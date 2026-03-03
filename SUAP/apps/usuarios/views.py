@@ -1,6 +1,7 @@
 # python
 # file: apps/usuarios/views.py
-from django.http import HttpResponse
+from django.shortcuts import redirect
+
 
 def index(request):
-    return HttpResponse("Página inicial de usuários")
+    return redirect("usuarios:alunos_list")

@@ -11,6 +11,10 @@
       Alunos
     </a>
 
+    <a class="sidebar-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">
+      Professores
+    </a>
+
 {#    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'classes_page' %}">#}
     <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="/alunos/">
       Turmas

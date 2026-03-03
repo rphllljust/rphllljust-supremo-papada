@@ -1,124 +1,127 @@
 {% extends "base/base.html" %}
 
-{% block title %}Dashboard | {{ APP_NAME }}{% endblock %}
+{% block title %}Painel \| {{ APP_NAME|default:"SUAP" }}{% endblock %}
 
 {% block content %}
-<section class="page-header">
-  <h2>Dashboard</h2>
-  <p>Resumo geral do ambiente escolar.</p>
+{% url 'student_create' as student_create_url %}
+{% url 'enrollments_page' as enrollments_page_url %}
+{% url 'grades_page' as grades_page_url %}
+{% url 'attendance_page' as attendance_page_url %}
+
+<section class="breadcrumb">Navegação &gt; Painel &gt; Gestão Escolar</section>
+
+<section class="grid four">
+ <article class="card section-box"><h3>Alunos</h3><p class="kpi">{{ total_students }}</p></article>
+ <article class="card section-box"><h3>Cursos</h3><p class="kpi">{{ total_courses }}</p></article>
+ <article class="card section-box"><h3>Turmas</h3><p class="kpi">{{ total_classes }}</p></article>
+ <article class="card section-box"><h3>Matrículas Ativas</h3><p class="kpi">{{ total_enrollments }}</p></article>
+ <article class="card section-box"><h3>Média Geral</h3><p class="kpi">{{ avg_grade }}</p></article>
 </section>
 
-<section class="stats-grid">
-  <article class="card stat-card">
-    <h3>Alunos</h3>
-    <strong>{{ total_students }}</strong>
-  </article>
-
-  <article class="card stat-card">
-    <h3>Cursos</h3>
-    <strong>{{ total_courses }}</strong>
-  </article>
-
-  <article class="card stat-card">
-    <h3>Turmas</h3>
-    <strong>{{ total_classes }}</strong>
-  </article>
-
-  <article class="card stat-card">
-    <h3>Matrículas</h3>
-    <strong>{{ total_enrollments }}</strong>
-  </article>
-
-  <article class="card stat-card">
-    <h3>Média Geral</h3>
-    <strong>{{ avg_grade }}</strong>
-  </article>
+<section class="grid two">
+ <article class="card section-box">
+ <h3>Modalidade Presencial</h3>
+ <p class="kpi">{{ in_person_students|default:"0" }}</p>
+ <span class="badge badge-success">Cursos presenciais</span>
+ </article>
+ <article class="card section-box">
+ <h3>Modalidade Remota</h3>
+ <p class="kpi">{{ remote_students|default:"0" }}</p>
+ <span class="badge badge-info">Cursos remotos</span>
+ </article>
 </section>
 
-<section class="grid-2">
-  <div class="card">
-    <h3>Comunicados</h3>
-    <div class="announcements">
-      {% for item in announcements %}
-        <div class="alert alert-{{ item.level }}">
-          <strong>{{ item.title }}</strong>
-          <p>{{ item.body }}</p>
-        </div>
-      {% empty %}
-        <p>Nenhum comunicado disponível.</p>
-      {% endfor %}
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>Distribuição de Turmas</h3>
-    <ul>
-      {% for label in class_distribution.labels %}
-        <li>{{ label }}</li>
-      {% endfor %}
-    </ul>
-  </div>
+<section class="grid two">
+ <article class="card section-box">
+ <h3>Turmas Presenciais</h3>
+ <p class="kpi">{{ in_person_classes|default:"0" }}</p>
+ <span class="badge badge-success">Operação em sala</span>
+ </article>
+ <article class="card section-box">
+ <h3>Turmas Remotas</h3>
+ <p class="kpi">{{ remote_classes|default:"0" }}</p>
+ <span class="badge badge-info">Operação online</span>
+ </article>
 </section>
 
-<section class="grid-2">
-  <div class="card">
-    <h3>Matrículas Recentes</h3>
+<section class="grid two">
+ <article class="card section-box">
+ <h2>Botões e Ações</h2>
+ <div class="button-row">
+ <a class="btn btn-primary" href="{{ student_create_url|default:'#' }}">Novo Aluno</a>
+ <a class="btn btn-secondary" href="{{ enrollments_page_url|default:'#' }}">Nova Matrícula</a>
+ <a class="btn btn-secondary" href="{{ grades_page_url|default:'#' }}">Lançar Nota</a>
+ <a class="btn btn-secondary" href="{{ attendance_page_url|default:'#' }}">Registrar Frequência</a>
+ </div>
+ </article>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Aluno</th>
-          <th>Turma</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in recent_enrollments %}
-          <tr>
-            <td>{{ item.student.full_name }}</td>
-            <td>{{ item.school_class }}</td>
-            <td>{{ item.status }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="3">Nenhuma matrícula recente.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+ <article class="card section-box">
+ <h2>Mensagens</h2>
+ {% for alert in announcements %}
+ <div class="alert alert-{{ alert.level }}">
+ <strong>{{ alert.title }}</strong>
+ <p>{{ alert.body }}</p>
+ </div>
+ {% empty %}
+ <div class="alert alert-info">Sem avisos publicados.</div>
+ {% endfor %}
+ </article>
+</section>
 
-  <div class="card">
-    <h3>Frequência Recente</h3>
+<section class="grid two">
+ <article class="card section-box">
+ <h2>Matrículas Recentes</h2>
+ <table class="table">
+ <thead><tr><th>Aluno</th><th>Turma</th><th>Status</th></tr></thead>
+ <tbody>
+ {% for item in recent_enrollments %}
+ <tr>
+ <td>{{ item.student.full_name }}</td>
+ <td>{{ item.school_class }}</td>
+ <td>
+ {% if item.status == 'active' %}
+ <span class="badge badge-success">Ativa</span>
+ {% elif item.status == 'transferred' %}
+ <span class="badge badge-warning">Transferida</span>
+ {% elif item.status == 'completed' %}
+ <span class="badge badge-neutral">Concluída</span>
+ {% else %}
+ <span class="badge badge-info">{{ item.status }}</span>
+ {% endif %}
+ </td>
+ </tr>
+ {% empty %}
+ <tr><td colspan="3">Nenhuma matrícula recente.</td></tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </article>
 
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>Aluno</th>
-          <th>Presença</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in recent_attendance %}
-          <tr>
-            <td>{{ item.attendance_date }}</td>
-            <td>{{ item.enrollment.student.full_name }}</td>
-            <td>
-              {% if item.present %}
-                Presente
-              {% else %}
-                Ausente
-              {% endif %}
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="3">Nenhum registro recente.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+ <article class="card section-box">
+ <h2>Timeline de Frequência</h2>
+ <div class="timeline">
+ {% for rec in recent_attendance %}
+ <div class="timeline-item {% if rec.present %}done{% endif %}">
+ <small>{{ rec.attendance_date|date:"d/m/Y" }}</small>
+ <strong>{{ rec.enrollment.student.full_name }}</strong>
+ <p>{% if rec.present %}Presença registrada{% else %}Falta registrada{% endif %}</p>
+ </div>
+ {% empty %}
+ <div class="alert alert-info">Nenhum registro recente.</div>
+ {% endfor %}
+ </div>
+ </article>
+</section>
+
+<section class="grid two">
+ <article class="card section-box">
+ <h2>Barra de carregamento</h2>
+ <div class="loading-bar"><span></span></div>
+ </article>
+ <article class="card section-box">
+ <h2>Gráfico de Matrículas por Turma</h2>
+ {{ class_distribution|json_script:"chart-data" }}
+ <canvas id="suapChart" height="120"></canvas>
+ </article>
 </section>
 {% endblock %}
