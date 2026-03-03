@@ -1,3 +1,5 @@
-from django.shortcuts import render
+# file: apps/unidades/views.py
+from django.http import HttpResponse
 
-# Create your views here.
+def index(request):
+    return HttpResponse("Página inicial de unidades")

@@ -1,7 +1,11 @@
-from rest_framework.viewsets import ModelViewSet
-from apps.turmas.models import Turma
-from .serializers import TurmaSerializer
+# python
+# file: `apps/api/v1/turmas/views.py`
+from django.http import JsonResponse
 
-class TurmaViewSet(ModelViewSet):
-    queryset = Turma.objects.select_related("curso", "professor_responsavel").all().order_by("id")
-    serializer_class = TurmaSerializer
+
+def turmas_list(request):
+    return JsonResponse({"message": "Lista de turmas (exemplo)"})
+
+
+def turmas_detail(request, pk):
+    return JsonResponse({"message": f"Detalhe da turma {pk} (exemplo)"})

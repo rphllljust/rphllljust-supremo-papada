@@ -1,3 +1,6 @@
-from django.shortcuts import render
+# python
+# file: apps/usuarios/views.py
+from django.http import HttpResponse
 
-# Create your views here.
+def index(request):
+    return HttpResponse("Página inicial de usuários")

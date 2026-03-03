@@ -19,14 +19,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
 
-    'apps.api',
-    'apps.core',
-    'apps.usuarios',
-    'apps.unidades',
-    'apps.cursos',
-    'apps.turmas',
-    'apps.matriculas',
-    'apps.integracao_moodle',
+    "apps.core",
+    "apps.dashboard",
+    "apps.cursos",
+    "apps.integracao_moodle",
+    "apps.matriculas",
+    "apps.turmas",
+    "apps.unidades",
+    "apps.usuarios",
 ]
 
 MIDDLEWARE = [
@@ -43,14 +43,15 @@ ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.app_info",
             ],
         },
     },
@@ -79,10 +80,12 @@ USE_TZ = True
 
 TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
-MEDIA_URL = 'media/'
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

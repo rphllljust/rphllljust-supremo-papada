@@ -1,7 +1,11 @@
-from rest_framework.viewsets import ModelViewSet
-from apps.matriculas.models import Matricula
-from .serializers import MatriculaSerializer
+# python
+# file: `apps/api/v1/matriculas/views.py`
+from django.http import JsonResponse
 
-class MatriculaViewSet(ModelViewSet):
-    queryset = Matricula.objects.select_related("aluno", "turma").all().order_by("id")
-    serializer_class = MatriculaSerializer
+
+def matriculas_list(request):
+    return JsonResponse({"message": "Lista de matrículas (exemplo)"})
+
+
+def matriculas_detail(request, pk):
+    return JsonResponse({"message": f"Detalhe da matrícula {pk} (exemplo)"})

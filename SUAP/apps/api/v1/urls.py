@@ -1,17 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-
-from apps.api.v1.unidades.views import UnidadeViewSet
-from apps.api.v1.turmas.views import TurmaViewSet
-from apps.api.v1.matriculas.views import MatriculaViewSet
-from apps.api.v1.usuarios.views import UsuarioViewSet
-
-router = DefaultRouter()
-router.register(r"unidades", UnidadeViewSet, basename="unidade")
-router.register(r"turmas", TurmaViewSet, basename="turma")
-router.register(r"matriculas", MatriculaViewSet, basename="matricula")
-router.register(r"usuarios", UsuarioViewSet, basename="usuario")
+# python
+# file: `apps/api/v1/urls.py`
+from django.urls import include, path
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path("usuarios/", include("apps.api.v1.usuarios.urls")),
+    path("unidades/", include("apps.api.v1.unidades.urls")),
+    path("turmas/", include("apps.api.v1.turmas.urls")),
+    path("matriculas/", include("apps.api.v1.matriculas.urls")),
 ]

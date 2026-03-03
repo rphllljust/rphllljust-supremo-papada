@@ -1,0 +1,37 @@
+<header class="main-header">
+  <div class="container">
+    <div class="brand">
+      <h1>{{ APP_NAME }}</h1>
+    </div>
+
+    <nav class="main-nav">
+      <a
+        class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
+        href="{% url 'dashboard:index' %}"
+      >
+        Painel
+      </a>
+
+      <a
+        class="{% if request.resolver_match.namespace == 'usuarios' %}active{% endif %}"
+        href="{% url 'usuarios:index' %}"
+      >
+        Usuários
+      </a>
+
+      <a
+        class="{% if request.resolver_match.namespace == 'turmas' %}active{% endif %}"
+        href="{% url 'turmas:index' %}"
+      >
+        Turmas
+      </a>
+
+      <a
+        class="{% if request.resolver_match.namespace == 'matriculas' %}active{% endif %}"
+        href="{% url 'matriculas:index' %}"
+      >
+        Matrículas
+      </a>
+    </nav>
+  </div>
+</header>

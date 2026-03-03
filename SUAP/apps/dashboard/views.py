@@ -1,9 +1,7 @@
-# File: apps/core/views.py
 from django.shortcuts import render
 
 
-def dashboard(request):
-    """Renderiza `core/dashboard.html` com dados mockados."""
+def index(request):
     context = {
         "total_students": 1240,
         "total_courses": 18,
@@ -87,4 +85,4 @@ def dashboard(request):
         }
     }
 
-    return render(request, "core/dashboard.html", context)
+    return render(request, "dashboard/index.html", context) 
