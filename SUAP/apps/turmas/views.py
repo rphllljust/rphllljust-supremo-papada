@@ -1,5 +1,5 @@
 # file: apps/turmas/views.py
-from django.http import HttpResponse
+from django.shortcuts import redirect
 
 def index(request):
-    return HttpResponse("Página inicial de turmas")
+    return redirect("turmas:turmas_list")

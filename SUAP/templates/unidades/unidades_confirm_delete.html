@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+
+{% block title %}Excluir unidade{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Excluir unidade</h1>
+  <p>Tem certeza que deseja excluir <strong>{{ unidade.nome }}</strong>?</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:flex;gap:12px;">
+      <button type="submit" class="btn">Confirmar exclusao</button>
+      <a href="{% url 'unidades:unidades_list' %}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

@@ -1,9 +1,11 @@
 # file: apps/turmas/urls.py
-from django.urls import path
+from django.urls import include, path
+
 from . import views
 
 app_name = "turmas"
 
 urlpatterns = [
-    path("", views.index, name="index"),
+    path("", include("apps.turmas.turmas.urls")),
+    path("inicio/", views.index, name="index"),
 ]

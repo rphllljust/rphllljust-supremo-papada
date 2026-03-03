@@ -1,9 +1,11 @@
 # file: apps/unidades/urls.py
-from django.urls import path
+from django.urls import include, path
+
 from . import views
 
 app_name = "unidades"
 
 urlpatterns = [
-    path("", views.index, name="index"),
+    path("", include("apps.unidades.unidades.urls")),
+    path("inicio/", views.index, name="index"),
 ]

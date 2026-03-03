@@ -16,12 +16,12 @@
     </a>
 
 {#    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'classes_page' %}">#}
-    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="/alunos/">
+    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">
       Turmas
     </a>
 
 {#    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'enrollments_page' %}">#}
-    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="/alunos/">
+    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">
       Matrículas
     </a>
 

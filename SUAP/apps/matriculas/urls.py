@@ -1,9 +1,11 @@
 # file: apps/matriculas/urls.py
-from django.urls import path
+from django.urls import include, path
+
 from . import views
 
 app_name = "matriculas"
 
 urlpatterns = [
-    path("", views.index, name="index"),
+    path("", include("apps.matriculas.matriculas.urls")),
+    path("inicio/", views.index, name="index"),
 ]

@@ -1,5 +1,5 @@
 # file: apps/matriculas/views.py
-from django.http import HttpResponse
+from django.shortcuts import redirect
 
 def index(request):
-    return HttpResponse("Página inicial de matrículas")
+    return redirect("matriculas:matriculas_list")
