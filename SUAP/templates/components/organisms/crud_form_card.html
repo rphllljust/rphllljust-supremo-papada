@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block title %}{% block form_page_title %}{{ page_title }}{% endblock %}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1 class="crud-title">{% block form_title %}{{ page_title }}{% endblock %}</h1>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "components/molecules/form_fields.html" with form=form %}
+    {% block form_actions %}
+      {% include "components/molecules/form_actions.html" with cancel_url="#" submit_label='Salvar' cancel_label='Cancelar' %}
+    {% endblock %}
+  </form>
+</section>
+{% endblock %}

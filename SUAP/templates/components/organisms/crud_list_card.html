@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+
+{% block title %}{% block page_title %}{% endblock %}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">{% block header_title %}{% block header_title_fallback %}{% endblock %}{% endblock %}</h1>
+    {% block header_action %}{% endblock %}
+  </div>
+
+  <div class="crud-table-wrap">
+    <table class="table">
+      <thead>
+        {% block table_head %}{% endblock %}
+      </thead>
+      <tbody>
+        {% block table_body %}{% endblock %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

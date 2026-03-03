@@ -16,7 +16,7 @@ def matriculas_create(request):
         form.save()
         messages.success(request, "Matricula cadastrada com sucesso.")
         return redirect("matriculas:matriculas_list")
-    return render(request, "matriculas/matriculas_form.html", {"form": form, "page_title": "Nova matricula"})
+    return render(request, "matriculas/matriculas_form_atomic.html", {"form": form, "page_title": "Nova matricula"})
 
 
 def matriculas_update(request, pk):
@@ -26,7 +26,7 @@ def matriculas_update(request, pk):
         form.save()
         messages.success(request, "Matricula atualizada com sucesso.")
         return redirect("matriculas:matriculas_list")
-    return render(request, "matriculas/matriculas_form.html", {"form": form, "page_title": "Editar matricula"})
+    return render(request, "matriculas/matriculas_form_atomic.html", {"form": form, "page_title": "Editar matricula"})
 
 
 def matriculas_delete(request, pk):

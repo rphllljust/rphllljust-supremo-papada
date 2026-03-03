@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block title %}{% block confirm_page_title %}{% endblock %}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1 class="crud-title">{% block confirm_title %}{% endblock %}</h1>
+  <p class="confirm-text">{% block confirm_text %}{% endblock %}</p>
+
+  <form method="post">
+    {% csrf_token %}
+    {% block confirm_actions %}
+      {% include "components/molecules/confirm_actions.html" with cancel_url="#" confirm_label='Confirmar exclusao' cancel_label='Cancelar' %}
+    {% endblock %}
+  </form>
+</section>
+{% endblock %}

@@ -418,3 +418,48 @@ tbody tr:hover {
     position: static;
   }
 }
+
+/* Novas classes CRUD */
+.crud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.crud-title {
+  margin: 0;
+}
+
+.crud-table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.table-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.form-error {
+  color: #a12a2a;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-text {
+  margin-bottom: 16px;
+}

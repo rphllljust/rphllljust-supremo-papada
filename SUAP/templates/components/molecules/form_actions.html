@@ -1,0 +1,5 @@
+<div class="form-actions">
+  {% include "components/atoms/button_submit.html" with label=submit_label|default:"Salvar" variant="primary" %}
+  <a href="{{ cancel_url }}">{{ cancel_label|default:"Cancelar" }}</a>
+</div>
+
