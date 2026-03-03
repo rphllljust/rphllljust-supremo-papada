@@ -12,10 +12,14 @@
 <body>
   {% include "components/navbar.html" %}
 
-  <main class="container">
-    {% include "components/messages.html" %}
-    {% block content %}{% endblock %}
-  </main>
+  <div class="page shell" id="pageContent">
+    {% include "components/sidebar.html" %}
+
+    <main class="container content-area">
+      {% include "components/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
   {% include "components/footer.html" %}
 
