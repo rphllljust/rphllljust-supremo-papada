@@ -1,0 +1,30 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}Matriculas | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Matriculas > Operação</section>
+<section class="grid two">
+  <article class="card section-box">
+    <h2>Nova Matricula</h2>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-primary" type="submit">Salvar Matricula</button>
+    </form>
+  </article>
+  <article class="card section-box">
+    <h2>Lista Recente</h2>
+    <table>
+      <thead><tr><th>Aluno</th><th>Turma</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in enrollments %}
+        <tr>
+          <td>{{ item.student.full_name }}</td>
+          <td>{{ item.school_class }}</td>
+          <td>{{ item.get_status_display }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+</section>
+{% endblock %}

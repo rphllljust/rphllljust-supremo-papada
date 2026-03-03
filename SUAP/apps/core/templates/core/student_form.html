@@ -1,0 +1,16 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}{{ page_title }} | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Alunos > {{ page_title }}</section>
+<section class="card section-box">
+  <h2>{{ page_title }}</h2>
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="button-row">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn btn-secondary" href="{% url 'students_page' %}">Voltar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}Turmas | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Turmas > Visão Geral</section>
+<section class="card section-box">
+  <h2>Filtros de Turmas</h2>
+  <form method="get" class="form-inline compact-inline">
+    {{ filter_form.learning_mode }}
+    {{ filter_form.shift }}
+    <button class="btn btn-secondary" type="submit">Filtrar</button>
+    <a class="btn btn-primary" href="{% url 'classes_page' %}">Limpar</a>
+  </form>
+</section>
+<section class="grid two">
+  <article class="card section-box">
+    <h2>Turmas Presenciais</h2>
+    {% for turma in in_person_classes %}
+    <div class="class-block">
+      <h3>Turma {{ turma.name }} - {{ turma.year }}</h3>
+      <p><strong>Modalidade:</strong> <span class="badge badge-success">Presencial</span></p>
+      <p><strong>Turno:</strong> {{ turma.get_shift_display }}</p>
+      <p><strong>Coordenação:</strong> {{ turma.coordinator|default:'Não definida' }}</p>
+      <p><strong>Disciplinas:</strong></p>
+      <ul class="checklist">
+        {% for link in turma.subjects.all %}
+        <li>{{ link.subject.name }} - {{ link.teacher.full_name }}</li>
+        {% empty %}
+        <li>Sem disciplinas vinculadas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% empty %}
+    <p>Nenhuma turma presencial cadastrada.</p>
+    {% endfor %}
+  </article>
+
+  <article class="card section-box">
+    <h2>Turmas Remotas</h2>
+    {% for turma in remote_classes %}
+    <div class="class-block">
+      <h3>Turma {{ turma.name }} - {{ turma.year }}</h3>
+      <p><strong>Modalidade:</strong> <span class="badge badge-info">Remota</span></p>
+      <p><strong>Turno:</strong> {{ turma.get_shift_display }}</p>
+      <p><strong>Coordenação:</strong> {{ turma.coordinator|default:'Não definida' }}</p>
+      <p><strong>Disciplinas:</strong></p>
+      <ul class="checklist">
+        {% for link in turma.subjects.all %}
+        <li>{{ link.subject.name }} - {{ link.teacher.full_name }}</li>
+        {% empty %}
+        <li>Sem disciplinas vinculadas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% empty %}
+    <p>Nenhuma turma remota cadastrada.</p>
+    {% endfor %}
+  </article>
+</section>
+{% endblock %}

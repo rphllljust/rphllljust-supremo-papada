@@ -1,0 +1,14 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}Excluir Aluno | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Alunos > Excluir</section>
+<section class="card section-box">
+  <h2>Excluir Aluno</h2>
+  <p>Confirma excluir <strong>{{ student.full_name }}</strong>?</p>
+  <form method="post" class="button-row">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Confirmar Exclusão</button>
+    <a class="btn btn-secondary" href="{% url 'students_page' %}">Cancelar</a>
+  </form>
+</section>
+{% endblock %}

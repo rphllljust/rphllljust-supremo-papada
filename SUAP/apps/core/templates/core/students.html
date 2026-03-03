@@ -1,0 +1,60 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}Alunos | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Alunos > Gestão Escolar</section>
+
+<section class="card section-box">
+  <div class="title-row">
+    <h2>Alunos</h2>
+    <a class="btn btn-primary" href="{% url 'student_create' %}">Novo Aluno</a>
+  </div>
+
+  <form method="get" class="form-inline">
+    {{ filter_form.query }}
+    {{ filter_form.class_filter }}
+    {{ filter_form.learning_mode }}
+    {{ filter_form.status }}
+    <button class="btn btn-secondary" type="submit">Filtrar</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Matrícula</th>
+        <th>Modalidade</th>
+        <th>Curso</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for student in students %}
+      <tr>
+        <td>{{ student.full_name }}</td>
+        <td>{{ student.registration }}</td>
+        <td>
+          {% if student.learning_mode == 'in_person' %}
+          <span class="badge badge-success">Presencial</span>
+          {% else %}
+          <span class="badge badge-info">Remoto</span>
+          {% endif %}
+        </td>
+        <td>{{ student.abstract_course }}</td>
+        <td>
+          {% if student.status == 'active' %}<span class="badge badge-success">Ativo</span>{% endif %}
+          {% if student.status == 'attention' %}<span class="badge badge-warning">Atencao</span>{% endif %}
+          {% if student.status == 'inactive' %}<span class="badge badge-neutral">Inativo</span>{% endif %}
+        </td>
+        <td class="action-buttons">
+          <a class="btn btn-small btn-secondary" href="{% url 'student_update' student.id %}">Editar</a>
+          <a class="btn btn-small btn-danger" href="{% url 'student_delete' student.id %}">Excluir</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">Nenhum aluno encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

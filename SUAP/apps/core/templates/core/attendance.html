@@ -1,0 +1,52 @@
+﻿{% extends "a/../../../../templates/base.html" %}
+{% block title %}Frequencia | SUAP{% endblock %}
+{% block content %}
+<section class="breadcrumb">Navegação > Frequencia > Registro</section>
+<section class="grid two">
+  <article class="card section-box">
+    <h2>Registrar Frequencia</h2>
+    <form method="post" class="form-grid">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn btn-primary" type="submit">Salvar Frequencia</button>
+    </form>
+  </article>
+  <article class="card section-box">
+    <h2>Frequência Presencial</h2>
+    <table>
+      <thead><tr><th>Aluno</th><th>Turma</th><th>Disciplina</th><th>Data</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in in_person_records %}
+        <tr>
+          <td>{{ item.enrollment.student.full_name }}</td>
+          <td>{{ item.class_subject.school_class.name }}</td>
+          <td>{{ item.class_subject.subject.name }}</td>
+          <td>{{ item.attendance_date|date:"d/m/Y" }}</td>
+          <td>{% if item.present %}<span class="badge badge-success">Presente</span>{% else %}<span class="badge badge-warning">Falta</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Sem frequências presenciais registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="table-spacer"></div>
+    <h2>Frequência Remota</h2>
+    <table>
+      <thead><tr><th>Aluno</th><th>Turma</th><th>Disciplina</th><th>Data</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in remote_records %}
+        <tr>
+          <td>{{ item.enrollment.student.full_name }}</td>
+          <td>{{ item.class_subject.school_class.name }}</td>
+          <td>{{ item.class_subject.subject.name }}</td>
+          <td>{{ item.attendance_date|date:"d/m/Y" }}</td>
+          <td>{% if item.present %}<span class="badge badge-success">Presente</span>{% else %}<span class="badge badge-warning">Falta</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Sem frequências remotas registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+</section>
+{% endblock %}
