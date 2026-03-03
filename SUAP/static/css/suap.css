@@ -101,6 +101,37 @@ main.container,
   padding: 1rem 0;
 }
 
+/* Gov.br Top Bar */
+.govbar {
+  background: #111827;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.govbar-inner {
+  width: min(1200px, 92%);
+  margin: 0 auto;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.govbar-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #facc15;
+  color: #111827;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.govbar-text {
+  font-size: 13px;
+  color: #e5e7eb;
+}
+
 /* Layouts */
 .shell {
   display: grid;
@@ -462,4 +493,29 @@ tbody tr:hover {
 
 .confirm-text {
   margin-bottom: 16px;
+}
+
+/* Novas classes para o bloco de marca */
+.brand-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.brand {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.88);
 }
