@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+
+{% block title %}P03 – Solicitação de Transferência{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">{{ page_title }}</h1>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <fieldset style="margin-bottom:1.5rem; padding:1rem; border:1px solid #ddd; border-radius:4px;">
+      <legend style="font-weight:bold; padding:0 .5rem;">Dados da Matrícula</legend>
+      {% include "components/molecules/form_fields.html" with form=form_fluxo %}
+    </fieldset>
+
+    <fieldset style="margin-bottom:1.5rem; padding:1rem; border:1px solid #ddd; border-radius:4px;">
+      <legend style="font-weight:bold; padding:0 .5rem;">Dados da Transferência</legend>
+      {% include "components/molecules/form_fields.html" with form=form_trans %}
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Registrar Solicitação →</button>
+      <a href="{% url 'matriculas:transferencia_fluxo_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
