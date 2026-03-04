@@ -13,6 +13,9 @@ urlpatterns = [
     path("turmas/", include(("apps.turmas.urls", "turmas"), namespace="turmas")),
     path("matriculas/", include(("apps.matriculas.urls", "matriculas"), namespace="matriculas")),
     path("unidades/", include(("apps.unidades.urls", "unidades"), namespace="unidades")),
+    path("notas/", include(("apps.notas.urls", "notas"), namespace="notas")),
+    path("frequencia/", include(("apps.frequencia.urls", "frequencia"), namespace="frequencia")),
+    path("agenda/", include(("apps.agenda.urls", "agenda"), namespace="agenda")),
 
     path("api/v1/", include("apps.api.v1.urls")),
 

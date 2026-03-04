@@ -26,15 +26,15 @@
       Matrículas
     </a>
 
-    <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="/alunos/">
+    <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">
       Notas
     </a>
 
-    <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="/alunos/">
+    <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">
       Frequência
     </a>
 
-    <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="/alunos/">
+    <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">
       Agenda
     </a>
 

@@ -27,6 +27,9 @@ INSTALLED_APPS = [
     "apps.turmas",
     "apps.unidades",
     "apps.usuarios",
+    "apps.notas",
+    "apps.frequencia",
+    "apps.agenda",
 ]
 
 MIDDLEWARE = [

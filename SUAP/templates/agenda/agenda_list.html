@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Agenda{% endblock %}
+{% block header_title %}Agenda{% endblock %}
+{% block header_action %}
+  {% url 'agenda:agenda_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo evento' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Titulo</th>
+  <th>Turma</th>
+  <th>Inicio</th>
+  <th>Fim</th>
+  <th class="table-actions">Acoes</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for evento in eventos %}
+<tr>
+  <td>{{ evento.titulo }}</td>
+  <td>{{ evento.turma.nome }}</td>
+  <td>{{ evento.inicio|date:"d/m/Y H:i" }}</td>
+  <td>{{ evento.fim|date:"d/m/Y H:i" }}</td>
+  <td class="table-actions">
+    <a href="{% url 'agenda:agenda_update' evento.pk %}">Editar</a>
+    |
+    <a href="{% url 'agenda:agenda_delete' evento.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="5">Nenhum evento cadastrado.</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

@@ -1,0 +1,41 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Notas{% endblock %}
+{% block header_title %}Notas{% endblock %}
+{% block header_action %}
+  {% url 'notas:notas_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Nova nota' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Turma</th>
+  <th>Descricao</th>
+  <th>Valor</th>
+  <th>Data</th>
+  <th class="table-actions">Acoes</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for nota in notas %}
+<tr>
+  <td>{{ nota.matricula.aluno.username }}</td>
+  <td>{{ nota.matricula.turma.nome }}</td>
+  <td>{{ nota.descricao }}</td>
+  <td>{{ nota.valor }}</td>
+  <td>{{ nota.data_lancamento|date:"d/m/Y" }}</td>
+  <td class="table-actions">
+    <a href="{% url 'notas:notas_update' nota.pk %}">Editar</a>
+    |
+    <a href="{% url 'notas:notas_delete' nota.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="6">Nenhuma nota cadastrada.</td>
+</tr>
+{% endfor %}
+{% endblock %}
+

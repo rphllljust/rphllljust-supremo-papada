@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Frequencia{% endblock %}
+{% block header_title %}Frequencia{% endblock %}
+{% block header_action %}
+  {% url 'frequencia:frequencia_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo registro' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Turma</th>
+  <th>Data</th>
+  <th>Presenca</th>
+  <th class="table-actions">Acoes</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for registro in registros %}
+<tr>
+  <td>{{ registro.matricula.aluno.username }}</td>
+  <td>{{ registro.matricula.turma.nome }}</td>
+  <td>{{ registro.data|date:"d/m/Y" }}</td>
+  <td>{% if registro.presente %}Presente{% else %}Falta{% endif %}</td>
+  <td class="table-actions">
+    <a href="{% url 'frequencia:frequencia_update' registro.pk %}">Editar</a>
+    |
+    <a href="{% url 'frequencia:frequencia_delete' registro.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="5">Nenhum registro cadastrado.</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
