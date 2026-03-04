@@ -37,6 +37,7 @@ class MatriculaCrudTests(TestCase):
             reverse("matriculas:matriculas_create"),
             {
                 "aluno": self.aluno.pk,
+                "curso": self.curso.pk,
                 "turma": self.turma.pk,
                 "status": "ATIVA",
             },
@@ -44,10 +45,10 @@ class MatriculaCrudTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(Matricula.objects.filter(aluno=self.aluno, turma=self.turma).exists())
+        self.assertTrue(Matricula.objects.filter(aluno=self.aluno, turma=self.turma, curso=self.curso).exists())
 
     def test_list_matriculas(self):
-        Matricula.objects.create(aluno=self.aluno, turma=self.turma, status="ATIVA")
+        Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
 
         response = self.client.get(reverse("matriculas:matriculas_list"))
 
@@ -55,7 +56,7 @@ class MatriculaCrudTests(TestCase):
         self.assertContains(response, "aluno_matricula")
 
     def test_delete_matricula(self):
-        matricula = Matricula.objects.create(aluno=self.aluno, turma=self.turma, status="ATIVA")
+        matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
 
         response = self.client.post(reverse("matriculas:matriculas_delete", args=[matricula.pk]), follow=True)
 

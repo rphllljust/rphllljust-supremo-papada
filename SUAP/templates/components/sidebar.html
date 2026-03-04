@@ -6,7 +6,6 @@
       Início
     </a>
 
-{#    <a class="sidebar-link {% if '/alunos/' in request.path %}active{% endif %}" href="{% url 'students_page' %}">#}
     <a class="sidebar-link {% if '/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">
       Alunos
     </a>
@@ -15,117 +14,98 @@
       Professores
     </a>
 
-{#    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'classes_page' %}">#}
+    <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">
+      Cursos
+    </a>
+
     <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">
       Turmas
     </a>
 
-{#    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'enrollments_page' %}">#}
     <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">
       Matrículas
     </a>
 
-{#    <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'grades_page' %}">#}
     <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="/alunos/">
       Notas
     </a>
 
-{#    <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'attendance_page' %}">#}
     <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="/alunos/">
       Frequência
     </a>
 
-{#    <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda_page' %}">#}
     <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="/alunos/">
       Agenda
     </a>
 
-{#    <a class="sidebar-link {% if '/diario-classe/' in request.path %}active{% endif %}" href="{% url 'class_diary_page' %}">#}
     <a class="sidebar-link {% if '/diario-classe/' in request.path %}active{% endif %}" href="/alunos/">
       Diário de Classe
     </a>
 
-{#    <a class="sidebar-link {% if '/ata-professores/' in request.path %}active{% endif %}" href="{% url 'teachers_minutes_page' %}">#}
     <a class="sidebar-link {% if '/ata-professores/' in request.path %}active{% endif %}" href="/alunos/">
       Ata dos Professores
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'documentos-processos' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Documentos/Processos
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'programa-gestao' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Programa de Gestão
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'ensino' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Ensino
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'pesquisa' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Pesquisa
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'extensao' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Extensão
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'gestao-pessoas' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Gestão de Pessoas
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'administracao' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Administração
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'tec-informacao' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Tec. da Informação
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'desenvolvimento-institucional' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Des. Institucional
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'central-servicos' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Central de Serviços
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'internacionalizacao' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Internacionalização
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'atividades-estudantis' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Atividades Estudantis
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'comunicacao-social' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Comunicação Social
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'seguranca-institucional' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Segurança Institucional
     </a>
 
-{#    <a class="sidebar-link" href="{% url 'module_page' 'auditoria' %}">#}
     <a class="sidebar-link" href="/alunos/">
       Auditoria
     </a>
 
-{#    <a class="sidebar-link sidebar-exit" href="{% url 'module_page' 'sair' %}">#}
     <a class="sidebar-link sidebar-exit" href="/alunos/">
       Sair
     </a>

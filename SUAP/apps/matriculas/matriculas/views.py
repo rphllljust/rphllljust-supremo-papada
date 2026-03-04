@@ -6,7 +6,7 @@ from .forms import MatriculaForm
 
 
 def matriculas_list(request):
-    matriculas = Matricula.objects.select_related("aluno", "turma", "turma__curso").all().order_by("-id")
+    matriculas = Matricula.objects.select_related("aluno", "curso", "turma", "turma__curso").all().order_by("-id")
     return render(request, "matriculas/matriculas_list.html", {"matriculas": matriculas})
 
 
@@ -36,4 +36,3 @@ def matriculas_delete(request, pk):
         messages.success(request, "Matricula removida com sucesso.")
         return redirect("matriculas:matriculas_list")
     return render(request, "matriculas/matriculas_confirm_delete.html", {"matricula": matricula})
-

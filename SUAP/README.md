@@ -1,177 +1,148 @@
-# Plano: SUAP ETEC-IDEP — Projeto Django com OAuth2
+# SUAP - IDEP
 
-## Contexto
-Criação do sistema SUAP da ETEC-IDEP, uma aplicação web Django com autenticação OAuth2 via SUAP (suap.ifrn.edu.br). O projeto inclui módulos de Dashboard, Perfil de Usuário e Notícias/Avisos, utilizando social-auth-app-django, django-environ, Ruff e Djlint.
+Sistema web em **Django** para gestão escolar, com módulos de:
 
----
+* usuários
+* unidades
+* cursos
+* turmas
+* matrículas
 
-## Estrutura do Projeto
+## Requisitos
 
-```
-C:\Users\rphll\etec-idep-suap\
-├── .env.example
-├── .gitignore
-├── pyproject.toml          # Ruff + Djlint config
-├── requirements.txt
-├── manage.py
-├── config/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── apps/
-│   ├── __init__.py
-│   ├── accounts/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── models.py       # CustomUser estendendo AbstractUser
-│   │   ├── views.py        # login, logout, profile
-│   │   ├── urls.py
-│   │   └── pipeline.py     # social-auth pipeline: salvar dados do SUAP
-│   ├── dashboard/
-│   │   ├── __init__.py
-│   │   ├── views.py
-│   │   └── urls.py
-│   └── news/
-│       ├── __init__.py
-│       ├── admin.py
-│       ├── models.py       # News (titulo, conteudo, data, autor)
-│       ├── views.py
-│       └── urls.py
-├── templates/
-│   ├── base.html           # Layout base com navbar + sidebar
-│   ├── home.html           # Landing page pública
-│   ├── accounts/
-│   │   ├── login.html      # Botão "Entrar com SUAP"
-│   │   └── profile.html    # Dados do usuário vindos do SUAP
-│   ├── dashboard/
-│   │   └── index.html      # Dashboard pós-login
-│   └── news/
-│       ├── list.html
-│       └── detail.html
-└── static/
-    ├── css/
-    │   └── style.css       # Estilos institucionais ETEC-IDEP
-    └── js/
-        └── logout.js       # Script de confirmação + POST logout
+* Python 3.12+
+* pip
+* **SQLite** para desenvolvimento
+* **PostgreSQL** para produção
+
+## Banco de dados
+
+Atualmente, o projeto está configurado para utilizar **SQLite** durante a etapa de desenvolvimento, por ser mais simples de configurar e executar localmente.
+
+Para o ambiente de **produção**, o banco de dados previsto é o **PostgreSQL**, por oferecer mais robustez, desempenho e recursos adequados para uso em ambiente real.
+
+## Como rodar o projeto no Windows
+
+### 1. Clonar o repositório e entrar na pasta
+
+```powershell
+git clone <url-do-repositorio>
+cd SUAP
 ```
 
----
+### 2. Criar e ativar o ambiente virtual
 
-## Arquivos a Criar
-
-### 1. `requirements.txt`
-```
-Django>=5.0
-social-auth-app-django>=5.4
-django-environ>=0.11
-Pillow>=10.0
+```powershell
+py -m venv .venv
+.\.venv\Scripts\activate
 ```
 
-### 2. `pyproject.toml` — Ruff + Djlint
-- Ruff: lint e format Python (target py311, line-length 88)
-- Djlint: format HTML (profile django, indent 2)
+### 3. Instalar as dependências
 
-### 3. `.env.example`
-Variáveis: SECRET_KEY, DEBUG, ALLOWED_HOSTS, DATABASE_URL,
-SUAP_KEY, SUAP_SECRET, SUAP_URL=https://suap.ifrn.edu.br
-
-### 4. `config/settings.py`
-- django-environ para leitura do .env
-- INSTALLED_APPS: social_django, apps.accounts, apps.dashboard, apps.news
-- AUTHENTICATION_BACKENDS: SuapOAuth2 + ModelBackend
-- SOCIAL_AUTH_SUAP_KEY / SUAP_SECRET via env
-- AUTH_USER_MODEL = 'accounts.CustomUser'
-- LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
-
-### 5. `apps/accounts/models.py`
-CustomUser com campos extras: matricula, tipo_vinculo, foto (vindos do SUAP)
-
-### 6. `apps/accounts/pipeline.py`
-Pipeline social-auth para salvar dados do SUAP no CustomUser:
-- matricula, tipo_vinculo, nome_usual, foto_url
-
-### 7. Backend OAuth2 SUAP (`config/suap_backend.py`)
-```python
-from social_core.backends.oauth import BaseOAuth2
-
-class SuapOAuth2(BaseOAuth2):
-    name = "suap"
-    BASE_URL = env("SUAP_URL", "https://suap.ifrn.edu.br")
-    AUTHORIZATION_URL = f"{BASE_URL}/o/authorize/"
-    ACCESS_TOKEN_URL = f"{BASE_URL}/o/token/"
-    ACCESS_TOKEN_METHOD = "POST"
-    REDIRECT_STATE = False
-    DEFAULT_SCOPE = ["identificacao", "email", "documentos_pessoais"]
-
-    def user_data(self, access_token, *args, **kwargs):
-        return self.get_json(f"{self.BASE_URL}/api/eu/", headers={
-            "Authorization": f"Bearer {access_token}"
-        })
-
-    def get_user_details(self, response):
-        return {
-            "username": response.get("identificacao"),
-            "email": response.get("email"),
-            "first_name": response.get("nome_usual"),
-            "matricula": response.get("identificacao"),
-            "tipo_vinculo": response.get("tipo_vinculo"),
-        }
+```powershell
+pip install -r requirements.txt
 ```
 
-### 8. Templates
-- `base.html`: navbar com logo ETEC-IDEP, links para dashboard/perfil/notícias, botão logout
-- `accounts/login.html`: card centralizado com botão "Entrar com SUAP" (OAuth2)
-- `accounts/profile.html`: foto, nome, matrícula, tipo de vínculo
-- `dashboard/index.html`: boas-vindas + cards de acesso rápido
-- `news/list.html` e `news/detail.html`
+### 4. Aplicar as migrações
 
-### 9. `static/js/logout.js`
-```javascript
-// Confirmação antes de logout + submissão via POST form
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (confirm("Deseja realmente sair do sistema?")) {
-        document.getElementById("logout-form").submit();
-      }
-    });
-  }
-});
+```powershell
+py manage.py migrate
 ```
 
-### 10. `static/css/style.css`
-Estilos institucionais com cores da ETEC-IDEP (paleta verde/branco)
+### 5. Criar um usuário administrador *(opcional)*
 
----
-
-## Configuração de Ferramentas
-
-### Ruff (`pyproject.toml`)
-```toml
-[tool.ruff]
-target-version = "py311"
-line-length = 88
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "UP"]
+```powershell
+py manage.py createsuperuser
 ```
 
-### Djlint (`.djlintrc` ou `pyproject.toml`)
-```toml
-[tool.djlint]
-profile = "django"
-indent = 2
+### 6. Rodar o servidor local
+
+```powershell
+py manage.py runserver
 ```
 
----
+A aplicação ficará disponível em:
 
-## Verificação (pós-implementação)
-1. `pip install -r requirements.txt`
-2. Copiar `.env.example` → `.env` e preencher SUAP_KEY/SUAP_SECRET
-3. `python manage.py migrate`
-4. `python manage.py runserver`
-5. Acesso em http://localhost:8000 → botão "Entrar com SUAP"
-6. `ruff check .` e `djlint templates/ --check` para validar formatação
+```text
+http://127.0.0.1:8000/
+```
+
+## Migrações
+
+### Gerar novas migrações
+
+```powershell
+py manage.py makemigrations
+```
+
+### Aplicar migrações
+
+```powershell
+py manage.py migrate
+```
+
+### Verificar pendências de migração
+
+```powershell
+py manage.py makemigrations --check --dry-run
+```
+
+## Testes
+
+### Rodar toda a suíte de testes
+
+```powershell
+py manage.py test
+```
+
+### Rodar testes de um app específico
+
+```powershell
+py manage.py test apps.cursos
+```
+
+## Estrutura básica
+
+* `apps/` — apps Django do sistema
+* `templates/` — templates HTML reutilizáveis e telas de CRUD
+* `config/` — configuração principal do projeto (`urls.py`, `settings.py`, etc.)
+
+## Apps principais
+
+* `apps/usuarios`
+* `apps/unidades`
+* `apps/cursos`
+* `apps/turmas`
+* `apps/matriculas`
+* `apps/dashboard`
+* `apps/api`
+
+## Comandos úteis
+
+### Limpar arquivos `.pyc`
+
+```powershell
+Get-ChildItem -Recurse -Include *.pyc | Remove-Item -Force
+```
+
+### Abrir o shell do Django
+
+```powershell
+py manage.py shell
+```
+
+## Observações
+
+* O projeto utiliza **SQLite apenas no ambiente de desenvolvimento**.
+* Para **produção**, o banco de dados planejado é o **PostgreSQL**.
+* O arquivo `README.md` pode ser expandido futuramente com:
+
+  * padrões de código
+  * CI/CD
+  * instruções de deploy
+* Em caso de alteração nos modelos, execute sempre:
+
+```powershell
+py manage.py makemigrations
+py manage.py migrate
+```

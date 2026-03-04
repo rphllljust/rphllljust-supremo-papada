@@ -1,12 +1,12 @@
 {% extends "base/base.html" %}
 
-{% block title %}Painel \| {{ APP_NAME|default:"SUAP" }}{% endblock %}
+{% block title %}Painel | {{ APP_NAME|default:"SUAP" }}{% endblock %}
 
 {% block content %}
-{% url 'student_create' as student_create_url %}
-{% url 'enrollments_page' as enrollments_page_url %}
-{% url 'grades_page' as grades_page_url %}
-{% url 'attendance_page' as attendance_page_url %}
+{% url 'usuarios:alunos_create' as student_create_url %}
+{% url 'cursos:cursos_create' as course_create_url %}
+{% url 'matriculas:matriculas_create' as enrollments_page_url %}
+{% url 'turmas:turmas_list' as classes_page_url %}
 
 <section class="breadcrumb">Navegação &gt; Painel &gt; Gestão Escolar</section>
 
@@ -49,9 +49,9 @@
  <h2>Botões e Ações</h2>
  <div class="button-row">
  <a class="btn btn-primary" href="{{ student_create_url|default:'#' }}">Novo Aluno</a>
+ <a class="btn btn-secondary" href="{{ course_create_url|default:'#' }}">Novo Curso</a>
+ <a class="btn btn-secondary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
  <a class="btn btn-secondary" href="{{ enrollments_page_url|default:'#' }}">Nova Matrícula</a>
- <a class="btn btn-secondary" href="{{ grades_page_url|default:'#' }}">Lançar Nota</a>
- <a class="btn btn-secondary" href="{{ attendance_page_url|default:'#' }}">Registrar Frequência</a>
  </div>
  </article>
 
@@ -79,11 +79,11 @@
  <td>{{ item.student.full_name }}</td>
  <td>{{ item.school_class }}</td>
  <td>
- {% if item.status == 'active' %}
+ {% if item.status == 'ATIVA' %}
  <span class="badge badge-success">Ativa</span>
- {% elif item.status == 'transferred' %}
- <span class="badge badge-warning">Transferida</span>
- {% elif item.status == 'completed' %}
+ {% elif item.status == 'TRANCADA' %}
+ <span class="badge badge-warning">Trancada</span>
+ {% elif item.status == 'CONCLUIDA' %}
  <span class="badge badge-neutral">Concluída</span>
  {% else %}
  <span class="badge badge-info">{{ item.status }}</span>

@@ -3,6 +3,7 @@ from apps.matriculas.models import Matricula
 
 class MatriculaSerializer(serializers.ModelSerializer):
     aluno_username = serializers.CharField(source="aluno.username", read_only=True)
+    curso_nome = serializers.CharField(source="curso.nome", read_only=True)
     turma_nome = serializers.CharField(source="turma.nome", read_only=True)
 
     class Meta:
@@ -11,6 +12,8 @@ class MatriculaSerializer(serializers.ModelSerializer):
             "id",
             "aluno",
             "aluno_username",
+            "curso",
+            "curso_nome",
             "turma",
             "turma_nome",
             "data_matricula",
