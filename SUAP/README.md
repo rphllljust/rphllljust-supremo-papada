@@ -67,6 +67,19 @@ A aplicação ficará disponível em:
 http://127.0.0.1:8000/
 ```
 
+Django Admin
+
+O Django Admin pode ser utilizado para gerenciar os dados do sistema de forma administrativa, incluindo cadastros e consultas internas.
+
+Após criar um superusuário com o comando abaixo:
+```text
+py manage.py createsuperuser
+```
+acesse no navegador:
+```text
+http://127.0.0.1:8000/admin/
+```
+
 ## Migrações
 
 ### Gerar novas migrações
