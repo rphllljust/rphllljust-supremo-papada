@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+
+{% block title %}P03 – Fluxos de Transferência{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">P03 – Fluxos de Transferência</h1>
+    <a href="{% url 'matriculas:transferencia_fluxo_create' %}" class="btn btn-primary">+ Nova Solicitação</a>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Aluno</th>
+        <th>Curso</th>
+        <th>Tipo</th>
+        <th>Etapa Atual</th>
+        <th>Protocolo</th>
+        <th>Início</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fluxo in fluxos %}
+      <tr>
+        <td>{{ fluxo.pk }}</td>
+        <td>{{ fluxo.matricula.aluno.get_full_name|default:fluxo.matricula.aluno.username }}</td>
+        <td>{{ fluxo.matricula.curso.nome }}</td>
+        <td>{{ fluxo.transferencia.get_tipo_display|default:'–' }}</td>
+        <td>{{ fluxo.get_etapa_atual_display }}</td>
+        <td>{{ fluxo.processo.numero|default:'–' }}</td>
+        <td>{{ fluxo.data_inicio|date:'d/m/Y' }}</td>
+        <td>
+          {% if fluxo.concluido %}
+            <span style="color:green;font-weight:bold">✔ Concluído</span>
+          {% else %}
+            <span style="color:orange;">Em andamento</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'matriculas:transferencia_fluxo_detalhe' fluxo.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9">Nenhum fluxo de transferência registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

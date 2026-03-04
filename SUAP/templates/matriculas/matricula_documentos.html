@@ -1,0 +1,48 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Documentos – {{ matricula }}{% endblock %}
+{% block header_title %}Conferência de Documentos{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:documento_create' matricula.pk as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Adicionar Documento' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Documento</th>
+  <th>Entregue</th>
+  <th>Data de Entrega</th>
+  <th>Observação</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+<tr>
+  <td colspan="5">
+    <strong>Matrícula:</strong> {{ matricula }} &nbsp;|&nbsp;
+    <strong>Tipo:</strong> {{ matricula.get_tipo_matricula_display }} &nbsp;|&nbsp;
+    <strong>Status:</strong> {{ matricula.get_status_display }} &nbsp;|&nbsp;
+    <a href="{% url 'matriculas:matricula_pendencias' matricula.pk %}">Ver Pendências</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'matriculas:matriculas_list' %}">Voltar às Matrículas</a>
+  </td>
+</tr>
+{% for doc in documentos %}
+<tr>
+  <td>{{ doc.get_tipo_documento_display }}</td>
+  <td>{% if doc.entregue %}Sim{% else %}Não{% endif %}</td>
+  <td>{{ doc.data_entrega|date:'d/m/Y'|default:'–' }}</td>
+  <td>{{ doc.observacao|default:'–' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:documento_update' doc.pk %}">Editar</a>
+    |
+    <a href="{% url 'matriculas:documento_delete' doc.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="5">Nenhum documento registrado.</td>
+</tr>
+{% endfor %}
+{% endblock %}

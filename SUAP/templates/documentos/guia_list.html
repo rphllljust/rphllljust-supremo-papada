@@ -1,0 +1,28 @@
+
+{% extends "base/base.html" %}
+{% block title %}Guias de Transferência{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">Guias de Transferência</h1>
+    <a href="{% url 'documentos:guia_create' %}" class="btn btn-primary">+ Emitir</a>
+  </div>
+  <table class="table">
+    <thead><tr><th>Protocolo</th><th>Assunto</th><th>Matrícula</th><th>Emitido em</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for doc in docs %}
+      <tr>
+        <td>{{ doc.numero_protocolo }}</td>
+        {% if doc.tipo %}<td>{{ doc.get_tipo_display }}</td>{% endif %}
+        <td>{{ doc.assunto }}</td>
+        <td>{{ doc.matricula|default:'–' }}</td>
+        <td>{{ doc.data_emissao|date:'d/m/Y' }}</td>
+        <td><a href="{% url 'documentos:guia_detalhe' doc.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

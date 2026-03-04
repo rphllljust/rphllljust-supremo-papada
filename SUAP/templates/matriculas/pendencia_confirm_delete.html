@@ -1,0 +1,10 @@
+{% extends "components/organisms/crud_confirm_delete_card.html" %}
+
+{% block confirm_page_title %}Excluir pendência{% endblock %}
+{% block confirm_title %}Excluir pendência{% endblock %}
+{% block confirm_text %}Tem certeza que deseja excluir a pendência <strong>{{ pendencia.descricao }}</strong>?{% endblock %}
+
+{% block confirm_actions %}
+  {% url 'matriculas:matricula_pendencias' pendencia.matricula.pk as cancel_url %}
+  {% include "components/molecules/confirm_actions.html" with cancel_url=cancel_url confirm_label='Confirmar exclusão' cancel_label='Cancelar' %}
+{% endblock %}

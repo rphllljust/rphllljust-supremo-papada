@@ -1,0 +1,44 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}P02 – Emissão de Histórico/Declaração{% endblock %}
+{% block header_title %}P02 – Emissão de Histórico / Declaração{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:emissao_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Abrir Protocolo' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Protocolo</th>
+  <th>Solicitante</th>
+  <th>Documento</th>
+  <th>Matrícula</th>
+  <th>Etapa Atual</th>
+  <th>Início</th>
+  <th>Status</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for fluxo in fluxos %}
+<tr>
+  <td><strong>{{ fluxo.processo.numero|default:'–' }}</strong></td>
+  <td>{{ fluxo.solicitante.get_full_name|default:fluxo.solicitante.username }}</td>
+  <td>{{ fluxo.get_tipo_documento_display }}</td>
+  <td>{{ fluxo.matricula.curso.nome }} / {{ fluxo.matricula.turma.nome }}</td>
+  <td>{{ fluxo.get_etapa_atual_display }}</td>
+  <td>{{ fluxo.data_inicio|date:'d/m/Y' }}</td>
+  <td>
+    {% if fluxo.concluido %}<span style="color:green">Concluído</span>
+    {% elif fluxo.elegivel == False %}<span style="color:red">Inelegível</span>
+    {% else %}<span style="color:orange">Em andamento</span>{% endif %}
+  </td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:emissao_detalhe' fluxo.pk %}">Abrir Fluxo</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="8">Nenhum protocolo de emissão aberto.</td></tr>
+{% endfor %}
+{% endblock %}

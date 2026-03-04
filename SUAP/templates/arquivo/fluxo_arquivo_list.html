@@ -1,0 +1,51 @@
+{% extends "base/base.html" %}
+
+{% block title %}P04 – Fluxos de Arquivo{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">P04 – Fluxos de Arquivo Escolar e Prazos</h1>
+    <a href="{% url 'arquivo:arquivo_list' %}" class="btn btn-secondary">Ver Guarda Documental</a>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Registro ARQ</th>
+        <th>Tipo</th>
+        <th>Descrição</th>
+        <th>Etapa Atual</th>
+        <th>Início</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fluxo in fluxos %}
+      <tr>
+        <td>{{ fluxo.pk }}</td>
+        <td>{{ fluxo.guarda.numero_registro }}</td>
+        <td>{{ fluxo.guarda.get_tipo_documento_display }}</td>
+        <td>{{ fluxo.guarda.descricao|truncatechars:40 }}</td>
+        <td>{{ fluxo.get_etapa_atual_display }}</td>
+        <td>{{ fluxo.data_inicio|date:'d/m/Y' }}</td>
+        <td>
+          {% if fluxo.concluido %}
+            <span style="color:green;font-weight:bold">✔ Eliminado</span>
+          {% else %}
+            <span style="color:orange;">Em andamento</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'arquivo:fluxo_arquivo_detalhe' fluxo.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">Nenhum fluxo de arquivo registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

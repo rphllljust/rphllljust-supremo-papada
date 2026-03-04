@@ -4,7 +4,7 @@
 {% block header_title %}Turmas{% endblock %}
 {% block header_action %}
   {% url 'turmas:turmas_create' as create_url %}
-  {% include "components/atoms/button_link.html" with url=create_url label='Nova turma' variant='primary' %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Nova turma' variant='success' %}
 {% endblock %}
 
 {% block table_head %}

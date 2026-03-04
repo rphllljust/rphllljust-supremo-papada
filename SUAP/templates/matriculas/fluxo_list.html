@@ -1,0 +1,38 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}P01 – Fluxo de Matrícula{% endblock %}
+{% block header_title %}P01 – Fluxo de Matrícula{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:fluxo_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo Requerimento' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Tipo</th>
+  <th>Etapa Atual</th>
+  <th>Matrícula</th>
+  <th>Início</th>
+  <th>Status</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for fluxo in fluxos %}
+<tr>
+  <td>{{ fluxo.aluno.get_full_name|default:fluxo.aluno.username }}</td>
+  <td>{{ fluxo.get_tipo_matricula_display }}</td>
+  <td>{{ fluxo.get_etapa_atual_display }}</td>
+  <td>{% if fluxo.matricula %}{{ fluxo.matricula }}{% else %}–{% endif %}</td>
+  <td>{{ fluxo.data_inicio|date:'d/m/Y' }}</td>
+  <td>{% if fluxo.concluido %}<span style="color:green">Concluído</span>{% else %}<span style="color:orange">Em andamento</span>{% endif %}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:fluxo_detalhe' fluxo.pk %}">Abrir Fluxo</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum fluxo de matrícula iniciado.</td></tr>
+{% endfor %}
+{% endblock %}

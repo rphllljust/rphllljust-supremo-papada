@@ -30,6 +30,10 @@ INSTALLED_APPS = [
     "apps.notas",
     "apps.frequencia",
     "apps.agenda",
+    "apps.processos",
+    "apps.arquivo",
+    "apps.documentos",
+    "apps.auditoria",
 ]
 
 MIDDLEWARE = [

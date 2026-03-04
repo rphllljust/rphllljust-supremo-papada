@@ -1,0 +1,38 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Transferências – UC03{% endblock %}
+{% block header_title %}Transferências (Entrada/Saída){% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Curso</th>
+  <th>Tipo</th>
+  <th>Escola Origem/Destino</th>
+  <th>Status</th>
+  <th>Solicitação</th>
+  <th>Nº Guia</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for t in transferencias %}
+<tr>
+  <td>{{ t.matricula.aluno.get_full_name|default:t.matricula.aluno.username }}</td>
+  <td>{{ t.matricula.curso.nome }}</td>
+  <td>{{ t.get_tipo_display }}</td>
+  <td>{% if t.tipo == 'ENTRADA' %}{{ t.escola_origem }}{% else %}{{ t.escola_destino }}{% endif %}</td>
+  <td>{{ t.get_status_display }}</td>
+  <td>{{ t.data_solicitacao|date:'d/m/Y' }}</td>
+  <td>{{ t.numero_guia|default:'–' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:transferencia_update' t.pk %}">Editar</a>
+    |
+    <a href="{% url 'matriculas:transferencia_delete' t.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="8">Nenhuma transferência registrada.</td></tr>
+{% endfor %}
+{% endblock %}

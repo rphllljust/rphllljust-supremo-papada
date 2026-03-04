@@ -1,0 +1,51 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ processo.numero }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">{{ processo.numero }} – {{ processo.assunto }}</h1>
+    <a href="{% url 'processos:processo_update' processo.pk %}" class="btn btn-secondary">Editar</a>
+  </div>
+
+  <table class="table">
+    <tbody>
+      <tr><th>Tipo</th><td>{{ processo.get_tipo_display }}</td></tr>
+      <tr><th>Requerente</th><td>{{ processo.requerente.get_full_name|default:processo.requerente.username|default:'–' }}</td></tr>
+      <tr><th>Status</th><td><strong>{{ processo.get_status_display }}</strong></td></tr>
+      <tr><th>Abertura</th><td>{{ processo.data_abertura|date:'d/m/Y' }}</td></tr>
+      {% if processo.data_conclusao %}<tr><th>Conclusão</th><td>{{ processo.data_conclusao|date:'d/m/Y' }}</td></tr>{% endif %}
+      {% if processo.descricao %}<tr><th>Descrição</th><td>{{ processo.descricao }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+
+  <h2>Histórico de Tramitações</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Data/Hora</th><th>Ação</th><th>Setor Destino</th><th>Responsável</th><th>Observação</th></tr>
+    </thead>
+    <tbody>
+      {% for t in tramitacoes %}
+      <tr>
+        <td>{{ t.data|date:'d/m/Y H:i' }}</td>
+        <td>{{ t.get_acao_display }}</td>
+        <td>{{ t.setor_destino|default:'–' }}</td>
+        <td>{{ t.responsavel.get_full_name|default:t.responsavel.username|default:'–' }}</td>
+        <td>{{ t.observacao|default:'–' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">Nenhuma tramitação registrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Registrar Tramitação</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% include "components/molecules/form_fields.html" with form=form %}
+    {% url 'processos:processos_list' as cancel_url %}
+    {% include "components/molecules/form_actions.html" with cancel_url=cancel_url submit_label='Tramitar' cancel_label='Voltar' %}
+  </form>
+</section>
+{% endblock %}

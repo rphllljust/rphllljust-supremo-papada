@@ -1,10 +1,10 @@
 {% extends "components/organisms/crud_list_card.html" %}
 
-{% block page_title %}Matriculas{% endblock %}
-{% block header_title %}Matriculas{% endblock %}
+{% block page_title %}Matrículas{% endblock %}
+{% block header_title %}Matrículas{% endblock %}
 {% block header_action %}
   {% url 'matriculas:matriculas_create' as create_url %}
-  {% include "components/atoms/button_link.html" with url=create_url label='Nova matricula' variant='primary' %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Nova matrícula' variant='success' %}
 {% endblock %}
 
 {% block table_head %}
@@ -12,9 +12,12 @@
   <th>Aluno</th>
   <th>Curso</th>
   <th>Turma</th>
+  <th>Tipo</th>
   <th>Status</th>
   <th>Data</th>
-  <th class="table-actions">Acoes</th>
+  <th>Docs</th>
+  <th>Pendências</th>
+  <th class="table-actions">Ações</th>
 </tr>
 {% endblock %}
 
@@ -24,17 +27,32 @@
   <td>{{ matricula.aluno.username }}</td>
   <td>{{ matricula.curso.nome }}</td>
   <td>{{ matricula.turma.nome }}</td>
+  <td>{{ matricula.get_tipo_matricula_display }}</td>
   <td>{{ matricula.get_status_display }}</td>
   <td>{{ matricula.data_matricula|date:'d/m/Y' }}</td>
+  <td>
+    <a href="{% url 'matriculas:matricula_documentos' matricula.pk %}">
+      {{ matricula.documentos_conferidos }}/{{ matricula.total_documentos }}
+    </a>
+  </td>
+  <td>
+    {% if matricula.tem_pendencia %}
+      <a href="{% url 'matriculas:matricula_pendencias' matricula.pk %}" style="color:red;font-weight:bold;">Aberta</a>
+    {% else %}
+      <a href="{% url 'matriculas:matricula_pendencias' matricula.pk %}">–</a>
+    {% endif %}
+  </td>
   <td class="table-actions">
     <a href="{% url 'matriculas:matriculas_update' matricula.pk %}">Editar</a>
+    |
+    <a href="{% url 'matriculas:matricula_documentos' matricula.pk %}">Documentos</a>
     |
     <a href="{% url 'matriculas:matriculas_delete' matricula.pk %}">Excluir</a>
   </td>
 </tr>
 {% empty %}
 <tr>
-  <td colspan="6">Nenhuma matricula cadastrada.</td>
+  <td colspan="9">Nenhuma matrícula cadastrada.</td>
 </tr>
 {% endfor %}
 {% endblock %}

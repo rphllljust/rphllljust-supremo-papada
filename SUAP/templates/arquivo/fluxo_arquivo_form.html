@@ -1,0 +1,41 @@
+{% extends "base/base.html" %}
+
+{% block title %}P04 – Classificar Documento{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">{{ page_title }}</h1>
+  </div>
+
+  <table class="table" style="margin-bottom:1.5rem;">
+    <tbody>
+      <tr>
+        <th>Registro</th>
+        <td>{{ guarda.numero_registro }}</td>
+        <th>Status Atual</th>
+        <td>{{ guarda.get_status_display }}</td>
+        <th>Arquivado em</th>
+        <td>{{ guarda.data_arquivamento|date:'d/m/Y' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <form method="post">
+    {% csrf_token %}
+    <fieldset style="margin-bottom:1.5rem; padding:1rem; border:1px solid #ddd; border-radius:4px;">
+      <legend style="font-weight:bold; padding:0 .5rem;">Classificação do Documento</legend>
+      {% include "components/molecules/form_fields.html" with form=form %}
+      <div style="margin-top:.6rem;">
+        <label for="id_observacoes">Observações</label>
+        <textarea name="observacoes" id="id_observacoes" rows="3" class="form-control"></textarea>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Classificar e Iniciar Fluxo →</button>
+      <a href="{% url 'arquivo:arquivo_list' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

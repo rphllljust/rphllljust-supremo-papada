@@ -1,0 +1,48 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Guarda Documental – UC06{% endblock %}
+{% block header_title %}Arquivo – Guarda Documental{% endblock %}
+{% block header_action %}
+  {% url 'arquivo:arquivo_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Arquivar Documento' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Registro</th>
+  <th>Tipo</th>
+  <th>Descrição</th>
+  <th>Caixa</th>
+  <th>Localização</th>
+  <th>Status</th>
+  <th>Arquivamento</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for g in registros %}
+<tr>
+  <td><strong>{{ g.numero_registro }}</strong></td>
+  <td>{{ g.get_tipo_documento_display }}</td>
+  <td>{{ g.descricao }}</td>
+  <td>{{ g.numero_caixa|default:'–' }}</td>
+  <td>{{ g.localizacao|default:'–' }}</td>
+  <td>
+    {% if g.status == 'EMPRESTADO' %}<span style="color:orange">{{ g.get_status_display }}</span>
+    {% elif g.status == 'ELIMINADO' %}<span style="color:red">{{ g.get_status_display }}</span>
+    {% else %}{{ g.get_status_display }}{% endif %}
+  </td>
+  <td>{{ g.data_arquivamento|date:'d/m/Y' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'arquivo:arquivo_update' g.pk %}">Editar</a>
+    |
+    <a href="{% url 'arquivo:emprestimo_create' g.pk %}">Empréstimo</a>
+    |
+    <a href="{% url 'arquivo:arquivo_delete' g.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="8">Nenhum documento arquivado.</td></tr>
+{% endfor %}
+{% endblock %}
