@@ -10,6 +10,7 @@ class TipoUsuarioForm(forms.ModelForm):
         model = Usuario
         fields = ["username", "first_name", "last_name", "email", "cpf", "is_active"]
         labels = {
+            "username": "Usuario de acesso",
             "first_name": "Nome",
             "last_name": "Sobrenome",
             "email": "E-mail",
@@ -38,4 +39,3 @@ class TipoUsuarioForm(forms.ModelForm):
         if commit:
             usuario.save()
         return usuario
-

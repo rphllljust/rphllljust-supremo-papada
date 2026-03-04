@@ -9,7 +9,6 @@ class AlunoCrudTests(TestCase):
         response = self.client.post(
             reverse("usuarios:alunos_create"),
             {
-                "username": "aluno1",
                 "first_name": "Ana",
                 "last_name": "Silva",
                 "email": "ana@example.com",
@@ -20,8 +19,15 @@ class AlunoCrudTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        aluno = Usuario.objects.get(username="aluno1")
+        aluno = Usuario.objects.get(cpf="12345678901")
         self.assertEqual(aluno.tipo, "ALUNO")
+        self.assertEqual(aluno.username, "12345678901")
+
+    def test_create_form_does_not_show_username_field(self):
+        response = self.client.get(reverse("usuarios:alunos_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'name="username"')
 
     def test_list_shows_only_alunos(self):
         Usuario.objects.create_user(
