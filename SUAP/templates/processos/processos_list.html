@@ -1,0 +1,42 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Processos – UC05{% endblock %}
+{% block header_title %}Processos e Protocolos{% endblock %}
+{% block header_action %}
+  {% url 'processos:processo_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Abrir Processo' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Número</th>
+  <th>Tipo</th>
+  <th>Assunto</th>
+  <th>Requerente</th>
+  <th>Status</th>
+  <th>Abertura</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for p in processos %}
+<tr>
+  <td><strong>{{ p.numero }}</strong></td>
+  <td>{{ p.get_tipo_display }}</td>
+  <td>{{ p.assunto }}</td>
+  <td>{{ p.requerente.get_full_name|default:p.requerente.username|default:'–' }}</td>
+  <td>{{ p.get_status_display }}</td>
+  <td>{{ p.data_abertura|date:'d/m/Y' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'processos:processo_detalhe' p.pk %}">Ver</a>
+    |
+    <a href="{% url 'processos:processo_update' p.pk %}">Editar</a>
+    |
+    <a href="{% url 'processos:processo_delete' p.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum processo aberto.</td></tr>
+{% endfor %}
+{% endblock %}
