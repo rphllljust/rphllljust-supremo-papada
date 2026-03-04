@@ -17,6 +17,11 @@ urlpatterns = [
     path("frequencia/", include(("apps.frequencia.urls", "frequencia"), namespace="frequencia")),
     path("agenda/", include(("apps.agenda.urls", "agenda"), namespace="agenda")),
 
+    path("processos/", include(("apps.processos.urls", "processos"), namespace="processos")),
+    path("arquivo/", include(("apps.arquivo.urls", "arquivo"), namespace="arquivo")),
+    path("documentos/", include(("apps.documentos.urls", "documentos"), namespace="documentos")),
+    path("auditoria/", include(("apps.auditoria.urls", "auditoria"), namespace="auditoria")),
+
     path("api/v1/", include("apps.api.v1.urls")),
 
 ]

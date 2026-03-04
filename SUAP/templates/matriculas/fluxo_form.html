@@ -1,0 +1,6 @@
+{% extends "components/organisms/crud_form_card.html" %}
+
+{% block form_actions %}
+  {% url 'matriculas:fluxo_list' as cancel_url %}
+  {% include "components/molecules/form_actions.html" with cancel_url=cancel_url submit_label='Iniciar Fluxo' cancel_label='Cancelar' %}
+{% endblock %}

@@ -4,7 +4,7 @@
 {% block header_title %}Cursos{% endblock %}
 {% block header_action %}
   {% url 'cursos:cursos_create' as create_url %}
-  {% include "components/atoms/button_link.html" with url=create_url label='Novo curso' variant='primary' %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo curso' variant='success' %}
 {% endblock %}
 
 {% block table_head %}

@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% block title %}Log de Auditoria{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="crud-header"><h1 class="crud-title">Log de Auditoria</h1></div>
+  <table class="table">
+    <thead><tr><th>Data/Hora</th><th>Ação</th><th>Modelo</th><th>ID</th><th>Usuário</th><th>IP</th><th>Descrição</th></tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.data|date:'d/m/Y H:i' }}</td>
+        <td>{{ log.get_acao_display }}</td>
+        <td>{{ log.modelo|default:'–' }}</td>
+        <td>{{ log.objeto_id|default:'–' }}</td>
+        <td>{{ log.usuario.username|default:'–' }}</td>
+        <td>{{ log.ip_address|default:'–' }}</td>
+        <td>{{ log.descricao|truncatechars:60|default:'–' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">Nenhum registro de auditoria.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

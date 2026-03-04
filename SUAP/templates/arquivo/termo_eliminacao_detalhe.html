@@ -1,0 +1,98 @@
+{% extends "base/base.html" %}
+
+{% block title %}Termo de Eliminação {{ termo.numero }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">Termo de Eliminação de Documento</h1>
+    <div>
+      <strong>Nº:</strong> {{ termo.numero }}
+      &nbsp;|&nbsp;
+      <strong>Data:</strong> {{ termo.data_termo|date:'d/m/Y' }}
+    </div>
+  </div>
+
+  <div style="border:2px solid #c00; padding:1.5rem; margin-bottom:1.5rem; border-radius:4px;">
+    <h2 style="text-align:center; color:#c00; margin-bottom:1rem;">TERMO DE ELIMINAÇÃO Nº {{ termo.numero }}</h2>
+
+    <table class="table" style="margin-bottom:1rem;">
+      <tbody>
+        <tr>
+          <th style="width:200px;">Número do Termo</th>
+          <td>{{ termo.numero }}</td>
+        </tr>
+        <tr>
+          <th>Data do Termo</th>
+          <td>{{ termo.data_termo|date:'d/m/Y' }}</td>
+        </tr>
+        <tr>
+          <th>Registro ARQ</th>
+          <td>{{ termo.fluxo.guarda.numero_registro }}</td>
+        </tr>
+        <tr>
+          <th>Tipo de Documento</th>
+          <td>{{ termo.fluxo.guarda.get_tipo_documento_display }}</td>
+        </tr>
+        <tr>
+          <th>Descrição</th>
+          <td>{{ termo.fluxo.guarda.descricao }}</td>
+        </tr>
+        <tr>
+          <th>Localização</th>
+          <td>{{ termo.fluxo.guarda.localizacao|default:'–' }} / Caixa {{ termo.fluxo.guarda.numero_caixa|default:'–' }}</td>
+        </tr>
+        {% if termo.fluxo.guarda.matricula %}
+        <tr>
+          <th>Matrícula</th>
+          <td>{{ termo.fluxo.guarda.matricula }}</td>
+        </tr>
+        {% endif %}
+        {% if termo.fluxo.guarda.processo %}
+        <tr>
+          <th>Processo</th>
+          <td>{{ termo.fluxo.guarda.processo.numero }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <th>Data de Eliminação Prevista</th>
+          <td>{{ termo.fluxo.guarda.data_eliminacao_prevista|date:'d/m/Y'|default:'–' }}</td>
+        </tr>
+        <tr>
+          <th>Justificativa</th>
+          <td>{{ termo.justificativa }}</td>
+        </tr>
+        <tr>
+          <th>Autorizado por</th>
+          <td>{{ termo.autorizado_por.get_full_name|default:termo.autorizado_por.username|default:'–' }}</td>
+        </tr>
+        <tr>
+          <th>Data de Autorização</th>
+          <td>{{ termo.data_autorizacao|date:'d/m/Y'|default:'–' }}</td>
+        </tr>
+        {% if termo.observacao %}
+        <tr>
+          <th>Observação</th>
+          <td>{{ termo.observacao }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div style="margin-top:2rem; display:flex; gap:4rem; justify-content:center;">
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #333; width:200px; margin:0 auto; padding-top:.3rem;">Responsável pelo Arquivo</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #333; width:200px; margin:0 auto; padding-top:.3rem;">Autorização</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem; display:flex; gap:1rem;">
+    <button onclick="window.print()" class="btn btn-secondary">Imprimir</button>
+    <a href="{% url 'arquivo:fluxo_arquivo_detalhe' termo.fluxo.pk %}" class="btn btn-secondary">← Voltar ao Fluxo</a>
+    <a href="{% url 'arquivo:fluxo_arquivo_list' %}">← Lista de Fluxos</a>
+  </div>
+</section>
+{% endblock %}

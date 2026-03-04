@@ -1,0 +1,48 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Pendências – {{ matricula }}{% endblock %}
+{% block header_title %}Pendências Documentais{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:pendencia_create' matricula.pk as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Abrir Pendência' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Descrição</th>
+  <th>Status</th>
+  <th>Data Abertura</th>
+  <th>Data Resolução</th>
+  <th>Observação</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+<tr>
+  <td colspan="6">
+    <strong>Matrícula:</strong> {{ matricula }} &nbsp;|&nbsp;
+    <a href="{% url 'matriculas:matricula_documentos' matricula.pk %}">Ver Documentos</a>
+    &nbsp;|&nbsp;
+    <a href="{% url 'matriculas:matriculas_list' %}">Voltar às Matrículas</a>
+  </td>
+</tr>
+{% for pendencia in pendencias %}
+<tr>
+  <td>{{ pendencia.descricao }}</td>
+  <td>{{ pendencia.get_status_display }}</td>
+  <td>{{ pendencia.data_abertura|date:'d/m/Y' }}</td>
+  <td>{{ pendencia.data_resolucao|date:'d/m/Y'|default:'–' }}</td>
+  <td>{{ pendencia.observacao|default:'–' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:pendencia_update' pendencia.pk %}">Editar</a>
+    |
+    <a href="{% url 'matriculas:pendencia_delete' pendencia.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="6">Nenhuma pendência registrada.</td>
+</tr>
+{% endfor %}
+{% endblock %}

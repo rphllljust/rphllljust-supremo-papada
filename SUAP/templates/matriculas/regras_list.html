@@ -1,0 +1,32 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Regras Acadêmicas – UC04{% endblock %}
+{% block header_title %}Regras Acadêmicas por Curso{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:regra_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Nova Regra' variant='primary' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Curso</th>
+  <th>Média Mínima</th>
+  <th>Frequência Mínima (%)</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for regra in regras %}
+<tr>
+  <td>{{ regra.curso.nome }}</td>
+  <td>{{ regra.media_minima }}</td>
+  <td>{{ regra.frequencia_minima }}%</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:regra_update' regra.pk %}">Editar</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="4">Nenhuma regra configurada.</td></tr>
+{% endfor %}
+{% endblock %}

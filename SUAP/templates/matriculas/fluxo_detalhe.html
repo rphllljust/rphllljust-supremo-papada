@@ -1,0 +1,215 @@
+{% extends "base/base.html" %}
+
+{% block title %}P01 – {{ fluxo.aluno }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">P01 – Fluxo de Matrícula</h1>
+    <div>
+      <strong>Aluno:</strong> {{ fluxo.aluno.get_full_name|default:fluxo.aluno.username }}
+      &nbsp;|&nbsp;
+      <strong>Tipo:</strong> {{ fluxo.get_tipo_matricula_display }}
+      &nbsp;|&nbsp;
+      {% if fluxo.concluido %}
+        <span style="color:green;font-weight:bold">✔ Concluído</span>
+      {% else %}
+        <span style="color:orange;font-weight:bold">Em andamento</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Swimlane ──────────────────────────────────────────────────────────── #}
+  <div style="overflow-x:auto; margin: 1.5rem 0;">
+    <table class="table" style="min-width:700px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="width:120px; background:#e8f4fd; text-align:center; padding:.5rem; border:1px solid #ccc;">ALUNO</th>
+          <th style="width:120px; background:#fef9e7; text-align:center; padding:.5rem; border:1px solid #ccc;">SECRETARIA</th>
+          <th style="width:120px; background:#eafaf1; text-align:center; padding:.5rem; border:1px solid #ccc;">SISTEMA</th>
+          <th style="background:#f8f9fa; padding:.5rem; border:1px solid #ccc;">Detalhes / Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for etapa in etapas %}
+        <tr style="{% if etapa.atual %}background:#fffbcc; font-weight:bold;{% elif etapa.concluida %}background:#f0fff0; color:#555;{% endif %}">
+
+          {# Célula ALUNO #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'aluno' %}
+              {% if etapa.atual %}
+                <span style="font-size:1.3em;">👤</span><br>
+              {% elif etapa.concluida %}
+                <span style="color:green">✔</span>
+              {% else %}
+                <span style="color:#ccc">○</span>
+              {% endif %}
+            {% endif %}
+          </td>
+
+          {# Célula SECRETARIA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'secretaria' %}
+              {% if etapa.atual %}
+                <span style="font-size:1.3em;">🖊️</span><br>
+              {% elif etapa.concluida %}
+                <span style="color:green">✔</span>
+              {% else %}
+                <span style="color:#ccc">○</span>
+              {% endif %}
+            {% endif %}
+          </td>
+
+          {# Célula SISTEMA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'sistema' %}
+              {% if etapa.atual %}
+                <span style="font-size:1.3em;">⚙️</span><br>
+              {% elif etapa.concluida %}
+                <span style="color:green">✔</span>
+              {% else %}
+                <span style="color:#ccc">○</span>
+              {% endif %}
+            {% endif %}
+          </td>
+
+          {# Coluna de detalhes e ação #}
+          <td style="border:1px solid #ddd; padding:.6rem;">
+            <strong>{{ etapa.label }}</strong>
+
+            {% if etapa.atual and not fluxo.concluido %}
+            <div style="margin-top:.7rem;">
+
+              {# ── Etapa 1: Vincular Matrícula antes de avançar ────────── #}
+              {% if fluxo.etapa_atual == 'REQUERIMENTO_RECEBIDO' %}
+                {% if not fluxo.matricula %}
+                  <a href="{% url 'matriculas:fluxo_vincular_matricula' fluxo.pk %}" class="btn btn-secondary" style="margin-bottom:.4rem;">
+                    Registrar Matrícula no Sistema
+                  </a><br>
+                {% else %}
+                  <em>Matrícula: {{ fluxo.matricula }}</em><br>
+                  <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="observacao" value="Documentos recebidos">
+                    <button type="submit" class="btn btn-primary">Conferir Documentos →</button>
+                  </form>
+                {% endif %}
+
+              {# ── Etapa 2: Decisão Completo? ──────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'DOCUMENTOS_CONFERIDOS' %}
+                {% if fluxo.matricula %}
+                  <a href="{% url 'matriculas:matricula_documentos' fluxo.matricula.pk %}" class="btn btn-secondary">
+                    Gerenciar Documentos
+                  </a>
+                {% endif %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}" style="margin-top:.5rem;">
+                  {% csrf_token %}
+                  <strong>Documentos completos?</strong><br>
+                  <button type="submit" name="decisao" value="completo" class="btn btn-primary" style="margin-top:.3rem;">
+                    Sim – Validar Requisitos →
+                  </button>
+                  &nbsp;
+                  <button type="submit" name="decisao" value="incompleto" class="btn btn-secondary" style="margin-top:.3rem;">
+                    Não – Abrir Pendência
+                  </button>
+                  {% if form_pendencia %}
+                  <div id="form-pendencia" style="margin-top:.8rem; padding:.8rem; border:1px solid #f0ad4e; border-radius:4px; background:#fffdf0;">
+                    <strong>Pendência + Prazo + Orientação:</strong>
+                    {% include "components/molecules/form_fields.html" with form=form_pendencia %}
+                  </div>
+                  {% endif %}
+                </form>
+
+              {# ── Etapa 3: Pendência aberta → aguardar resolução ──────── #}
+              {% elif fluxo.etapa_atual == 'PENDENCIA_ABERTA' %}
+                {% if fluxo.matricula %}
+                  <a href="{% url 'matriculas:matricula_pendencias' fluxo.matricula.pk %}" class="btn btn-secondary">
+                    Ver Pendências
+                  </a>
+                {% endif %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}" style="margin-top:.5rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Pendência resolvida pelo aluno">
+                  <button type="submit" class="btn btn-primary">Pendência Resolvida – Validar Requisitos →</button>
+                </form>
+
+              {# ── Etapa 4: Validar Requisitos (sistema) ───────────────── #}
+              {% elif fluxo.etapa_atual == 'REQUISITOS_VALIDADOS' %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_obs %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Registrar Matrícula →</button>
+                </form>
+
+              {# ── Etapa 5: Registrar Matrícula ────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'MATRICULA_REGISTRADA' %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_enturmar %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Enturmar / Alocar Turno →</button>
+                </form>
+
+              {# ── Etapa 6: Enturmar ───────────────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'ALUNO_ENTURMADO' %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Comprovante de matrícula emitido">
+                  <button type="submit" class="btn btn-primary">Emitir Comprovante →</button>
+                </form>
+
+              {# ── Etapa 7: Comprovante Emitido → Arquivar ─────────────── #}
+              {% elif fluxo.etapa_atual == 'COMPROVANTE_EMITIDO' %}
+                {% if fluxo.documento_comprovante %}
+                  <a href="{% url 'matriculas:documento_emitido_detalhe' fluxo.documento_comprovante.pk %}" class="btn btn-secondary">
+                    Ver Comprovante {{ fluxo.documento_comprovante.numero_protocolo }}
+                  </a>
+                {% endif %}
+                <form method="post" action="{% url 'matriculas:fluxo_avancar' fluxo.pk %}" style="margin-top:.5rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Documentos classificados e arquivados">
+                  <button type="submit" class="btn btn-primary">Arquivar (Classificar + Indexar) →</button>
+                </form>
+
+              {# ── Etapa 8: Arquivado ──────────────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'ARQUIVADO' %}
+                <a href="{% url 'arquivo:arquivo_list' %}" class="btn btn-secondary">Ver Arquivo</a>
+              {% endif %}
+
+            </div>
+            {% endif %}{# fim if etapa.atual #}
+
+            {% if etapa.concluida %}
+              <span style="color:#888; font-size:.85em;">Concluída</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Log de Auditoria ──────────────────────────────────────────────────── #}
+  <h2>Histórico do Fluxo</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Data/Hora</th><th>Etapa</th><th>Responsável</th><th>Observação</th></tr>
+    </thead>
+    <tbody>
+      {% for entrada in log %}
+      <tr>
+        <td>{{ entrada.data|date:'d/m/Y H:i' }}</td>
+        <td>{{ entrada.get_etapa_display }}</td>
+        <td>{{ entrada.responsavel.get_full_name|default:entrada.responsavel.username|default:'–' }}</td>
+        <td>{{ entrada.observacao|default:'–' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:1rem;">
+    <a href="{% url 'matriculas:fluxo_list' %}">← Voltar à lista</a>
+  </div>
+</section>
+{% endblock %}

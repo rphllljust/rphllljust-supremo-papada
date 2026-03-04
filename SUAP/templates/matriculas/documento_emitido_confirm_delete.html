@@ -1,0 +1,10 @@
+{% extends "components/organisms/crud_confirm_delete_card.html" %}
+
+{% block confirm_page_title %}Excluir documento emitido{% endblock %}
+{% block confirm_title %}Excluir documento emitido{% endblock %}
+{% block confirm_text %}Tem certeza que deseja excluir o documento <strong>{{ doc.numero_protocolo }} – {{ doc.get_tipo_display }}</strong>?{% endblock %}
+
+{% block confirm_actions %}
+  {% url 'matriculas:matricula_documentos_emitidos' doc.matricula.pk as cancel_url %}
+  {% include "components/molecules/confirm_actions.html" with cancel_url=cancel_url confirm_label='Confirmar exclusão' cancel_label='Cancelar' %}
+{% endblock %}

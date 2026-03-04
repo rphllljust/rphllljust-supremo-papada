@@ -1,0 +1,87 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ doc.numero_protocolo }} – {{ doc.get_tipo_display }}{% endblock %}
+
+{% block content %}
+<section class="card" id="documento-print">
+  <div class="crud-header">
+    <h1 class="crud-title">{{ doc.get_tipo_display }}</h1>
+    <div>
+      <a href="{% url 'matriculas:documento_emitido_validar' doc.pk %}" class="btn btn-secondary">Assinar / Validar</a>
+      <a href="{% url 'matriculas:documento_emitido_entrega' doc.pk %}" class="btn btn-secondary">Registrar Entrega</a>
+      <button onclick="window.print()" class="btn btn-primary">Imprimir</button>
+    </div>
+  </div>
+
+  <table class="table">
+    <tbody>
+      <tr><th>Protocolo</th><td><strong>{{ doc.numero_protocolo }}</strong></td></tr>
+      <tr><th>Aluno</th><td>{{ doc.matricula.aluno.get_full_name|default:doc.matricula.aluno.username }}</td></tr>
+      <tr><th>CPF</th><td>{{ doc.matricula.aluno.cpf }}</td></tr>
+      <tr><th>Curso</th><td>{{ doc.matricula.curso.nome }}</td></tr>
+      <tr><th>Turma</th><td>{{ doc.matricula.turma.nome }} – {{ doc.matricula.turma.ano_letivo }}</td></tr>
+      <tr><th>Tipo de Matrícula</th><td>{{ doc.matricula.get_tipo_matricula_display }}</td></tr>
+      <tr><th>Status da Matrícula</th><td>{{ doc.matricula.get_status_display }}</td></tr>
+      <tr><th>Data de Matrícula</th><td>{{ doc.matricula.data_matricula|date:'d/m/Y' }}</td></tr>
+
+      {% if doc.tipo == 'DECLARACAO_FREQUENCIA' %}
+      <tr><th>Total de Aulas</th><td>{{ total_aulas }}</td></tr>
+      <tr><th>Presenças</th><td>{{ presencas }}</td></tr>
+      <tr><th>Frequência</th><td><strong>{{ percentual_frequencia }}%</strong></td></tr>
+      {% endif %}
+
+      {% if doc.tipo == 'HISTORICO_ESCOLAR' and notas %}
+      <tr>
+        <th>Notas</th>
+        <td>
+          <table class="table">
+            <thead><tr><th>Avaliação</th><th>Valor</th><th>Peso</th><th>Data</th></tr></thead>
+            <tbody>
+              {% for nota in notas %}
+              <tr>
+                <td>{{ nota.descricao }}</td>
+                <td>{{ nota.valor }}</td>
+                <td>{{ nota.peso }}</td>
+                <td>{{ nota.data_lancamento|date:'d/m/Y' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      {% endif %}
+
+      <tr><th>Data de Emissão</th><td>{{ doc.data_emissao|date:'d/m/Y' }}</td></tr>
+      {% if doc.observacao %}<tr><th>Observação</th><td>{{ doc.observacao }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+
+  <hr>
+  <h2>Assinatura / Validação</h2>
+  <table class="table">
+    <tbody>
+      <tr><th>Validado</th><td>{% if doc.validado %}Sim{% else %}Não{% endif %}</td></tr>
+      {% if doc.validado %}
+      <tr><th>Data de Validação</th><td>{{ doc.data_validacao|date:'d/m/Y'|default:'–' }}</td></tr>
+      <tr><th>Validado por</th><td>{{ doc.validado_por.get_full_name|default:doc.validado_por.username|default:'–' }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <hr>
+  <h2>Protocolo de Entrega</h2>
+  <table class="table">
+    <tbody>
+      <tr><th>Entregue</th><td>{% if doc.entregue %}Sim{% else %}Não{% endif %}</td></tr>
+      {% if doc.entregue %}
+      <tr><th>Data de Entrega</th><td>{{ doc.data_entrega|date:'d/m/Y'|default:'–' }}</td></tr>
+      <tr><th>Recebido por</th><td>{{ doc.recebido_por|default:'–' }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:2rem;">
+    <a href="{% url 'matriculas:matricula_documentos_emitidos' doc.matricula.pk %}">← Voltar</a>
+  </div>
+</section>
+{% endblock %}

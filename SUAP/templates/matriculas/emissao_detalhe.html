@@ -1,0 +1,188 @@
+{% extends "base/base.html" %}
+
+{% block title %}P02 – {{ fluxo.get_tipo_documento_display }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">P02 – Emissão de Histórico / Declaração</h1>
+    <div>
+      <strong>Protocolo:</strong> {{ fluxo.processo.numero|default:'–' }}
+      &nbsp;|&nbsp;
+      <strong>Solicitante:</strong> {{ fluxo.solicitante.get_full_name|default:fluxo.solicitante.username }}
+      &nbsp;|&nbsp;
+      <strong>Documento:</strong> {{ fluxo.get_tipo_documento_display }}
+      &nbsp;|&nbsp;
+      {% if fluxo.concluido %}
+        <span style="color:green;font-weight:bold">✔ Concluído</span>
+      {% elif fluxo.elegivel == False %}
+        <span style="color:red;font-weight:bold">✘ Inelegível – {{ fluxo.motivo_inelegivel }}</span>
+      {% else %}
+        <span style="color:orange;font-weight:bold">Em andamento</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Dados da matrícula ──────────────────────────────────────────────── #}
+  <table class="table" style="margin-bottom:1.5rem;">
+    <tbody>
+      <tr>
+        <th>Aluno</th>
+        <td>{{ fluxo.matricula.aluno.get_full_name|default:fluxo.matricula.aluno.username }}</td>
+        <th>Curso</th>
+        <td>{{ fluxo.matricula.curso.nome }}</td>
+        <th>Status Matrícula</th>
+        <td>{{ fluxo.matricula.get_status_display }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {# ── Swimlane ──────────────────────────────────────────────────────────── #}
+  <div style="overflow-x:auto; margin: 1rem 0;">
+    <table class="table" style="min-width:680px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="width:130px; background:#e8f4fd; text-align:center; padding:.5rem; border:1px solid #ccc;">ALUNO / SOLICITANTE</th>
+          <th style="width:130px; background:#fef9e7; text-align:center; padding:.5rem; border:1px solid #ccc;">SECRETARIA</th>
+          <th style="width:130px; background:#eafaf1; text-align:center; padding:.5rem; border:1px solid #ccc;">SISTEMA</th>
+          <th style="background:#f8f9fa; padding:.5rem; border:1px solid #ccc;">Detalhes / Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for etapa in etapas %}
+        <tr style="{% if etapa.atual %}background:#fffbcc; font-weight:bold;{% elif etapa.concluida %}background:#f0fff0; color:#555;{% endif %}">
+
+          {# Célula ALUNO #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'aluno' %}
+              {% if etapa.atual %}<span style="font-size:1.3em;">👤</span>
+              {% elif etapa.concluida %}<span style="color:green">✔</span>
+              {% else %}<span style="color:#ccc">○</span>{% endif %}
+            {% endif %}
+          </td>
+
+          {# Célula SECRETARIA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'secretaria' %}
+              {% if etapa.atual %}<span style="font-size:1.3em;">🖊️</span>
+              {% elif etapa.concluida %}<span style="color:green">✔</span>
+              {% else %}<span style="color:#ccc">○</span>{% endif %}
+            {% endif %}
+          </td>
+
+          {# Célula SISTEMA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'sistema' %}
+              {% if etapa.atual %}<span style="font-size:1.3em;">⚙️</span>
+              {% elif etapa.concluida %}<span style="color:green">✔</span>
+              {% else %}<span style="color:#ccc">○</span>{% endif %}
+            {% endif %}
+          </td>
+
+          {# Coluna de ação #}
+          <td style="border:1px solid #ddd; padding:.6rem;">
+            <strong>{{ etapa.label }}</strong>
+
+            {% if etapa.atual and not fluxo.concluido %}
+            <div style="margin-top:.6rem;">
+
+              {# ── 1. Abrir Protocolo → Verificar Elegibilidade ─────────── #}
+              {% if fluxo.etapa_atual == 'PROTOCOLO_ABERTO' %}
+                <em>Protocolo: {{ fluxo.processo.numero|default:'–' }}</em><br>
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}" style="margin-top:.4rem;">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_obs %}
+                  <button type="submit" class="btn btn-primary">Verificar Elegibilidade →</button>
+                </form>
+
+              {# ── 2. Elegibilidade verificada → Gerar Documento ────────── #}
+              {% elif fluxo.etapa_atual == 'ELEGIBILIDADE_VERIFICADA' %}
+                <span style="color:green">✔ Aluno elegível</span><br>
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}" style="margin-top:.4rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Documento gerado automaticamente pelo sistema">
+                  <button type="submit" class="btn btn-primary">Gerar Documento Padrão →</button>
+                </form>
+
+              {# ── 3. Documento gerado → Assinar/Validar ────────────────── #}
+              {% elif fluxo.etapa_atual == 'DOCUMENTO_GERADO' %}
+                {% if fluxo.documento_emitido %}
+                  <a href="{% url 'matriculas:documento_emitido_detalhe' fluxo.documento_emitido.pk %}" class="btn btn-secondary">
+                    Ver Documento {{ fluxo.documento_emitido.numero_protocolo }}
+                  </a>
+                {% endif %}
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}" style="margin-top:.4rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Encaminhado para assinatura">
+                  <button type="submit" class="btn btn-primary">Encaminhar para Assinatura →</button>
+                </form>
+
+              {# ── 4. Assinar / Validar ──────────────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'DOCUMENTO_VALIDADO' %}
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_validar %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Confirmar Assinatura →</button>
+                </form>
+
+              {# ── 5. Registrar Entrega ──────────────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'ENTREGA_REGISTRADA' %}
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_entrega %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Confirmar Entrega →</button>
+                </form>
+
+              {# ── 6. Arquivar via Protocolo ─────────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'ARQUIVADO' %}
+                <form method="post" action="{% url 'matriculas:emissao_avancar' fluxo.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="observacao" value="Arquivado via protocolo P02">
+                  <button type="submit" class="btn btn-primary">Arquivar e Concluir Fluxo ✔</button>
+                </form>
+              {% endif %}
+
+            </div>
+            {% endif %}
+
+            {% if etapa.concluida %}
+              <span style="color:#888; font-size:.85em;">Concluída</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Log de Auditoria ──────────────────────────────────────────────────── #}
+  <h2>Histórico do Fluxo</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Data/Hora</th><th>Etapa</th><th>Responsável</th><th>Observação</th></tr>
+    </thead>
+    <tbody>
+      {% for entrada in log %}
+      <tr>
+        <td>{{ entrada.data|date:'d/m/Y H:i' }}</td>
+        <td>{{ entrada.get_etapa_display }}</td>
+        <td>{{ entrada.responsavel.get_full_name|default:entrada.responsavel.username|default:'–' }}</td>
+        <td>{{ entrada.observacao|default:'–' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:1rem;">
+    {% if fluxo.processo %}
+      <a href="{% url 'processos:processo_detalhe' fluxo.processo.pk %}" style="margin-right:1rem;">Ver Processo {{ fluxo.processo.numero }}</a>
+    {% endif %}
+    {% if fluxo.documento_emitido %}
+      <a href="{% url 'matriculas:documento_emitido_detalhe' fluxo.documento_emitido.pk %}" style="margin-right:1rem;">Ver Documento</a>
+    {% endif %}
+    <a href="{% url 'matriculas:emissao_list' %}">← Voltar à lista</a>
+  </div>
+</section>
+{% endblock %}

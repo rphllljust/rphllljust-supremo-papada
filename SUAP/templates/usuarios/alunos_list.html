@@ -4,7 +4,7 @@
 {% block header_title %}Alunos{% endblock %}
 {% block header_action %}
   {% url 'usuarios:alunos_create' as create_url %}
-  {% include "components/atoms/button_link.html" with url=create_url label='Novo aluno' variant='primary' %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo aluno' variant='success' %}
 {% endblock %}
 
 {% block table_head %}

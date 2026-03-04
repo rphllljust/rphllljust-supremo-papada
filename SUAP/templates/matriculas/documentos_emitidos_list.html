@@ -1,0 +1,42 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Documentos Emitidos{% endblock %}
+{% block header_title %}Documentos Emitidos – UC02{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Protocolo</th>
+  <th>Aluno</th>
+  <th>Tipo</th>
+  <th>Emissão</th>
+  <th>Validado</th>
+  <th>Entregue</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for doc in documentos %}
+<tr>
+  <td><strong>{{ doc.numero_protocolo }}</strong></td>
+  <td>{{ doc.matricula.aluno.get_full_name|default:doc.matricula.aluno.username }}</td>
+  <td>{{ doc.get_tipo_display }}</td>
+  <td>{{ doc.data_emissao|date:'d/m/Y' }}</td>
+  <td>{% if doc.validado %}Sim{% else %}Não{% endif %}</td>
+  <td>{% if doc.entregue %}Sim{% else %}Não{% endif %}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:documento_emitido_detalhe' doc.pk %}">Ver</a>
+    |
+    <a href="{% url 'matriculas:documento_emitido_validar' doc.pk %}">Validar</a>
+    |
+    <a href="{% url 'matriculas:documento_emitido_entrega' doc.pk %}">Entrega</a>
+    |
+    <a href="{% url 'matriculas:documento_emitido_delete' doc.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="7">Nenhum documento emitido.</td>
+</tr>
+{% endfor %}
+{% endblock %}

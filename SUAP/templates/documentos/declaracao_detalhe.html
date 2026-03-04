@@ -1,0 +1,21 @@
+
+{% extends "base/base.html" %}
+{% block title %}Declaração {{ doc.numero_protocolo }}{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">Declaração</h1>
+    <button onclick="window.print()" class="btn btn-secondary">Imprimir</button>
+  </div>
+  <table class="table">
+    <tbody>
+      <tr><th>Protocolo</th><td>{{ doc.numero_protocolo }}</td><th>Data</th><td>{{ doc.data_emissao|date:'d/m/Y' }}</td></tr>
+      <tr><th>Assunto</th><td colspan="3">{{ doc.assunto }}</td></tr>
+      <tr><th>Matrícula</th><td>{{ doc.matricula|default:'–' }}</td><th>Emitido por</th><td>{{ doc.emitido_por.get_full_name|default:doc.emitido_por.username|default:'–' }}</td></tr>
+      <tr><th>Tipo</th><td colspan="3">{{ doc.get_tipo_display }}</td></tr>
+      {% if doc.observacao %}<tr><th>Observação</th><td colspan="3">{{ doc.observacao }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <div style="margin-top:1rem;"><a href="javascript:history.back()">← Voltar</a></div>
+</section>
+{% endblock %}

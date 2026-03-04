@@ -1,0 +1,8 @@
+{% extends "components/organisms/crud_form_card.html" %}
+
+{% block form_title %}Registrar Matrícula – {{ fluxo.aluno }}{% endblock %}
+
+{% block form_actions %}
+  {% url 'matriculas:fluxo_detalhe' fluxo.pk as cancel_url %}
+  {% include "components/molecules/form_actions.html" with cancel_url=cancel_url submit_label='Registrar' cancel_label='Cancelar' %}
+{% endblock %}

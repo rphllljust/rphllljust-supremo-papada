@@ -1,0 +1,68 @@
+{% extends "base/base.html" %}
+
+{% block title %}Consolidação – {{ matricula.aluno }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">Consolidação Acadêmica – UC04</h1>
+  </div>
+
+  <table class="table">
+    <tbody>
+      <tr><th>Aluno</th><td>{{ matricula.aluno.get_full_name|default:matricula.aluno.username }}</td></tr>
+      <tr><th>Curso</th><td>{{ matricula.curso.nome }}</td></tr>
+      <tr><th>Turma</th><td>{{ matricula.turma.nome }}</td></tr>
+      <tr><th>Total de Aulas</th><td>{{ total_aulas }}</td></tr>
+      <tr><th>Presenças</th><td>{{ presencas }}</td></tr>
+      <tr><th>Frequência Atual</th><td><strong>{{ percentual }}%</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Notas Lançadas</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Avaliação</th><th>Valor</th><th>Peso</th><th>Data</th></tr>
+    </thead>
+    <tbody>
+      {% for nota in notas %}
+      <tr>
+        <td>{{ nota.descricao }}</td>
+        <td>{{ nota.valor }}</td>
+        <td>{{ nota.peso }}</td>
+        <td>{{ nota.data_lancamento|date:'d/m/Y' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhuma nota lançada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Resultado Consolidado</h2>
+  <table class="table">
+    <tbody>
+      <tr><th>Média Final</th><td>{{ consolidacao.media_final|default:'–' }}</td></tr>
+      <tr><th>Frequência</th><td>{{ consolidacao.percentual_frequencia|default:'–' }}{% if consolidacao.percentual_frequencia %}%{% endif %}</td></tr>
+      <tr><th>Situação</th><td><strong>{{ consolidacao.get_situacao_display }}</strong></td></tr>
+      <tr><th>Data da Consolidação</th><td>{{ consolidacao.data_consolidacao|date:'d/m/Y'|default:'–' }}</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin:1rem 0; display:flex; gap:1rem;">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="consolidar">
+      <button type="submit" class="btn btn-primary">Calcular / Consolidar</button>
+    </form>
+  </div>
+
+  <h2>Ajuste Manual de Situação</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="editar">
+    {% include "components/molecules/form_fields.html" with form=form %}
+    {% url 'matriculas:matriculas_list' as cancel_url %}
+    {% include "components/molecules/form_actions.html" with cancel_url=cancel_url submit_label='Salvar Ajuste' cancel_label='Cancelar' %}
+  </form>
+</section>
+{% endblock %}

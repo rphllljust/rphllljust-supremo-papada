@@ -1,0 +1,161 @@
+{% extends "base/base.html" %}
+
+{% block title %}P04 – Arquivo {{ fluxo.guarda.numero_registro }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">P04 – Fluxo de Arquivo Escolar e Prazos</h1>
+    <div>
+      <strong>Registro:</strong> {{ fluxo.guarda.numero_registro }}
+      &nbsp;|&nbsp;
+      <strong>Tipo:</strong> {{ fluxo.guarda.get_tipo_documento_display }}
+      &nbsp;|&nbsp;
+      {% if fluxo.concluido %}
+        <span style="color:darkred;font-weight:bold">✔ Eliminado</span>
+      {% else %}
+        <span style="color:orange;font-weight:bold">Em andamento</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Dados do documento ──────────────────────────────────────────────── #}
+  <table class="table" style="margin-bottom:1.5rem;">
+    <tbody>
+      <tr>
+        <th>Descrição</th>
+        <td>{{ fluxo.guarda.descricao }}</td>
+        <th>Localização</th>
+        <td>{{ fluxo.guarda.localizacao|default:'–' }} / Cx {{ fluxo.guarda.numero_caixa|default:'–' }}</td>
+        <th>Eliminação Prevista</th>
+        <td>{{ fluxo.guarda.data_eliminacao_prevista|date:'d/m/Y'|default:'–' }}</td>
+      </tr>
+      <tr>
+        <th>Status da Guarda</th>
+        <td>{{ fluxo.guarda.get_status_display }}</td>
+        <th>Matrícula Vinculada</th>
+        <td>{{ fluxo.guarda.matricula|default:'–' }}</td>
+        <th>Processo Vinculado</th>
+        <td>{{ fluxo.guarda.processo.numero|default:'–' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {# ── Swimlane ──────────────────────────────────────────────────────────── #}
+  <div style="overflow-x:auto; margin: 1rem 0;">
+    <table class="table" style="min-width:600px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="width:160px; background:#fef9e7; text-align:center; padding:.5rem; border:1px solid #ccc;">SECRETARIA / ARQUIVO</th>
+          <th style="width:160px; background:#eafaf1; text-align:center; padding:.5rem; border:1px solid #ccc;">SISTEMA</th>
+          <th style="background:#f8f9fa; padding:.5rem; border:1px solid #ccc;">Detalhes / Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for etapa in etapas %}
+        <tr style="{% if etapa.atual %}background:#fffbcc; font-weight:bold;{% elif etapa.concluida %}background:#f0fff0; color:#555;{% endif %}">
+
+          {# Célula SECRETARIA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'secretaria' %}
+              {% if etapa.atual %}<span style="font-size:1.3em;">🖊️</span>
+              {% elif etapa.concluida %}<span style="color:green">✔</span>
+              {% else %}<span style="color:#ccc">○</span>{% endif %}
+            {% endif %}
+          </td>
+
+          {# Célula SISTEMA #}
+          <td style="text-align:center; vertical-align:middle; border:1px solid #ddd; padding:.5rem;">
+            {% if etapa.ator == 'sistema' %}
+              {% if etapa.atual %}<span style="font-size:1.3em;">⚙️</span>
+              {% elif etapa.concluida %}<span style="color:green">✔</span>
+              {% else %}<span style="color:#ccc">○</span>{% endif %}
+            {% endif %}
+          </td>
+
+          {# Coluna de ação #}
+          <td style="border:1px solid #ddd; padding:.6rem;">
+            <strong>{{ etapa.label }}</strong>
+
+            {% if etapa.atual and not fluxo.concluido %}
+            <div style="margin-top:.6rem;">
+
+              {# ── 1. Classificado → Indexar ─────────────────────────────── #}
+              {% if fluxo.etapa_atual == 'CLASSIFICADO' %}
+                <span style="color:green;">✔ Classificado: {{ fluxo.guarda.get_tipo_documento_display }}</span><br>
+                <form method="post" action="{% url 'arquivo:fluxo_arquivo_avancar' fluxo.pk %}" style="margin-top:.6rem;">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_index %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Indexar / Localizar →</button>
+                </form>
+
+              {# ── 2. Indexado → Aplicar Prazo ───────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'INDEXADO' %}
+                <span style="color:green;">✔ Localização: {{ fluxo.guarda.localizacao|default:fluxo.guarda.numero_caixa|default:'–' }}</span><br>
+                <form method="post" action="{% url 'arquivo:fluxo_arquivo_avancar' fluxo.pk %}" style="margin-top:.6rem;">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_prazo %}
+                  <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Aplicar Prazo de Guarda →</button>
+                </form>
+
+              {# ── 3. Prazo Aplicado → Eliminar ──────────────────────────── #}
+              {% elif fluxo.etapa_atual == 'PRAZO_APLICADO' %}
+                <span style="color:green;">✔ Prazo: {{ fluxo.guarda.data_eliminacao_prevista|date:'d/m/Y'|default:'–' }}</span><br>
+                {% if not termo %}
+                <form method="post" action="{% url 'arquivo:fluxo_arquivo_avancar' fluxo.pk %}" style="margin-top:.6rem;">
+                  {% csrf_token %}
+                  {% include "components/molecules/form_fields.html" with form=form_termo %}
+                  <button type="submit" class="btn btn-danger" style="margin-top:.4rem;">Eliminar e Emitir Termo ✔</button>
+                </form>
+                {% else %}
+                  <a href="{% url 'arquivo:termo_eliminacao_detalhe' termo.pk %}" class="btn btn-secondary">Ver Termo {{ termo.numero }}</a>
+                {% endif %}
+
+              {% endif %}
+
+            </div>
+            {% endif %}
+
+            {% if etapa.concluida %}
+              <span style="color:#888; font-size:.85em;">Concluída</span>
+            {% endif %}
+
+            {% if etapa.codigo == 'ELIMINADO' and fluxo.concluido %}
+              {% if fluxo.termo_eliminacao %}
+                <br><a href="{% url 'arquivo:termo_eliminacao_detalhe' fluxo.termo_eliminacao.pk %}" class="btn btn-secondary btn-sm" style="margin-top:.4rem;">
+                  Ver Termo {{ fluxo.termo_eliminacao.numero }}
+                </a>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Log de Auditoria ──────────────────────────────────────────────────── #}
+  <h2>Histórico do Fluxo</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Data/Hora</th><th>Etapa</th><th>Responsável</th><th>Observação</th></tr>
+    </thead>
+    <tbody>
+      {% for entrada in log %}
+      <tr>
+        <td>{{ entrada.data|date:'d/m/Y H:i' }}</td>
+        <td>{{ entrada.get_etapa_display }}</td>
+        <td>{{ entrada.responsavel.get_full_name|default:entrada.responsavel.username|default:'–' }}</td>
+        <td>{{ entrada.observacao|default:'–' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhum registro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:1rem;">
+    <a href="{% url 'arquivo:fluxo_arquivo_list' %}">← Voltar à lista</a>
+  </div>
+</section>
+{% endblock %}

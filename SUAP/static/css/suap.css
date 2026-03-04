@@ -11,6 +11,128 @@
   --text: #0c1f38;
   --text-soft: #42566e;
   --surface: #ffffff;
+
+  /* Paleta GOV.BR — tons 10→100 (50 = fornecido) */
+  --br-color-primary-10:  #F6FAFF;
+  --br-color-primary-20:  #F7FAFF;
+  --br-color-primary-30:  #F8FBFF;
+  --br-color-primary-40:  #F9FBFF;
+  --br-color-primary-50:  #F5F9FF;
+  --br-color-primary-60:  #C4C7CC;
+  --br-color-primary-70:  #ACAEB2;
+  --br-color-primary-80:  #939599;
+  --br-color-primary-90:  #7A7C80;
+  --br-color-primary-100: #626466;
+
+  --br-color-secondary-10:  #FCFCFC;
+  --br-color-secondary-20:  #FDFDFD;
+  --br-color-secondary-30:  #FDFDFD;
+  --br-color-secondary-40:  #FDFDFD;
+  --br-color-secondary-50:  #FCFCFC;
+  --br-color-secondary-60:  #CACACA;
+  --br-color-secondary-70:  #B0B0B0;
+  --br-color-secondary-80:  #979797;
+  --br-color-secondary-90:  #7E7E7E;
+  --br-color-secondary-100: #656565;
+
+  --br-color-info-10:    #F6FAFF;
+  --br-color-info-20:    #F7FAFF;
+  --br-color-info-30:    #F8FBFF;
+  --br-color-info-40:    #F9FBFF;
+  --br-color-info-50:    #F5F9FF;
+  --br-color-info-60:    #C4C7CC;
+  --br-color-info-70:    #ACAEB2;
+  --br-color-info-80:    #939599;
+  --br-color-info-90:    #7A7C80;
+  --br-color-info-100:   #626466;
+
+  --br-color-warning-10: #FFFCF2;
+  --br-color-warning-20: #FFFDF3;
+  --br-color-warning-30: #FFFDF4;
+  --br-color-warning-40: #FFFDF6;
+  --br-color-warning-50: #FFFCF0;
+  --br-color-warning-60: #CCCAC0;
+  --br-color-warning-70: #B2B0A8;
+  --br-color-warning-80: #999790;
+  --br-color-warning-90: #807E78;
+  --br-color-warning-100:#666560;
+
+  --br-color-caution-10: #FEFAF2;
+  --br-color-caution-20: #FEFAF4;
+  --br-color-caution-30: #FEFBF5;
+  --br-color-caution-40: #FEFBF7;
+  --br-color-caution-50: #FEF9F1;
+  --br-color-caution-60: #CBC7C1;
+  --br-color-caution-70: #B2AEA9;
+  --br-color-caution-80: #989591;
+  --br-color-caution-90: #7F7C78;
+  --br-color-caution-100:#666460;
+
+  --br-color-danger-10:  #FFF4F3;
+  --br-color-danger-20:  #FFF5F5;
+  --br-color-danger-30:  #FFF7F6;
+  --br-color-danger-40:  #FFF8F7;
+  --br-color-danger-50:  #FFF3F2;
+  --br-color-danger-60:  #CCC2C2;
+  --br-color-danger-70:  #B2AAA9;
+  --br-color-danger-80:  #999291;
+  --br-color-danger-90:  #807A79;
+  --br-color-danger-100: #666161;
+
+  --br-color-success-10: #F2FAF2;
+  --br-color-success-20: #F4FBF3;
+  --br-color-success-30: #F5FCF4;
+  --br-color-success-40: #F7FCF6;
+  --br-color-success-50: #F1FAF0;
+  --br-color-success-60: #C1C8C0;
+  --br-color-success-70: #A9AFA8;
+  --br-color-success-80: #919690;
+  --br-color-success-90: #787D78;
+  --br-color-success-100:#606460;
+
+  --br-color-violet-10:  #F9F2FA;
+  --br-color-violet-20:  #F9F3FA;
+  --br-color-violet-30:  #FAF4FB;
+  --br-color-violet-40:  #FBF6FB;
+  --br-color-violet-50:  #F8F0F9;
+  --br-color-violet-60:  #C6C0C7;
+  --br-color-violet-70:  #AEA8AE;
+  --br-color-violet-80:  #959095;
+  --br-color-violet-90:  #7C787C;
+  --br-color-violet-100: #636064;
+
+  --br-color-lime-10:    #FDFEF2;
+  --br-color-lime-20:    #FDFEF4;
+  --br-color-lime-30:    #FEFEF5;
+  --br-color-lime-40:    #FEFEF7;
+  --br-color-lime-50:    #FDFEF1;
+  --br-color-lime-60:    #CACBC1;
+  --br-color-lime-70:    #B1B2A9;
+  --br-color-lime-80:    #989891;
+  --br-color-lime-90:    #7E7F78;
+  --br-color-lime-100:   #656660;
+
+  --br-color-pink-10:    #FFF3F6;
+  --br-color-pink-20:    #FFF5F7;
+  --br-color-pink-30:    #FFF6F8;
+  --br-color-pink-40:    #FFF7F9;
+  --br-color-pink-50:    #FFF2F5;
+  --br-color-pink-60:    #CCC2C4;
+  --br-color-pink-70:    #B2A9AC;
+  --br-color-pink-80:    #999193;
+  --br-color-pink-90:    #80797A;
+  --br-color-pink-100:   #666162;
+
+  --br-color-cyan-10:    #F4FAFC;
+  --br-color-cyan-20:    #F5FBFD;
+  --br-color-cyan-30:    #F7FCFD;
+  --br-color-cyan-40:    #F8FCFD;
+  --br-color-cyan-50:    #F3FAFC;
+  --br-color-cyan-60:    #C2C8CA;
+  --br-color-cyan-70:    #AAAFB0;
+  --br-color-cyan-80:    #929697;
+  --br-color-cyan-90:    #7A7D7E;
+  --br-color-cyan-100:   #616465;
 }
 
 * {
@@ -215,6 +337,9 @@ main.container,
   display: inline-block;
   cursor: pointer;
   transition: 0.17s ease;
+  background: var(--br-color-secondary-50);
+  color: var(--text);
+  border: 1px solid var(--br-color-secondary-80);
 }
 
 .btn:hover {
@@ -223,8 +348,9 @@ main.container,
 }
 
 .btn-primary {
-  background: var(--suap-primary);
+  background: var(--br-color-primary-60);
   color: #fff;
+  border: 1px solid var(--br-color-primary-80);
 }
 
 .btn-secondary {
@@ -233,8 +359,16 @@ main.container,
 }
 
 .btn-danger {
-  background: var(--suap-danger);
+  background: var(--br-color-danger-60);
   color: #fff;
+  border: 1px solid var(--br-color-danger-80);
+}
+
+.btn-success {
+  /* Botão de ação principal (criar/confirmar) - verde GOV.BR mais saturado */
+  background: #168821;
+  color: #fff;
+  border: 1px solid #0f5f18;
 }
 
 /* Badges e alertas */
@@ -518,4 +652,52 @@ tbody tr:hover {
 .brand-sub {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.88);
+}
+
+/* Utilitários de cores GOV.BR — usos rápidos em badges/alertas/cards */
+.gov-bg-info {
+  background-color: var(--br-color-info-50);
+  color: var(--br-color-info-100);
+  border: 1px solid var(--br-color-info-80);
+}
+
+.gov-bg-warning {
+  background-color: var(--br-color-warning-50);
+  color: var(--br-color-warning-100);
+  border: 1px solid var(--br-color-warning-80);
+}
+
+.gov-bg-danger {
+  background-color: var(--br-color-danger-50);
+  color: var(--br-color-danger-100);
+  border: 1px solid var(--br-color-danger-80);
+}
+
+.gov-bg-success {
+  background-color: var(--br-color-success-50);
+  color: var(--br-color-success-100);
+  border: 1px solid var(--br-color-success-80);
+}
+
+.gov-bg-primary {
+  background-color: var(--br-color-primary-50);
+  color: var(--br-color-primary-100);
+  border: 1px solid var(--br-color-primary-80);
+}
+
+.gov-bg-secondary {
+  background-color: var(--br-color-secondary-50);
+  color: var(--br-color-secondary-100);
+  border: 1px solid var(--br-color-secondary-80);
+}
+
+.gov-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
 }
