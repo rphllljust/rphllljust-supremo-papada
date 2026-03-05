@@ -4,6 +4,7 @@ from django.db import models
 
 from apps.cursos.models import Curso
 from apps.turmas.models import Turma
+from apps.usuarios.models import PerfilUsuario
 
 
 class Matricula(models.Model):
@@ -38,7 +39,7 @@ class Matricula(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='matriculas',
-        limit_choices_to={'tipo': 'ALUNO'}
+        limit_choices_to={'tipo': PerfilUsuario.ALUNO}
     )
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='matriculas')
     turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='matriculas')
@@ -448,7 +449,7 @@ class ConsolidacaoAcademica(models.Model):
         return f'Consolidação – {self.matricula} [{self.get_situacao_display()}]'
 
 
-# ── P01 – Fluxo de Matrícula ─────────────────────────────────────────────────
+# ── P01 – Fluxo de Matrícula ───────────────────────────────────────���─────────
 
 class FluxoMatricula(models.Model):
     """
@@ -486,7 +487,7 @@ class FluxoMatricula(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='fluxos_matricula',
-        limit_choices_to={'tipo': 'ALUNO'},
+        limit_choices_to={'tipo': PerfilUsuario.ALUNO},
         verbose_name='Aluno',
     )
     tipo_matricula  = models.CharField(max_length=20, choices=Matricula.TIPO_CHOICES, default='NOVA', verbose_name='Tipo')

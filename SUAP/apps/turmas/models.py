@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from apps.cursos.models import Curso
+from apps.usuarios.models import PerfilUsuario
 
 
 class Turma(models.Model):
@@ -29,7 +30,7 @@ class Turma(models.Model):
         null=True,
         blank=True,
         related_name='turmas_responsavel',
-        limit_choices_to={'tipo': 'PROFESSOR'}
+        limit_choices_to={'tipo': PerfilUsuario.PROFESSOR}
     )
 
     def clean(self):

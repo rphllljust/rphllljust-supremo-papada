@@ -9,7 +9,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     path("", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
-    path("accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
+    path("dashboard/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
 
     path("usuarios/", include(("apps.usuarios.urls", "usuarios"), namespace="usuarios")),
     path("cursos/", include(("apps.cursos.urls", "cursos"), namespace="cursos")),

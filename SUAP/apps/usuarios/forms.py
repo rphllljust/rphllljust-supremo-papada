@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.accounts.utils import normalize_cpf
+
 from .models import Pessoa, Usuario
 
 
@@ -8,9 +10,8 @@ class TipoUsuarioForm(forms.ModelForm):
 
     class Meta:
         model = Usuario
-        fields = ["username", "first_name", "last_name", "email", "cpf", "is_active"]
+        fields = ["first_name", "last_name", "email", "cpf", "is_active"]
         labels = {
-            "username": "Usuario de acesso",
             "first_name": "Nome",
             "last_name": "Sobrenome",
             "email": "E-mail",
@@ -19,9 +20,7 @@ class TipoUsuarioForm(forms.ModelForm):
         }
 
     def clean_cpf(self):
-        cpf = "".join(ch for ch in self.cleaned_data["cpf"] if ch.isdigit())
-        if len(cpf) != 11:
-            raise forms.ValidationError("Informe um CPF com 11 digitos.")
+        cpf = normalize_cpf(self.cleaned_data["cpf"])
         qs = Usuario.objects.filter(cpf=cpf)
         if self.instance.pk:
             qs = qs.exclude(pk=self.instance.pk)
@@ -34,14 +33,14 @@ class TipoUsuarioForm(forms.ModelForm):
         if not self.tipo_valor:
             raise ValueError("tipo_valor deve ser definido no formulario filho.")
         usuario.tipo = self.tipo_valor
-        if not usuario.username:
-            usuario.username = usuario.cpf
+        # Keep Django's default auth backend compatible while identifying users by CPF.
+        usuario.username = usuario.cpf
         if not usuario.password:
             usuario.set_unusable_password()
 
         nome_completo = " ".join(
             part for part in [usuario.first_name, usuario.last_name] if part
-        ).strip() or usuario.username
+        ).strip() or usuario.cpf
 
         pessoa = usuario.pessoa
         if pessoa is None:

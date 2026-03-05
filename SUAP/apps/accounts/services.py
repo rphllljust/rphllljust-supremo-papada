@@ -1,23 +1,23 @@
 from django.urls import reverse
 
-from apps.usuarios.models import Pessoa, Usuario
+from apps.usuarios.models import PerfilUsuario, Pessoa, Usuario
 
 
 def redirect_by_profile(user) -> str:
     tipo = getattr(user, "tipo", None)
-    if tipo == "SECRETARIA":
+    if tipo == PerfilUsuario.SECRETARIA:
         return reverse("matriculas:matriculas_list")
-    if tipo == "COORDENACAO":
+    if tipo == PerfilUsuario.COORDENACAO:
         return reverse("dashboard:index")
-    if tipo == "PROFESSOR":
+    if tipo == PerfilUsuario.PROFESSOR:
         return reverse("turmas:turmas_list")
-    if tipo == "ALUNO":
-        return reverse("matriculas:matriculas_list")
+    if tipo == PerfilUsuario.ALUNO:
+        return reverse("accounts:acesso_negado")
     return reverse("dashboard:index")
 
 
-def create_public_user(*, username, first_name, last_name, email, cpf, perfil, password):
-    nome_completo = " ".join(part for part in [first_name, last_name] if part).strip() or username
+def create_public_user(*, first_name, last_name, email, cpf, perfil, password):
+    nome_completo = " ".join(part for part in [first_name, last_name] if part).strip() or cpf
     pessoa = Pessoa.objects.create(
         nome_completo=nome_completo,
         cpf=cpf,
@@ -25,7 +25,7 @@ def create_public_user(*, username, first_name, last_name, email, cpf, perfil, p
         telefone="",
     )
     return Usuario.objects.create_user(
-        username=username,
+        username=cpf,
         first_name=first_name,
         last_name=last_name,
         email=email or "",
@@ -34,4 +34,3 @@ def create_public_user(*, username, first_name, last_name, email, cpf, perfil, p
         password=password,
         pessoa=pessoa,
     )
-

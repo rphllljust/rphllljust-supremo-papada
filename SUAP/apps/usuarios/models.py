@@ -2,6 +2,22 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+class PerfilUsuario(models.TextChoices):
+    ALUNO = "ALUNO", "Aluno"
+    PROFESSOR = "PROFESSOR", "Professor"
+    SECRETARIA = "SECRETARIA", "Secretaria"
+    COORDENACAO = "COORDENACAO", "Coordenacao/Consulta"
+    ADMIN = "ADMIN", "Administrador"
+
+    @classmethod
+    def autenticaveis(cls):
+        return (cls.PROFESSOR, cls.SECRETARIA, cls.COORDENACAO, cls.ADMIN)
+
+    @classmethod
+    def autenticaveis_choices(cls):
+        return [(perfil.value, perfil.label) for perfil in cls.autenticaveis()]
+
+
 class Pessoa(models.Model):
     nome_completo = models.CharField(max_length=200)
     cpf = models.CharField(max_length=11, unique=True)
@@ -58,16 +74,8 @@ class DocumentoPessoal(models.Model):
 
 
 class Usuario(AbstractUser):
-    TIPO_CHOICES = (
-        ("ALUNO", "Aluno"),
-        ("PROFESSOR", "Professor"),
-        ("SECRETARIA", "Secretaria"),
-        ("COORDENACAO", "Coordenacao/Consulta"),
-        ("ADMIN", "Administrador"),
-    )
-
     cpf = models.CharField(max_length=11, unique=True)
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    tipo = models.CharField(max_length=20, choices=PerfilUsuario)
     pessoa = models.OneToOneField(Pessoa, on_delete=models.SET_NULL, null=True, blank=True, related_name="usuario")
 
     def __str__(self):
@@ -81,7 +89,6 @@ class Aluno(models.Model):
     )
 
     pessoa = models.OneToOneField(Pessoa, on_delete=models.CASCADE, related_name="aluno")
-    usuario = models.OneToOneField(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="perfil_aluno")
     data_ingresso = models.DateField(auto_now_add=True)
     situacao = models.CharField(max_length=10, choices=SITUACAO_CHOICES, default="ATIVO")
 

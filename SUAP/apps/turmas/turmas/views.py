@@ -3,16 +3,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.permissions import role_required
 from apps.turmas.models import Turma
+from apps.usuarios.models import PerfilUsuario
 from .forms import TurmaForm
 
 
-@role_required("SECRETARIA", "COORDENACAO")
+@role_required(PerfilUsuario.SECRETARIA, PerfilUsuario.COORDENACAO)
 def turmas_list(request):
     turmas = Turma.objects.select_related("curso", "professor_responsavel").all().order_by("-ano_letivo", "nome")
     return render(request, "turmas/turmas_list.html", {"turmas": turmas})
 
 
-@role_required("SECRETARIA")
+@role_required(PerfilUsuario.SECRETARIA)
 def turmas_create(request):
     form = TurmaForm(request.POST or None)
     if form.is_valid():
@@ -22,7 +23,7 @@ def turmas_create(request):
     return render(request, "turmas/turmas_form.html", {"form": form, "page_title": "Nova turma"})
 
 
-@role_required("SECRETARIA")
+@role_required(PerfilUsuario.SECRETARIA)
 def turmas_update(request, pk):
     turma = get_object_or_404(Turma, pk=pk)
     form = TurmaForm(request.POST or None, instance=turma)
@@ -33,7 +34,7 @@ def turmas_update(request, pk):
     return render(request, "turmas/turmas_form.html", {"form": form, "page_title": "Editar turma"})
 
 
-@role_required("SECRETARIA")
+@role_required(PerfilUsuario.SECRETARIA)
 def turmas_delete(request, pk):
     turma = get_object_or_404(Turma, pk=pk)
     if request.method == "POST":

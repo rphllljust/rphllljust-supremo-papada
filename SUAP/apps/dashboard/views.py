@@ -5,7 +5,7 @@ from django.shortcuts import redirect, render
 from apps.cursos.models import Curso
 from apps.matriculas.models import Matricula
 from apps.turmas.models import Turma
-from apps.usuarios.models import Usuario
+from apps.usuarios.models import PerfilUsuario, Usuario
 
 
 @login_required
@@ -15,16 +15,23 @@ def index(request):
         return redirect("accounts:login")
 
     perfil = getattr(request.user, "tipo", "")
-    perfis_validos = {"SECRETARIA", "COORDENACAO", "PROFESSOR", "ALUNO", "ADMIN"}
+    perfis_validos = {PerfilUsuario.SECRETARIA, PerfilUsuario.COORDENACAO, PerfilUsuario.PROFESSOR, PerfilUsuario.ADMIN}
+    if perfil == PerfilUsuario.ALUNO:
+        return render(
+            request,
+            "base/acesso_negado.html",
+            {"mensagem": "Perfil Aluno nao possui acesso ao sistema SUAP."},
+            status=403,
+        )
     if perfil not in perfis_validos:
         return render(
             request,
             "base/acesso_negado.html",
-            {"mensagem": "Seu perfil ainda não está habilitado para o painel."},
+            {"mensagem": "Seu perfil ainda nao esta habilitado para o painel."},
             status=403,
         )
 
-    total_students = Usuario.objects.filter(tipo="ALUNO").count()
+    total_students = Usuario.objects.filter(tipo=PerfilUsuario.ALUNO).count()
     total_courses = Curso.objects.count()
     total_classes = Turma.objects.count()
     total_enrollments = Matricula.objects.filter(status="ATIVA").count()
@@ -42,17 +49,16 @@ def index(request):
         for matricula in latest_matriculas
     ]
 
-    is_secretaria = perfil in {"SECRETARIA", "ADMIN"}
-    is_coordenacao = perfil == "COORDENACAO"
-    is_professor = perfil == "PROFESSOR"
-    is_aluno = perfil == "ALUNO"
+    is_secretaria = perfil in {PerfilUsuario.SECRETARIA, PerfilUsuario.ADMIN}
+    is_coordenacao = perfil == PerfilUsuario.COORDENACAO
+    is_professor = perfil == PerfilUsuario.PROFESSOR
 
     context = {
         "perfil": perfil,
         "is_secretaria": is_secretaria,
         "is_coordenacao": is_coordenacao,
         "is_professor": is_professor,
-        "is_aluno": is_aluno,
+        "is_aluno": False,
         "total_students": total_students,
         "total_courses": total_courses,
         "total_classes": total_classes,

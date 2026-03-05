@@ -41,9 +41,9 @@ class DocumentoPessoalAdmin(admin.ModelAdmin):
 
 @admin.register(Aluno)
 class AlunoAdmin(admin.ModelAdmin):
-    list_display = ("pessoa", "usuario", "situacao", "data_ingresso")
+    list_display = ("pessoa", "situacao", "data_ingresso")
     list_filter = ("situacao",)
-    search_fields = ("pessoa__nome_completo", "pessoa__cpf", "usuario__username")
+    search_fields = ("pessoa__nome_completo", "pessoa__cpf")
 
 
 @admin.register(Responsavel)

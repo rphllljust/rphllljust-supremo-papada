@@ -3,9 +3,16 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from apps.usuarios.models import PerfilUsuario
+
 
 def role_required(*tipos_permitidos):
     """Simple role gate by Usuario.tipo with implicit ADMIN/superuser access."""
+
+    valores_permitidos = {
+        tipo.value if isinstance(tipo, PerfilUsuario) else tipo
+        for tipo in tipos_permitidos
+    }
 
     def decorator(view_func):
         @login_required
@@ -16,13 +23,21 @@ def role_required(*tipos_permitidos):
                 return view_func(request, *args, **kwargs)
 
             tipo = getattr(user, "tipo", None)
-            if tipo == "ADMIN" or tipo in tipos_permitidos:
+            if tipo == PerfilUsuario.ALUNO:
+                return render(
+                    request,
+                    "base/acesso_negado.html",
+                    {"mensagem": "Perfil Aluno nao possui acesso ao sistema SUAP."},
+                    status=403,
+                )
+
+            if tipo == PerfilUsuario.ADMIN or tipo in valores_permitidos:
                 return view_func(request, *args, **kwargs)
 
             return render(
                 request,
                 "base/acesso_negado.html",
-                {"mensagem": "Seu perfil não possui permissão para esta funcionalidade."},
+                {"mensagem": "Seu perfil nao possui permissao para esta funcionalidade."},
                 status=403,
             )
 

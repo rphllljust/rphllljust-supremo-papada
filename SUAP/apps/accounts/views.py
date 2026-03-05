@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import logout
 from django.contrib.auth.views import (
     LoginView,
     PasswordResetCompleteView,
@@ -9,6 +9,8 @@ from django.contrib.auth.views import (
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+
+from apps.usuarios.models import PerfilUsuario
 
 from .forms import CadastroPublicoForm, PerfilAuthenticationForm, RecuperarSenhaForm
 from .services import create_public_user, redirect_by_profile
@@ -45,24 +47,39 @@ def logout_confirmado(request):
     return render(request, "accounts/logout_confirmado.html")
 
 
+def acesso_negado(request):
+    return render(
+        request,
+        "base/acesso_negado.html",
+        {"mensagem": "Seu perfil nao possui acesso ao sistema SUAP."},
+        status=403,
+    )
+
+
 def cadastro(request):
     if request.user.is_authenticated:
         return redirect("dashboard:index")
 
     form = CadastroPublicoForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
+        perfil = form.cleaned_data["perfil"]
+        if perfil == PerfilUsuario.ALUNO:
+            messages.error(request, "Perfil Aluno nao possui acesso ao sistema SUAP.")
+            return render(request, "accounts/cadastro.html", {"form": form}, status=403)
+
         usuario = create_public_user(
-            username=form.cleaned_data["username"],
             first_name=form.cleaned_data["first_name"],
             last_name=form.cleaned_data.get("last_name", ""),
             email=form.cleaned_data.get("email", ""),
             cpf=form.cleaned_data["cpf"],
-            perfil=form.cleaned_data["perfil"],
+            perfil=perfil,
             password=form.cleaned_data["password1"],
         )
-        login(request, usuario)
-        messages.success(request, "Cadastro realizado com sucesso.")
-        return redirect("dashboard:index")
+        messages.success(
+            request,
+            f"Conta criada com sucesso para o CPF {usuario.cpf}. Agora faca login.",
+        )
+        return redirect("accounts:login")
 
     return render(request, "accounts/cadastro.html", {"form": form})
 

@@ -1,4 +1,5 @@
 {% extends "base/base.html" %}
+{% load static %}
 
 {% block title %}Cadastro | {{ APP_NAME }}{% endblock %}
 
@@ -18,14 +19,34 @@
       </div>
     {% endif %}
 
-    <div class="form-group"><label for="id_username">Usuario</label>{{ form.username }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_first_name">Nome</label>{{ form.first_name }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_last_name">Sobrenome</label>{{ form.last_name }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_email">E-mail</label>{{ form.email }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_cpf">CPF</label>{{ form.cpf }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_perfil">Perfil</label>{{ form.perfil }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_password1">Senha</label>{{ form.password1 }}</div>
-    <div class="form-group" style="margin-top:12px;"><label for="id_password2">Confirmar senha</label>{{ form.password2 }}</div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_first_name">Nome</label>{{ form.first_name }}
+      {% for error in form.first_name.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_last_name">Sobrenome</label>{{ form.last_name }}
+      {% for error in form.last_name.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_email">E-mail</label>{{ form.email }}
+      {% for error in form.email.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_cpf">CPF</label>{{ form.cpf }}
+      {% for error in form.cpf.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_perfil">Perfil</label>{{ form.perfil }}
+      {% for error in form.perfil.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_password1">Senha</label>{{ form.password1 }}
+      {% for error in form.password1.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label for="id_password2">Confirmar senha</label>{{ form.password2 }}
+      {% for error in form.password2.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
 
     <div class="button-row" style="margin-top:16px;">
       <button class="btn btn-success" type="submit">Cadastrar</button>
@@ -33,4 +54,8 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/cpf_mask.js' %}"></script>
 {% endblock %}
