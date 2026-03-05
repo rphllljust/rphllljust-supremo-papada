@@ -1,0 +1,40 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Inscrições{% endblock %}
+{% block header_title %}Inscrições Recebidas{% endblock %}
+{% block header_action %}
+  {% url 'inscricoes:inscricao_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Registrar Inscrição' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Nº Inscrição</th>
+  <th>Candidato</th>
+  <th>Edital</th>
+  <th>Curso</th>
+  <th>Status</th>
+  <th>Data</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for ins in inscricoes %}
+<tr>
+  <td>{{ ins.numero_inscricao }}</td>
+  <td>{{ ins.nome_candidato }}</td>
+  <td>{{ ins.publicacao.titulo }}</td>
+  <td>{{ ins.publicacao.curso.nome }}</td>
+  <td>{{ ins.get_status_display }}</td>
+  <td>{{ ins.data_inscricao|date:'d/m/Y' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'inscricoes:inscricao_documentos' ins.pk %}">Documentos</a> |
+    <a href="{% url 'inscricoes:inscricao_validar' ins.pk %}">Validar</a> |
+    <a href="{% url 'inscricoes:inscricao_delete' ins.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhuma inscrição registrada.</td></tr>
+{% endfor %}
+{% endblock %}

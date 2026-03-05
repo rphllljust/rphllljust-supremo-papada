@@ -1,0 +1,42 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Estágios{% endblock %}
+{% block header_title %}Registro de Estágios{% endblock %}
+{% block header_action %}
+  {% url 'estagio:estagio_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Registrar Estágio' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Curso</th>
+  <th>Empresa</th>
+  <th>Modalidade</th>
+  <th>Início</th>
+  <th>Status</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for e in estagios %}
+<tr>
+  <td>{{ e.matricula.aluno.username }}</td>
+  <td>{{ e.matricula.curso.nome }}</td>
+  <td>{{ e.empresa }}</td>
+  <td>{{ e.get_modalidade_display }}</td>
+  <td>{{ e.data_inicio|date:'d/m/Y' }}</td>
+  <td>{{ e.get_status_display }}</td>
+  <td class="table-actions">
+    <a href="{% url 'estagio:estagio_update' e.pk %}">Editar</a> |
+    {% if e.status == 'EM_ANDAMENTO' %}
+      <a href="{% url 'estagio:estagio_encerrar' e.pk %}">Encerrar</a> |
+    {% endif %}
+    <a href="{% url 'estagio:estagio_delete' e.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum estágio registrado.</td></tr>
+{% endfor %}
+{% endblock %}

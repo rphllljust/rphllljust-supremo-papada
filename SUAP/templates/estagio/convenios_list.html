@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Convênios de Estágio{% endblock %}
+{% block header_title %}Convênios de Estágio{% endblock %}
+{% block header_action %}
+  {% url 'estagio:convenio_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo Convênio' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Nº Convênio</th>
+  <th>Empresa</th>
+  <th>CNPJ</th>
+  <th>Assinatura</th>
+  <th>Vencimento</th>
+  <th>Status</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for c in convenios %}
+<tr>
+  <td>{{ c.numero_convenio }}</td>
+  <td>{{ c.empresa }}</td>
+  <td>{{ c.cnpj|default:'—' }}</td>
+  <td>{{ c.data_assinatura|date:'d/m/Y' }}</td>
+  <td>{{ c.data_vencimento|date:'d/m/Y'|default:'—' }}</td>
+  <td>{{ c.get_status_display }}</td>
+  <td class="table-actions">
+    <a href="{% url 'estagio:convenio_update' c.pk %}">Editar</a> |
+    <a href="{% url 'estagio:convenio_delete' c.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum convênio cadastrado.</td></tr>
+{% endfor %}
+{% endblock %}

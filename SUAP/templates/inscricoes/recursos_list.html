@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Recursos de Inscrição{% endblock %}
+{% block header_title %}Recursos Apresentados{% endblock %}
+{% block header_action %}
+  {% url 'inscricoes:recurso_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Registrar Recurso' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Candidato</th>
+  <th>Processo</th>
+  <th>Data Recurso</th>
+  <th>Status</th>
+  <th>Decisão</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for r in recursos %}
+<tr>
+  <td>{{ r.candidato.inscricao.nome_candidato }}</td>
+  <td>{{ r.candidato.processo.publicacao.titulo }}</td>
+  <td>{{ r.data_recurso|date:'d/m/Y' }}</td>
+  <td>{{ r.get_status_display }}</td>
+  <td>{{ r.data_decisao|date:'d/m/Y'|default:'—' }}</td>
+  <td class="table-actions">
+    {% if r.status == 'ABERTO' %}
+      <a href="{% url 'inscricoes:recurso_decisao' r.pk %}">Decidir</a> |
+    {% endif %}
+    <a href="{% url 'inscricoes:recurso_delete' r.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6">Nenhum recurso registrado.</td></tr>
+{% endfor %}
+{% endblock %}

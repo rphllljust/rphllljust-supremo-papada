@@ -1,0 +1,35 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Diários Acadêmicos{% endblock %}
+{% block header_title %}Diários Acadêmicos{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Turma</th>
+  <th>Período</th>
+  <th>Status</th>
+  <th>Abertura</th>
+  <th>Fechamento</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for diario in diarios %}
+<tr>
+  <td>{{ diario.turma }}</td>
+  <td>{{ diario.periodo }}</td>
+  <td>{{ diario.get_status_display }}</td>
+  <td>{{ diario.data_abertura|date:'d/m/Y' }}</td>
+  <td>{{ diario.data_fechamento|date:'d/m/Y'|default:'—' }}</td>
+  <td class="table-actions">
+    {% if diario.status != 'FECHADO' %}
+      <a href="{% url 'turmas:diario_fechar' diario.pk %}">Fechar</a> |
+    {% endif %}
+    <a href="{% url 'turmas:diario_delete' diario.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6">Nenhum diário cadastrado.</td></tr>
+{% endfor %}
+{% endblock %}

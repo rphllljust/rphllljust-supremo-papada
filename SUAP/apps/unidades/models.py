@@ -3,6 +3,7 @@ from django.db import models
 
 
 class Unidade(models.Model):
+    # Lista fixa de unidades permitidas (código -> nome)
     FIXED_UNITS = (
         ("sede", "Sede"),
         ("rio_branco", "Rio Branco"),
@@ -13,6 +14,9 @@ class Unidade(models.Model):
 
     nome = models.CharField(max_length=200, unique=True)
     codigo = models.CharField(max_length=20, unique=True, choices=FIXED_UNITS)
+    endereco = models.CharField(max_length=300, blank=True, default="")
+    cidade = models.CharField(max_length=100, blank=True, default="")
+    uf = models.CharField(max_length=2, blank=True, default="")
 
     def clean(self):
         self.codigo = (self.codigo or "").strip().lower()

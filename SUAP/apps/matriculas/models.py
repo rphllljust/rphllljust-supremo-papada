@@ -856,6 +856,521 @@ class FluxoTransferencia(models.Model):
         return f'P03 – {self.matricula.aluno} [{self.get_etapa_atual_display()}]'
 
 
+# ── Aproveitamento de Componentes / Equivalência ──────────────────────────────
+
+class AproveitamentoComponente(models.Model):
+    """Registro de aproveitamento ou equivalência de componente curricular."""
+
+    STATUS_CHOICES = (
+        ('SOLICITADO', 'Solicitado'),
+        ('APROVADO',   'Aprovado'),
+        ('INDEFERIDO', 'Indeferido'),
+    )
+
+    matricula           = models.ForeignKey(
+        Matricula, on_delete=models.CASCADE,
+        related_name='aproveitamentos',
+        verbose_name='Matrícula',
+    )
+    componente_origem   = models.CharField(max_length=255, verbose_name='Componente de Origem')
+    instituicao_origem  = models.CharField(max_length=255, blank=True, verbose_name='Instituição de Origem')
+    carga_horaria       = models.PositiveIntegerField(verbose_name='Carga Horária (h)')
+    componente_destino  = models.CharField(max_length=255, verbose_name='Componente Equivalente no Curso')
+    status              = models.CharField(max_length=15, choices=STATUS_CHOICES, default='SOLICITADO', verbose_name='Status')
+    data_solicitacao    = models.DateField(auto_now_add=True, verbose_name='Data da Solicitação')
+    data_decisao        = models.DateField(null=True, blank=True, verbose_name='Data da Decisão')
+    decisao_por         = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='aproveitamentos_decididos',
+        verbose_name='Decisão por',
+    )
+    justificativa       = models.TextField(blank=True, verbose_name='Justificativa / Observação')
+
+    class Meta:
+        verbose_name = 'Aproveitamento de Componente'
+        verbose_name_plural = 'Aproveitamentos de Componentes'
+        ordering = ['-data_solicitacao']
+
+    def __str__(self):
+        return f'Aproveitamento [{self.get_status_display()}] – {self.componente_origem} → {self.componente_destino} ({self.matricula.aluno})'
+
+
+# ── Fechamento e Conclusão ────────────────────────────────────────────────────
+
+class ConselhoClasse(models.Model):
+    """Registro do Conselho de Classe por turma/período."""
+
+    STATUS_CHOICES = (
+        ('AGENDADO',   'Agendado'),
+        ('REALIZADO',  'Realizado'),
+        ('CANCELADO',  'Cancelado'),
+    )
+
+    turma           = models.ForeignKey(
+        'turmas.Turma', on_delete=models.CASCADE,
+        related_name='conselhos',
+        verbose_name='Turma',
+    )
+    periodo         = models.CharField(max_length=50, verbose_name='Período de Referência')
+    data_reuniao    = models.DateField(verbose_name='Data da Reunião')
+    status          = models.CharField(max_length=15, choices=STATUS_CHOICES, default='AGENDADO', verbose_name='Status')
+    pauta           = models.TextField(blank=True, verbose_name='Pauta')
+    ata             = models.TextField(blank=True, verbose_name='Ata da Reunião')
+    responsavel     = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='conselhos_presididos',
+        verbose_name='Responsável',
+    )
+
+    class Meta:
+        verbose_name = 'Conselho de Classe'
+        verbose_name_plural = 'Conselhos de Classe'
+        ordering = ['-data_reuniao']
+
+    def __str__(self):
+        return f'Conselho – {self.turma} / {self.periodo} [{self.get_status_display()}]'
+
+
+class AtaResultado(models.Model):
+    """Ata de resultado final publicada após o conselho de classe."""
+
+    conselho        = models.OneToOneField(
+        ConselhoClasse, on_delete=models.CASCADE,
+        related_name='ata_resultado',
+        verbose_name='Conselho de Classe',
+    )
+    data_publicacao = models.DateField(verbose_name='Data de Publicação')
+    conteudo        = models.TextField(verbose_name='Conteúdo da Ata')
+    publicado_por   = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='atas_publicadas',
+        verbose_name='Publicado por',
+    )
+    numero_ata      = models.CharField(max_length=20, unique=True, editable=False, verbose_name='Nº da Ata')
+
+    class Meta:
+        verbose_name = 'Ata de Resultado'
+        verbose_name_plural = 'Atas de Resultado'
+        ordering = ['-data_publicacao']
+
+    def save(self, *args, **kwargs):
+        if not self.numero_ata:
+            from django.utils import timezone
+            ano = timezone.now().year
+            ultimo = AtaResultado.objects.filter(numero_ata__startswith=f'ATA-{ano}-').order_by('-numero_ata').first()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero_ata.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = AtaResultado.objects.filter(numero_ata__startswith=f'ATA-{ano}-').count() + 1
+            self.numero_ata = f'ATA-{ano}-{seq:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.numero_ata} – {self.conselho}'
+
+
+class CertificadoDiploma(models.Model):
+    """Certificado ou diploma emitido ao concluir o curso."""
+
+    TIPO_CHOICES = (
+        ('CERTIFICADO', 'Certificado'),
+        ('DIPLOMA',     'Diploma'),
+    )
+    STATUS_CHOICES = (
+        ('PENDENTE',  'Pendente'),
+        ('EMITIDO',   'Emitido'),
+        ('ENTREGUE',  'Entregue'),
+        ('CANCELADO', 'Cancelado'),
+    )
+
+    matricula       = models.ForeignKey(
+        Matricula, on_delete=models.CASCADE,
+        related_name='certificados',
+        verbose_name='Matrícula',
+    )
+    tipo            = models.CharField(max_length=15, choices=TIPO_CHOICES, default='CERTIFICADO', verbose_name='Tipo')
+    numero_registro = models.CharField(max_length=20, unique=True, editable=False, verbose_name='Nº de Registro')
+    data_emissao    = models.DateField(null=True, blank=True, verbose_name='Data de Emissão')
+    data_entrega    = models.DateField(null=True, blank=True, verbose_name='Data de Entrega')
+    status          = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDENTE', verbose_name='Status')
+    emitido_por     = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='certificados_emitidos',
+        verbose_name='Emitido por',
+    )
+    observacao      = models.TextField(blank=True, verbose_name='Observação')
+
+    class Meta:
+        verbose_name = 'Certificado / Diploma'
+        verbose_name_plural = 'Certificados / Diplomas'
+        ordering = ['-data_emissao']
+
+    def save(self, *args, **kwargs):
+        if not self.numero_registro:
+            from django.utils import timezone
+            ano = timezone.now().year
+            prefixo = 'CER' if self.tipo == 'CERTIFICADO' else 'DIP'
+            ultimo = CertificadoDiploma.objects.filter(numero_registro__startswith=f'{prefixo}-{ano}-').order_by('-numero_registro').first()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero_registro.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = CertificadoDiploma.objects.filter(numero_registro__startswith=f'{prefixo}-{ano}-').count() + 1
+            self.numero_registro = f'{prefixo}-{ano}-{seq:04d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.numero_registro} – {self.get_tipo_display()} – {self.matricula.aluno}'
+
+
+# ── Documento Oficial: Ata Escolar ───────────────────────────────────────────
+
+class AtaEscolar(models.Model):
+    """
+    Documento formal da Ata Escolar para impressão e arquivo oficial.
+    Gerado a partir do ConselhoClasse com estrutura completa para assinatura.
+    """
+
+    TIPO_CHOICES = (
+        ('CONSELHO_CLASSE',    'Conselho de Classe'),
+        ('RESULTADO_FINAL',    'Resultado Final'),
+        ('REUNIAO_PEDAGOGICA', 'Reunião Pedagógica'),
+    )
+
+    conselho        = models.OneToOneField(
+        ConselhoClasse, on_delete=models.CASCADE,
+        related_name='ata_escolar',
+        verbose_name='Conselho de Classe',
+    )
+    numero_documento = models.CharField(max_length=25, unique=True, editable=False, verbose_name='Nº do Documento')
+    tipo            = models.CharField(max_length=25, choices=TIPO_CHOICES, default='CONSELHO_CLASSE', verbose_name='Tipo de Ata')
+    titulo          = models.CharField(max_length=200, verbose_name='Título')
+    unidade_nome    = models.CharField(max_length=200, verbose_name='Unidade Escolar')
+    local_reuniao   = models.CharField(max_length=200, verbose_name='Local da Reunião')
+    data_reuniao    = models.DateField(verbose_name='Data da Reunião')
+    hora_inicio     = models.TimeField(null=True, blank=True, verbose_name='Hora de Início')
+    hora_fim        = models.TimeField(null=True, blank=True, verbose_name='Hora de Encerramento')
+    presidente      = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='atas_presididas',
+        verbose_name='Presidente da Reunião',
+    )
+    secretario      = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='atas_secretariadas',
+        verbose_name='Secretário(a)',
+    )
+    membros_presentes = models.TextField(
+        verbose_name='Membros Presentes',
+        help_text='Um por linha: Nome – Cargo',
+    )
+    abertura        = models.TextField(verbose_name='Texto de Abertura')
+    deliberacoes    = models.TextField(verbose_name='Deliberações / Decisões')
+    encerramento    = models.TextField(verbose_name='Texto de Encerramento')
+    assinado        = models.BooleanField(default=False, verbose_name='Assinado')
+    data_assinatura = models.DateField(null=True, blank=True, verbose_name='Data de Assinatura')
+
+    class Meta:
+        verbose_name = 'Ata Escolar'
+        verbose_name_plural = 'Atas Escolares'
+        ordering = ['-data_reuniao']
+
+    def save(self, *args, **kwargs):
+        if not self.numero_documento:
+            from django.utils import timezone
+            ano = timezone.now().year
+            ultimo = AtaEscolar.objects.filter(
+                numero_documento__startswith=f'ATA-ESC-{ano}-'
+            ).order_by('-numero_documento').first()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero_documento.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = AtaEscolar.objects.filter(
+                        numero_documento__startswith=f'ATA-ESC-{ano}-'
+                    ).count() + 1
+            self.numero_documento = f'ATA-ESC-{ano}-{seq:04d}'
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def _data_pt(d) -> str:
+        meses = ['janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro']
+        return f'{d.day:02d} de {meses[d.month - 1]} de {d.year}'
+
+    def gerar_documento(self) -> str:
+        """
+        Retorna a Ata Escolar no formato padrão SEDUC-RO para impressão/arquivo.
+        Inclui cabeçalho institucional, texto declaratório, membros, tabela de
+        resultados por aluno e bloco de assinaturas.
+        """
+        W = 92
+
+        unidade   = self.conselho.turma.curso.unidade
+        municipio = (f"{unidade.cidade} – {unidade.uf}"
+                     if unidade.cidade else "Porto Velho – RO")
+        pres_nome = (self.presidente.get_full_name()
+                     if self.presidente else '________________________________')
+        sec_nome  = (self.secretario.get_full_name()
+                     if self.secretario else '________________________________')
+        hora_ini  = self.hora_inicio.strftime('%Hh%M') if self.hora_inicio else '__h__'
+        hora_fim  = self.hora_fim.strftime('%Hh%M') if self.hora_fim else '__h__'
+
+        membros_lines = [m.strip() for m in self.membros_presentes.splitlines() if m.strip()]
+        membros_fmt   = '\n'.join(f'  {i + 1}. {m}' for i, m in enumerate(membros_lines))
+
+        matriculas = (
+            self.conselho.turma.matriculas
+            .select_related('aluno')
+            .order_by('aluno__last_name', 'aluno__first_name')
+        )
+
+        def _res(mat):
+            try:
+                c      = mat.consolidacao
+                media  = f"{c.media_final:.2f}".replace('.', ',') if c.media_final else '----'
+                freq   = (f"{c.percentual_frequencia:.1f}%".replace('.', ',')
+                          if c.percentual_frequencia else '----')
+                result = c.get_situacao_display()
+            except Exception:
+                media = freq = '----'
+                result = 'Pendente'
+            return media, freq, result
+
+        doc = [
+            f"\n{'=' * W}",
+            f"  GOVERNO DO ESTADO DE RONDÔNIA",
+            f"  SECRETARIA DE ESTADO DA EDUCAÇÃO – SEDUC/RO",
+            f"  {unidade.nome.upper()}",
+            (f"  Endereço: {unidade.endereco}  –  {municipio}"
+             if unidade.endereco else f"  {municipio}"),
+            f"{'=' * W}",
+            f"",
+            f"  {self.numero_documento}",
+            f"",
+            f"  {self.titulo.upper():^{W - 4}}",
+            f"",
+            f"{'─' * W}",
+            f"",
+            f"  {self.abertura}",
+            f"",
+            f"  LOCAL   : {self.local_reuniao}",
+            f"  DATA    : {self._data_pt(self.data_reuniao)}",
+            f"  HORÁRIO : {hora_ini} às {hora_fim}",
+            f"",
+            f"  MEMBROS PRESENTES:",
+            membros_fmt,
+            f"",
+            f"{'─' * W}",
+            f"",
+            f"  DELIBERAÇÕES:",
+            f"",
+            f"  {self.deliberacoes}",
+            f"",
+            f"{'─' * W}",
+            f"",
+            f"  RESULTADO FINAL POR ALUNO",
+            f"  Turma: {self.conselho.turma.nome}   Curso: {self.conselho.turma.curso.nome}"
+            f"   Período: {self.conselho.periodo}",
+            f"",
+            f"  {'N°':>3}  {'NOME DO ALUNO':<38}  {'MÉDIA':>6}  {'FREQ%':>6}  {'RESULTADO':<25}",
+            f"  {'─' * 3}  {'─' * 38}  {'─' * 6}  {'─' * 6}  {'─' * 25}",
+        ]
+
+        for i, mat in enumerate(matriculas, 1):
+            nome  = mat.aluno.get_full_name().upper()[:38]
+            media, freq, result = _res(mat)
+            doc.append(f"  {i:3d}  {nome:<38}  {media:>6}  {freq:>6}  {result:<25}")
+
+        doc += [
+            f"  {'─' * W}",
+            f"",
+            f"  {self.encerramento}",
+            f"",
+            f"  {municipio}, {self._data_pt(self.data_reuniao)}",
+            f"",
+            f"",
+            f"  {'─' * 38}          {'─' * 38}",
+            f"  {pres_nome:<38}          {sec_nome:<38}",
+            f"  Presidente do Conselho de Classe          Secretário(a) Escolar",
+            f"",
+        ]
+
+        outros = membros_lines[2:]
+        if outros:
+            doc.append(f"  Demais Membros Presentes:")
+            for j in range(0, len(outros), 2):
+                par = outros[j:j + 2]
+                sigs = '  '.join(['─' * 35] * len(par))
+                noms = '  '.join([f'{p:<35}' for p in par])
+                doc += [f"  {sigs}", f"  {noms}"]
+            doc.append(f"")
+
+        doc.append(f"{'=' * W}")
+        return '\n'.join(doc)
+
+    def __str__(self):
+        return f'{self.numero_documento} – {self.titulo}'
+
+
+# ── Documento Oficial: Diploma Escolar ───────────────────────────────────────
+
+class DiplomaEscolar(models.Model):
+    """
+    Documento formal do Diploma/Certificado de Conclusão para impressão
+    e registro oficial. Gerado a partir do CertificadoDiploma com todos
+    os dados necessários para validade legal.
+    """
+
+    certificado     = models.OneToOneField(
+        CertificadoDiploma, on_delete=models.CASCADE,
+        related_name='diploma_escolar',
+        verbose_name='Certificado / Diploma',
+    )
+    numero_diploma  = models.CharField(max_length=25, unique=True, editable=False, verbose_name='Nº do Diploma')
+    codigo_verificacao = models.CharField(max_length=36, unique=True, editable=False, verbose_name='Código de Verificação')
+
+    # Dados do aluno (copiados na emissão para garantir imutabilidade)
+    nome_completo   = models.CharField(max_length=200, verbose_name='Nome Completo do Aluno')
+    data_nascimento = models.DateField(verbose_name='Data de Nascimento')
+    local_nascimento = models.CharField(max_length=100, verbose_name='Local de Nascimento')
+    nome_pai        = models.CharField(max_length=200, blank=True, verbose_name='Nome do Pai')
+    nome_mae        = models.CharField(max_length=200, blank=True, verbose_name='Nome da Mãe')
+    cpf             = models.CharField(max_length=14, verbose_name='CPF')
+    rg              = models.CharField(max_length=20, blank=True, verbose_name='RG')
+
+    # Dados do curso (copiados na emissão)
+    curso_nome      = models.CharField(max_length=200, verbose_name='Curso')
+    habilitacao     = models.CharField(max_length=200, blank=True, verbose_name='Habilitação')
+    carga_horaria   = models.PositiveIntegerField(verbose_name='Carga Horária Total (h)')
+    data_inicio_curso  = models.DateField(verbose_name='Data de Início do Curso')
+    data_conclusao  = models.DateField(verbose_name='Data de Conclusão')
+    media_final     = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Média Final')
+
+    # Dados da unidade
+    unidade_nome    = models.CharField(max_length=200, verbose_name='Unidade Escolar')
+    municipio_uf    = models.CharField(max_length=100, verbose_name='Município/UF')
+
+    # Assinaturas
+    diretor_nome    = models.CharField(max_length=200, verbose_name='Nome do Diretor(a)')
+    diretor_cargo   = models.CharField(max_length=100, default='Diretor(a)', verbose_name='Cargo do Diretor(a)')
+    secretario_nome = models.CharField(max_length=200, verbose_name='Nome do(a) Secretário(a) Escolar')
+
+    data_emissao    = models.DateField(verbose_name='Data de Emissão')
+
+    class Meta:
+        verbose_name = 'Diploma Escolar'
+        verbose_name_plural = 'Diplomas Escolares'
+        ordering = ['-data_emissao']
+
+    def save(self, *args, **kwargs):
+        if not self.numero_diploma:
+            from django.utils import timezone
+            ano = timezone.now().year
+            ultimo = DiplomaEscolar.objects.filter(
+                numero_diploma__startswith=f'DIP-{ano}-'
+            ).order_by('-numero_diploma').first()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero_diploma.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = DiplomaEscolar.objects.filter(
+                        numero_diploma__startswith=f'DIP-{ano}-'
+                    ).count() + 1
+            self.numero_diploma = f'DIP-{ano}-{seq:04d}'
+        if not self.codigo_verificacao:
+            import uuid
+            self.codigo_verificacao = str(uuid.uuid4()).upper()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def _data_pt(d) -> str:
+        meses = ['janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro']
+        return f'{d.day:02d} de {meses[d.month - 1]} de {d.year}'
+
+    def gerar_documento(self) -> str:
+        """Retorna o texto formatado completo do diploma para impressão."""
+        media_str = f'{self.media_final:.2f}' if self.media_final else 'N/A'
+        pai_mae = ''
+        if self.nome_pai or self.nome_mae:
+            partes = []
+            if self.nome_pai:
+                partes.append(f'pai: {self.nome_pai}')
+            if self.nome_mae:
+                partes.append(f'mãe: {self.nome_mae}')
+            pai_mae = f"\n  Filiação      : {' | '.join(partes)}"
+
+        W = 92
+        doc = [
+            f"\n{'=' * W}",
+            f"  GOVERNO DO ESTADO DE RONDÔNIA",
+            f"  SECRETARIA DE ESTADO DA EDUCAÇÃO – SEDUC/RO",
+            f"  {self.unidade_nome.upper()}",
+            f"  {self.municipio_uf}",
+            f"{'=' * W}",
+            f"",
+            f"  Nº {self.numero_diploma}",
+            f"  Código de Verificação: {self.codigo_verificacao}",
+            f"",
+            f"  {'C E R T I F I C A D O   D E   C O N C L U S Ã O   D E   C U R S O   T É C N I C O':^{W - 4}}",
+            f"",
+            f"{'─' * W}",
+            f"",
+            f"  A {self.unidade_nome},",
+            f"  situada em {self.municipio_uf},",
+            f"  CERTIFICA que",
+            f"",
+            f"  {'*' * 3} {self.nome_completo.upper()} {'*' * 3}",
+            f"",
+            f"  nascido(a) em {self.data_nascimento.strftime('%d/%m/%Y')}, em {self.local_nascimento},{pai_mae}",
+            f"  CPF: {self.cpf}" + (f"  |  RG: {self.rg}" if self.rg else ""),
+            f"",
+            f"  concluiu com aproveitamento o Curso Técnico de Nível Médio em",
+            f"",
+            f"  {'*' * 3} {self.curso_nome.upper()} {'*' * 3}",
+        ]
+        if self.habilitacao:
+            doc.append(f"  Habilitação: {self.habilitacao}")
+        doc += [
+            f"",
+            f"  Carga Horária Total : {self.carga_horaria} horas",
+            f"  Período             : {self.data_inicio_curso.strftime('%d/%m/%Y')}"
+            f" a {self.data_conclusao.strftime('%d/%m/%Y')}",
+            f"  Média Final         : {media_str}",
+            f"",
+            f"{'─' * W}",
+            f"",
+            f"  {self.municipio_uf}, {self._data_pt(self.data_emissao)}",
+            f"",
+            f"",
+            f"  {'─' * 38}          {'─' * 38}",
+            f"  {self.diretor_nome:<38}          {self.secretario_nome:<38}",
+            f"  {self.diretor_cargo:<38}          Secretário(a) Escolar",
+            f"",
+            f"{'=' * W}",
+        ]
+        return '\n'.join(doc)
+
+    def __str__(self):
+        return f'{self.numero_diploma} – {self.nome_completo} – {self.curso_nome}'
+
+
 class EtapaFluxoTransferencia(models.Model):
     """Log de auditoria das transições do P03."""
 

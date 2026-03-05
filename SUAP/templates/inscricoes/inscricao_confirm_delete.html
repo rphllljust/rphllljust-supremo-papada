@@ -1,0 +1,8 @@
+{% extends "components/organisms/crud_confirm_delete_card.html" %}
+{% block confirm_page_title %}Excluir Inscrição{% endblock %}
+{% block confirm_title %}Excluir Inscrição{% endblock %}
+{% block confirm_text %}Tem certeza que deseja excluir a inscrição de <strong>{{ inscricao.nome_candidato }}</strong> ({{ inscricao.numero_inscricao }})?{% endblock %}
+{% block confirm_actions %}
+  {% url 'inscricoes:inscricoes_list' as cancel_url %}
+  {% include "components/molecules/confirm_actions.html" with cancel_url=cancel_url confirm_label='Confirmar' cancel_label='Cancelar' %}
+{% endblock %}

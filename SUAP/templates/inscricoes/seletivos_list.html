@@ -1,0 +1,37 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Processos Seletivos{% endblock %}
+{% block header_title %}Processos Seletivos{% endblock %}
+{% block header_action %}
+  {% url 'inscricoes:seletivo_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Novo Processo Seletivo' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Publicação</th>
+  <th>Curso</th>
+  <th>Modalidade</th>
+  <th>Realização</th>
+  <th>Status</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for s in seletivos %}
+<tr>
+  <td>{{ s.publicacao.titulo }}</td>
+  <td>{{ s.publicacao.curso.nome }}</td>
+  <td>{{ s.get_modalidade_display }}</td>
+  <td>{{ s.data_realizacao|date:'d/m/Y'|default:'—' }}</td>
+  <td>{{ s.get_status_display }}</td>
+  <td class="table-actions">
+    <a href="{% url 'inscricoes:seletivo_update' s.pk %}">Editar</a> |
+    <a href="{% url 'inscricoes:seletivo_delete' s.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6">Nenhum processo seletivo cadastrado.</td></tr>
+{% endfor %}
+{% endblock %}

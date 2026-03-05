@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     "apps.arquivo",
     "apps.documentos",
     "apps.auditoria",
+    "apps.inscricoes",
+    "apps.estagio",
 ]
 
 MIDDLEWARE = [

@@ -60,4 +60,27 @@ urlpatterns = [
     path("transferencias/fluxo/novo/", views.transferencia_fluxo_create, name="transferencia_fluxo_create"),
     path("transferencias/fluxo/<int:pk>/", views.transferencia_fluxo_detalhe, name="transferencia_fluxo_detalhe"),
     path("transferencias/fluxo/<int:pk>/avancar/", views.transferencia_fluxo_avancar, name="transferencia_fluxo_avancar"),
+
+    # Aproveitamento de Componentes / Equivalência
+    path("aproveitamentos/", views.aproveitamentos_list, name="aproveitamentos_list"),
+    path("aproveitamentos/novo/", views.aproveitamento_create, name="aproveitamento_create"),
+    path("aproveitamentos/<int:pk>/decisao/", views.aproveitamento_decisao, name="aproveitamento_decisao"),
+    path("aproveitamentos/<int:pk>/excluir/", views.aproveitamento_delete, name="aproveitamento_delete"),
+
+    # Conselho de Classe
+    path("conselho/", views.conselho_list, name="conselho_list"),
+    path("conselho/novo/", views.conselho_create, name="conselho_create"),
+    path("conselho/<int:pk>/editar/", views.conselho_update, name="conselho_update"),
+    path("conselho/<int:pk>/excluir/", views.conselho_delete, name="conselho_delete"),
+
+    # Ata de Resultado
+    path("atas/", views.ata_list, name="ata_list"),
+    path("atas/novo/", views.ata_create, name="ata_create"),
+    path("atas/<int:pk>/excluir/", views.ata_delete, name="ata_delete"),
+
+    # Certificado / Diploma
+    path("certificados/", views.certificados_list, name="certificados_list"),
+    path("certificados/novo/", views.certificado_create, name="certificado_create"),
+    path("certificados/<int:pk>/editar/", views.certificado_update, name="certificado_update"),
+    path("certificados/<int:pk>/excluir/", views.certificado_delete, name="certificado_delete"),
 ]

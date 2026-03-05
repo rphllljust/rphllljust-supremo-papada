@@ -3,6 +3,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core.permissions import role_required
 from apps.matriculas.models import (
+    AproveitamentoComponente,
+    AtaResultado,
+    CertificadoDiploma,
+    ConselhoClasse,
     ConsolidacaoAcademica,
     DocumentoEmitido,
     DocumentoMatricula,
@@ -19,6 +23,11 @@ from apps.matriculas.models import (
 )
 from apps.usuarios.models import PerfilUsuario
 from .forms import (
+    AproveitamentoDecisaoForm,
+    AproveitamentoForm,
+    AtaResultadoForm,
+    CertificadoDiplomaForm,
+    ConselhoClasseForm,
     ConsolidacaoObservacaoForm,
     DocumentoEmitidoForm,
     DocumentoMatriculaForm,
@@ -888,3 +897,168 @@ def transferencia_fluxo_avancar(request, pk):
     )
     messages.success(request, f"Etapa: {fluxo.get_etapa_atual_display()}")
     return redirect("matriculas:transferencia_fluxo_detalhe", pk=pk)
+
+
+# ── Aproveitamento de Componentes / Equivalência ──────────────────────────────
+
+def aproveitamentos_list(request):
+    aproveitamentos = AproveitamentoComponente.objects.select_related(
+        "matricula", "matricula__aluno", "matricula__curso", "decisao_por"
+    ).all()
+    return render(request, "matriculas/aproveitamentos_list.html", {"aproveitamentos": aproveitamentos})
+
+
+def aproveitamento_create(request):
+    form = AproveitamentoForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Solicitação de aproveitamento registrada.")
+        return redirect("matriculas:aproveitamentos_list")
+    return render(request, "matriculas/aproveitamento_form.html", {
+        "form": form,
+        "page_title": "Solicitar Aproveitamento / Equivalência",
+    })
+
+
+def aproveitamento_decisao(request, pk):
+    aproveitamento = get_object_or_404(AproveitamentoComponente, pk=pk)
+    form = AproveitamentoDecisaoForm(request.POST or None, instance=aproveitamento)
+    if form.is_valid():
+        dec = form.save(commit=False)
+        dec.decisao_por = request.user
+        dec.save()
+        messages.success(request, "Decisão registrada.")
+        return redirect("matriculas:aproveitamentos_list")
+    return render(request, "matriculas/aproveitamento_decisao.html", {
+        "form": form,
+        "aproveitamento": aproveitamento,
+        "page_title": "Registrar Decisão – Aproveitamento",
+    })
+
+
+def aproveitamento_delete(request, pk):
+    aproveitamento = get_object_or_404(AproveitamentoComponente, pk=pk)
+    if request.method == "POST":
+        aproveitamento.delete()
+        messages.success(request, "Aproveitamento removido.")
+        return redirect("matriculas:aproveitamentos_list")
+    return render(request, "matriculas/aproveitamento_confirm_delete.html", {"aproveitamento": aproveitamento})
+
+
+# ── Conselho de Classe ────────────────────────────────────────────────────────
+
+def conselho_list(request):
+    conselhos = ConselhoClasse.objects.select_related("turma", "turma__curso", "responsavel").all()
+    return render(request, "matriculas/conselho_list.html", {"conselhos": conselhos})
+
+
+def conselho_create(request):
+    form = ConselhoClasseForm(request.POST or None)
+    if form.is_valid():
+        c = form.save(commit=False)
+        if not c.responsavel:
+            c.responsavel = request.user
+        c.save()
+        messages.success(request, "Conselho de classe agendado.")
+        return redirect("matriculas:conselho_list")
+    return render(request, "matriculas/conselho_form.html", {
+        "form": form,
+        "page_title": "Agendar Conselho de Classe",
+    })
+
+
+def conselho_update(request, pk):
+    conselho = get_object_or_404(ConselhoClasse, pk=pk)
+    form = ConselhoClasseForm(request.POST or None, instance=conselho)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Conselho de classe atualizado.")
+        return redirect("matriculas:conselho_list")
+    return render(request, "matriculas/conselho_form.html", {
+        "form": form,
+        "page_title": "Editar Conselho de Classe",
+    })
+
+
+def conselho_delete(request, pk):
+    conselho = get_object_or_404(ConselhoClasse, pk=pk)
+    if request.method == "POST":
+        conselho.delete()
+        messages.success(request, "Conselho removido.")
+        return redirect("matriculas:conselho_list")
+    return render(request, "matriculas/conselho_confirm_delete.html", {"conselho": conselho})
+
+
+# ── Ata de Resultado ──────────────────────────────────────────────────────────
+
+def ata_list(request):
+    atas = AtaResultado.objects.select_related("conselho", "conselho__turma", "publicado_por").all()
+    return render(request, "matriculas/ata_list.html", {"atas": atas})
+
+
+def ata_create(request):
+    form = AtaResultadoForm(request.POST or None)
+    if form.is_valid():
+        ata = form.save(commit=False)
+        ata.publicado_por = request.user
+        ata.save()
+        messages.success(request, f"Ata publicada: {ata.numero_ata}")
+        return redirect("matriculas:ata_list")
+    return render(request, "matriculas/ata_form.html", {
+        "form": form,
+        "page_title": "Publicar Ata de Resultado",
+    })
+
+
+def ata_delete(request, pk):
+    ata = get_object_or_404(AtaResultado, pk=pk)
+    if request.method == "POST":
+        ata.delete()
+        messages.success(request, "Ata removida.")
+        return redirect("matriculas:ata_list")
+    return render(request, "matriculas/ata_confirm_delete.html", {"ata": ata})
+
+
+# ── Certificado / Diploma ─────────────────────────────────────────────────────
+
+def certificados_list(request):
+    certificados = CertificadoDiploma.objects.select_related(
+        "matricula", "matricula__aluno", "matricula__curso", "emitido_por"
+    ).all()
+    return render(request, "matriculas/certificados_list.html", {"certificados": certificados})
+
+
+def certificado_create(request):
+    form = CertificadoDiplomaForm(request.POST or None)
+    if form.is_valid():
+        cert = form.save(commit=False)
+        cert.emitido_por = request.user
+        cert.save()
+        messages.success(request, f"Certificado/Diploma registrado: {cert.numero_registro}")
+        return redirect("matriculas:certificados_list")
+    return render(request, "matriculas/certificado_form.html", {
+        "form": form,
+        "page_title": "Emitir Certificado / Diploma",
+    })
+
+
+def certificado_update(request, pk):
+    cert = get_object_or_404(CertificadoDiploma, pk=pk)
+    form = CertificadoDiplomaForm(request.POST or None, instance=cert)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Registro atualizado.")
+        return redirect("matriculas:certificados_list")
+    return render(request, "matriculas/certificado_form.html", {
+        "form": form,
+        "page_title": "Editar Certificado / Diploma",
+    })
+
+
+def certificado_delete(request, pk):
+    cert = get_object_or_404(CertificadoDiploma, pk=pk)
+    if request.method == "POST":
+        cert.delete()
+        messages.success(request, "Registro removido.")
+        return redirect("matriculas:certificados_list")
+    return render(request, "matriculas/certificado_confirm_delete.html", {"cert": cert})

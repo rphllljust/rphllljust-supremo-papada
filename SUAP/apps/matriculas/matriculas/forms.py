@@ -1,6 +1,10 @@
 from django import forms
 
 from apps.matriculas.models import (
+    AproveitamentoComponente,
+    AtaResultado,
+    CertificadoDiploma,
+    ConselhoClasse,
     ConsolidacaoAcademica,
     DocumentoEmitido,
     DocumentoMatricula,
@@ -427,3 +431,92 @@ class EtapaTransferenciaObservacaoForm(forms.ModelForm):
         fields = ["observacao"]
         labels = {"observacao": "Observação"}
         widgets = {"observacao": forms.Textarea(attrs={"rows": 2})}
+
+
+# ── Aproveitamento de Componentes ─────────────────────────────────────────────
+
+class AproveitamentoForm(forms.ModelForm):
+    class Meta:
+        model = AproveitamentoComponente
+        fields = [
+            "matricula", "componente_origem", "instituicao_origem",
+            "carga_horaria", "componente_destino", "justificativa",
+        ]
+        labels = {
+            "matricula": "Matrícula",
+            "componente_origem": "Componente de Origem",
+            "instituicao_origem": "Instituição de Origem",
+            "carga_horaria": "Carga Horária (h)",
+            "componente_destino": "Equivalente no Curso",
+            "justificativa": "Justificativa",
+        }
+        widgets = {"justificativa": forms.Textarea(attrs={"rows": 3})}
+
+
+class AproveitamentoDecisaoForm(forms.ModelForm):
+    class Meta:
+        model = AproveitamentoComponente
+        fields = ["status", "data_decisao", "justificativa"]
+        labels = {
+            "status": "Decisão",
+            "data_decisao": "Data da Decisão",
+            "justificativa": "Justificativa / Observação",
+        }
+        widgets = {
+            "data_decisao": forms.DateInput(attrs={"type": "date"}),
+            "justificativa": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+# ── Fechamento e Conclusão ────────────────────────────────────────────────────
+
+class ConselhoClasseForm(forms.ModelForm):
+    class Meta:
+        model = ConselhoClasse
+        fields = ["turma", "periodo", "data_reuniao", "status", "pauta", "responsavel"]
+        labels = {
+            "turma": "Turma",
+            "periodo": "Período",
+            "data_reuniao": "Data da Reunião",
+            "status": "Status",
+            "pauta": "Pauta",
+            "responsavel": "Responsável",
+        }
+        widgets = {
+            "data_reuniao": forms.DateInput(attrs={"type": "date"}),
+            "pauta": forms.Textarea(attrs={"rows": 4}),
+        }
+
+
+class AtaResultadoForm(forms.ModelForm):
+    class Meta:
+        model = AtaResultado
+        fields = ["conselho", "data_publicacao", "conteudo"]
+        labels = {
+            "conselho": "Conselho de Classe",
+            "data_publicacao": "Data de Publicação",
+            "conteudo": "Conteúdo da Ata",
+        }
+        widgets = {
+            "data_publicacao": forms.DateInput(attrs={"type": "date"}),
+            "conteudo": forms.Textarea(attrs={"rows": 8}),
+        }
+
+
+class CertificadoDiplomaForm(forms.ModelForm):
+    class Meta:
+        model = CertificadoDiploma
+        fields = ["matricula", "tipo", "data_emissao", "data_entrega", "status", "observacao"]
+        labels = {
+            "matricula": "Matrícula",
+            "tipo": "Tipo",
+            "data_emissao": "Data de Emissão",
+            "data_entrega": "Data de Entrega",
+            "status": "Status",
+            "observacao": "Observação",
+        }
+        widgets = {
+            "data_emissao": forms.DateInput(attrs={"type": "date"}),
+            "data_entrega": forms.DateInput(attrs={"type": "date"}),
+            "observacao": forms.Textarea(attrs={"rows": 3}),
+        }

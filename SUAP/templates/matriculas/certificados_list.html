@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Certificados / Diplomas{% endblock %}
+{% block header_title %}Certificados e Diplomas{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:certificado_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Emitir Certificado/Diploma' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Nº de Registro</th>
+  <th>Aluno</th>
+  <th>Curso</th>
+  <th>Tipo</th>
+  <th>Status</th>
+  <th>Emissão</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for cert in certificados %}
+<tr>
+  <td>{{ cert.numero_registro }}</td>
+  <td>{{ cert.matricula.aluno.username }}</td>
+  <td>{{ cert.matricula.curso.nome }}</td>
+  <td>{{ cert.get_tipo_display }}</td>
+  <td>{{ cert.get_status_display }}</td>
+  <td>{{ cert.data_emissao|date:'d/m/Y'|default:'—' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'matriculas:certificado_update' cert.pk %}">Editar</a> |
+    <a href="{% url 'matriculas:certificado_delete' cert.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum certificado ou diploma emitido.</td></tr>
+{% endfor %}
+{% endblock %}

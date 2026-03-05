@@ -1,0 +1,36 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Acompanhamentos de Estágio{% endblock %}
+{% block header_title %}Acompanhamentos de Estágio{% endblock %}
+{% block header_action %}
+  {% url 'estagio:acompanhamento_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Registrar Acompanhamento' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Empresa</th>
+  <th>Tipo</th>
+  <th>Data</th>
+  <th>Registrado por</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for a in acompanhamentos %}
+<tr>
+  <td>{{ a.estagio.matricula.aluno.username }}</td>
+  <td>{{ a.estagio.empresa }}</td>
+  <td>{{ a.get_tipo_display }}</td>
+  <td>{{ a.data|date:'d/m/Y' }}</td>
+  <td>{{ a.registrado_por.username|default:'—' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'estagio:acompanhamento_delete' a.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6">Nenhum acompanhamento registrado.</td></tr>
+{% endfor %}
+{% endblock %}

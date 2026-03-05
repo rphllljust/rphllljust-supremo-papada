@@ -1,0 +1,5 @@
+{% extends "components/organisms/crud_form_card.html" %}
+{% block form_page_title %}{{ page_title }}{% endblock %}
+{% block form_actions %}
+  {% include "components/molecules/form_actions.html" with cancel_url="/turmas/diarios/" submit_label='Fechar Diário' cancel_label='Cancelar' %}
+{% endblock %}

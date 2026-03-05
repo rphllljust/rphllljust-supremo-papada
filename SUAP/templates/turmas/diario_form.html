@@ -1,0 +1,5 @@
+{% extends "components/organisms/crud_form_card.html" %}
+{% block form_page_title %}{{ page_title }}{% endblock %}
+{% block form_actions %}
+  {% include "components/molecules/form_actions.html" with cancel_url=request.META.HTTP_REFERER|default:"/turmas/diarios/" submit_label='Abrir Diário' cancel_label='Cancelar' %}
+{% endblock %}

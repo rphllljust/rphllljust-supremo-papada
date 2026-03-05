@@ -5,11 +5,29 @@ from apps.unidades.models import Unidade
 class Curso(models.Model):
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='cursos')
     nome = models.CharField(max_length=200)
-    sigla = models.CharField(max_length=10, blank=True)
+    eixo_tecnologico = models.CharField(max_length=200, blank=True, default='', verbose_name='Eixo Tecnológico')
     carga_horaria = models.PositiveIntegerField()
 
     def __str__(self):
         return self.nome
+
+
+class ComponenteCurricular(models.Model):
+    """Componente da matriz curricular de um curso."""
+
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='componentes', verbose_name='Curso')
+    nome = models.CharField(max_length=200, verbose_name='Nome')
+    carga_horaria = models.PositiveIntegerField(default=0, verbose_name='Carga Horária (h)')
+    ordem = models.PositiveIntegerField(default=1, verbose_name='Ordem')
+
+    class Meta:
+        verbose_name = 'Componente Curricular'
+        verbose_name_plural = 'Componentes Curriculares'
+        ordering = ['ordem', 'nome']
+        unique_together = ('curso', 'nome')
+
+    def __str__(self):
+        return f'{self.nome} ({self.curso.nome})'
 
 class CalendarioLetivo(models.Model):
     """Calendário Letivo por ano/curso  Entidade Acadêmica do Class Diagram."""

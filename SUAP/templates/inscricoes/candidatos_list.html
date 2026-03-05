@@ -1,0 +1,39 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Candidatos / Convocação{% endblock %}
+{% block header_title %}Candidatos Classificados{% endblock %}
+{% block header_action %}
+  {% url 'inscricoes:candidato_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Registrar Candidato' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Classificação</th>
+  <th>Candidato</th>
+  <th>Processo Seletivo</th>
+  <th>Pontuação</th>
+  <th>Situação</th>
+  <th>Convocação</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for c in candidatos %}
+<tr>
+  <td>{{ c.classificacao }}º</td>
+  <td>{{ c.inscricao.nome_candidato }}</td>
+  <td>{{ c.processo.publicacao.titulo }}</td>
+  <td>{{ c.pontuacao|default:'—' }}</td>
+  <td>{{ c.get_situacao_display }}</td>
+  <td>{{ c.data_convocacao|date:'d/m/Y'|default:'—' }}</td>
+  <td class="table-actions">
+    <a href="{% url 'inscricoes:candidato_update' c.pk %}">Editar</a> |
+    <a href="{% url 'inscricoes:candidato_delete' c.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7">Nenhum candidato registrado.</td></tr>
+{% endfor %}
+{% endblock %}

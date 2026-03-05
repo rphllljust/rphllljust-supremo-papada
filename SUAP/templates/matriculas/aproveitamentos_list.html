@@ -1,0 +1,43 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Aproveitamentos / Equivalências{% endblock %}
+{% block header_title %}Aproveitamentos de Componentes{% endblock %}
+{% block header_action %}
+  {% url 'matriculas:aproveitamento_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Solicitar Aproveitamento' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Aluno</th>
+  <th>Componente Origem</th>
+  <th>Instituição</th>
+  <th>CH (h)</th>
+  <th>Equivalente</th>
+  <th>Status</th>
+  <th>Solicitação</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for apr in aproveitamentos %}
+<tr>
+  <td>{{ apr.matricula.aluno.username }}</td>
+  <td>{{ apr.componente_origem }}</td>
+  <td>{{ apr.instituicao_origem|default:'—' }}</td>
+  <td>{{ apr.carga_horaria }}</td>
+  <td>{{ apr.componente_destino }}</td>
+  <td>{{ apr.get_status_display }}</td>
+  <td>{{ apr.data_solicitacao|date:'d/m/Y' }}</td>
+  <td class="table-actions">
+    {% if apr.status == 'SOLICITADO' %}
+      <a href="{% url 'matriculas:aproveitamento_decisao' apr.pk %}">Decidir</a> |
+    {% endif %}
+    <a href="{% url 'matriculas:aproveitamento_delete' apr.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="8">Nenhuma solicitação de aproveitamento.</td></tr>
+{% endfor %}
+{% endblock %}

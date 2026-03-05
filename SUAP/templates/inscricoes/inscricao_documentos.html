@@ -1,0 +1,38 @@
+{% extends "base/base.html" %}
+
+{% block title %}Documentos – {{ inscricao.numero_inscricao }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="crud-header">
+    <h1 class="crud-title">Documentos da Inscrição – {{ inscricao.numero_inscricao }}</h1>
+  </div>
+  <p><strong>Candidato:</strong> {{ inscricao.nome_candidato }} | <strong>Edital:</strong> {{ inscricao.publicacao.titulo }}</p>
+
+  <h2>Documentos</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Tipo</th><th>Entregue</th><th>Data</th><th>Obs</th></tr>
+    </thead>
+    <tbody>
+      {% for doc in documentos %}
+      <tr>
+        <td>{{ doc.get_tipo_display }}</td>
+        <td>{% if doc.entregue %}Sim{% else %}Não{% endif %}</td>
+        <td>{{ doc.data_entrega|date:'d/m/Y'|default:'—' }}</td>
+        <td>{{ doc.observacao|default:'—' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">Nenhum documento registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Adicionar Documento</h2>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "components/molecules/form_fields.html" with form=form %}
+    {% include "components/molecules/form_actions.html" with cancel_url="/inscricoes/inscricoes/" submit_label='Registrar' cancel_label='Voltar' %}
+  </form>
+</section>
+{% endblock %}

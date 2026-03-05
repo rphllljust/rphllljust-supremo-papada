@@ -1,0 +1,41 @@
+{% extends "components/organisms/crud_list_card.html" %}
+
+{% block page_title %}Termos de Compromisso{% endblock %}
+{% block header_title %}Termos de Compromisso de Estágio{% endblock %}
+{% block header_action %}
+  {% url 'estagio:termo_create' as create_url %}
+  {% include "components/atoms/button_link.html" with url=create_url label='Gerar Termo' variant='success' %}
+{% endblock %}
+
+{% block table_head %}
+<tr>
+  <th>Nº Termo</th>
+  <th>Aluno</th>
+  <th>Empresa</th>
+  <th>Assinatura</th>
+  <th>Status</th>
+  <th>Aluno</th><th>Empresa</th><th>IDEP</th>
+  <th class="table-actions">Ações</th>
+</tr>
+{% endblock %}
+
+{% block table_body %}
+{% for t in termos %}
+<tr>
+  <td>{{ t.numero_termo }}</td>
+  <td>{{ t.estagio.matricula.aluno.username }}</td>
+  <td>{{ t.estagio.empresa }}</td>
+  <td>{{ t.data_assinatura|date:'d/m/Y'|default:'—' }}</td>
+  <td>{{ t.get_status_display }}</td>
+  <td>{% if t.assinado_aluno %}✓{% else %}✗{% endif %}</td>
+  <td>{% if t.assinado_empresa %}✓{% else %}✗{% endif %}</td>
+  <td>{% if t.assinado_idep %}✓{% else %}✗{% endif %}</td>
+  <td class="table-actions">
+    <a href="{% url 'estagio:termo_update' t.pk %}">Editar</a> |
+    <a href="{% url 'estagio:termo_delete' t.pk %}">Excluir</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="9">Nenhum termo registrado.</td></tr>
+{% endfor %}
+{% endblock %}
