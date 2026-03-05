@@ -25,7 +25,13 @@
   <td><strong>{{ p.numero }}</strong></td>
   <td>{{ p.get_tipo_display }}</td>
   <td>{{ p.assunto }}</td>
-  <td>{{ p.requerente.get_full_name|default:p.requerente.username|default:'–' }}</td>
+  <td>
+    {% if p.requerente %}
+      {{ p.requerente.get_full_name|default:p.requerente.username }}
+    {% else %}
+      &ndash;
+    {% endif %}
+  </td>
   <td>{{ p.get_status_display }}</td>
   <td>{{ p.data_abertura|date:'d/m/Y' }}</td>
   <td class="table-actions">

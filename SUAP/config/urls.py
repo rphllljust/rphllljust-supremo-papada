@@ -12,6 +12,7 @@ urlpatterns = [
     path("dashboard/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
 
     path("usuarios/", include(("apps.usuarios.urls", "usuarios"), namespace="usuarios")),
+    path("alunos/", include("apps.usuarios.alunos.urls")),
     path("cursos/", include(("apps.cursos.urls", "cursos"), namespace="cursos")),
     path("turmas/", include(("apps.turmas.urls", "turmas"), namespace="turmas")),
     path("matriculas/", include(("apps.matriculas.urls", "matriculas"), namespace="matriculas")),
@@ -24,6 +25,8 @@ urlpatterns = [
     path("arquivo/", include(("apps.arquivo.urls", "arquivo"), namespace="arquivo")),
     path("documentos/", include(("apps.documentos.urls", "documentos"), namespace="documentos")),
     path("auditoria/", include(("apps.auditoria.urls", "auditoria"), namespace="auditoria")),
+    path("inscricoes/", include(("apps.inscricoes.urls", "inscricoes"), namespace="inscricoes")),
+    path("estagio/", include(("apps.estagio.urls", "estagio"), namespace="estagio")),
 
     path("api/v1/", include("apps.api.v1.urls")),
 

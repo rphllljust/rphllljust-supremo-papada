@@ -12,7 +12,16 @@
   <table class="table">
     <tbody>
       <tr><th>Tipo</th><td>{{ processo.get_tipo_display }}</td></tr>
-      <tr><th>Requerente</th><td>{{ processo.requerente.get_full_name|default:processo.requerente.username|default:'–' }}</td></tr>
+      <tr>
+        <th>Requerente</th>
+        <td>
+          {% if processo.requerente %}
+            {{ processo.requerente.get_full_name|default:processo.requerente.username }}
+          {% else %}
+            &ndash;
+          {% endif %}
+        </td>
+      </tr>
       <tr><th>Status</th><td><strong>{{ processo.get_status_display }}</strong></td></tr>
       <tr><th>Abertura</th><td>{{ processo.data_abertura|date:'d/m/Y' }}</td></tr>
       {% if processo.data_conclusao %}<tr><th>Conclusão</th><td>{{ processo.data_conclusao|date:'d/m/Y' }}</td></tr>{% endif %}
@@ -31,7 +40,13 @@
         <td>{{ t.data|date:'d/m/Y H:i' }}</td>
         <td>{{ t.get_acao_display }}</td>
         <td>{{ t.setor_destino|default:'–' }}</td>
-        <td>{{ t.responsavel.get_full_name|default:t.responsavel.username|default:'–' }}</td>
+        <td>
+          {% if t.responsavel %}
+            {{ t.responsavel.get_full_name|default:t.responsavel.username }}
+          {% else %}
+            &ndash;
+          {% endif %}
+        </td>
         <td>{{ t.observacao|default:'–' }}</td>
       </tr>
       {% empty %}

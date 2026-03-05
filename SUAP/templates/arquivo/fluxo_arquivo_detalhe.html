@@ -19,6 +19,146 @@
     </div>
   </div>
 
+  <div class="card" style="margin: 1rem 0; padding: 1rem; background:#f8f9fa; border:1px solid #e5e7eb;">
+    <h2 style="margin-top:0;">Papéis e atribuições no fluxo</h2>
+    <table class="table" style="margin:0;">
+      <tbody>
+        <tr>
+          <th style="width:160px;">Aluno</th>
+          <td>Cria inscrição, envia documentos, acompanha status, consulta notas, solicita 2ª via.</td>
+        </tr>
+        <tr>
+          <th>Secretaria</th>
+          <td>Valida documentos, efetiva matrícula, corrige cadastros, emite históricos/declarações, prepara ata e diploma (rascunho).</td>
+        </tr>
+        <tr>
+          <th>Professor</th>
+          <td>Lança avaliações/notas/frequência, solicita correções justificadas.</td>
+        </tr>
+        <tr>
+          <th>Coordenação</th>
+          <td>Valida regras pedagógicas (médias, recuperação), homologa resultados.</td>
+        </tr>
+        <tr>
+          <th>Direção</th>
+          <td>Assina/homologa documentos oficiais (ata/diploma).</td>
+        </tr>
+        <tr>
+          <th>IA (Assistente)</th>
+          <td>Orienta, coleta dados, pré-valida, gera rascunhos e minutas, abre solicitações e protocolos.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin: 1rem 0; padding: 1rem; background:#eef2ff; border:1px solid #d4d7ff;">
+    <h2 style="margin-top:0;">Fluxo macro (visão em árvore)</h2>
+    <ul style="margin:0 0 .5rem 1rem;">
+      <li><strong>A. Onboarding e Identidade</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>A1. Criar conta / login (CPF/e-mail/telefone)</li>
+          <li>A2. Consentimento LGPD + política de uso</li>
+          <li>A3. Verificação de identidade (documento + selfie ou validação interna)</li>
+          <li>A4. Perfil do aluno (dados pessoais, endereço, responsáveis se menor)</li>
+        </ul>
+      </li>
+      <li><strong>B. Inscrição (candidatura)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>B1. Escolher curso/unidade/turno</li>
+          <li>B2. Requisitos e elegibilidade (idade, escolaridade, pré-requisitos)</li>
+          <li>B3. Enviar documentos (RG/CPF, comprovante de escolaridade, endereço, etc.)</li>
+          <li>B4. Pré-validação automática (legibilidade, completude, formatos)</li>
+          <li>B5. Protocolo de inscrição + status (Em análise / Pendente / Aprovado / Indeferido)</li>
+          <li>B6. (Opcional) Pagamento de taxa / isenção</li>
+          <li>B7. Convocação/resultado (se houver processo seletivo)</li>
+        </ul>
+      </li>
+      <li><strong>C. Matrícula (após aprovação/convocação)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>C1. Conferência final de documentos (secretaria)</li>
+          <li>C2. Assinaturas e termos (contrato/termos, ciência do regimento)</li>
+          <li>C3. Geração de RA/matrícula + vínculo a turma</li>
+          <li>C4. Plano de curso: componentes, carga horária, calendário</li>
+          <li>C5. Situação: Matriculado / Trancado / Cancelado / Concluído</li>
+        </ul>
+      </li>
+      <li><strong>D. Diário/Notas/Frequência</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>D1. Cadastro de avaliações (provas, trabalhos, projetos)</li>
+          <li>D2. Lançamento de notas (professor) + frequências</li>
+          <li>D3. Cálculo automático (média, faltas, recuperação)</li>
+          <li>D4. Janela de revisão/retificação (com justificativa)</li>
+          <li>D5. Fechamento do período (lock) por coordenação</li>
+          <li>D6. Publicação para aluno (consulta) + relatórios</li>
+        </ul>
+      </li>
+      <li><strong>E. Ata (documento oficial)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>E1. IA gera “minuta de ata” do período/turma (a partir de notas fechadas)</li>
+          <li>E2. Coordenação revisa e homologa resultados</li>
+          <li>E3. Direção assina (digital/física) e secretaria registra</li>
+          <li>E4. Armazenamento imutável + numeração + trilha de auditoria</li>
+          <li>E5. Emissão de cópias autenticáveis (PDF com QR/validação)</li>
+        </ul>
+      </li>
+      <li><strong>F. Diploma/Certificado (conclusão)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>F1. Checagem de elegibilidade (todas disciplinas aprovadas + carga horária + estágio/TCC + pendências)</li>
+          <li>F2. IA gera minuta do diploma/certificado + histórico final (se aplicável)</li>
+          <li>F3. Secretaria confere dados (nome, CPF, datas, ato autorizativo, livro/folha)</li>
+          <li>F4. Direção assina e registra (livro de registros)</li>
+          <li>F5. Emissão do documento final (PDF assinado + QR de validação + número de registro)</li>
+          <li>F6. Entrega e 2ª via (com protocolo e motivo)</li>
+        </ul>
+      </li>
+      <li><strong>E. Ata (documento oficial)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>E1. IA gera “minuta de ata” do período/turma (a partir de notas fechadas)</li>
+          <li>E2. Coordenação revisa e homologa resultados</li>
+          <li>E3. Direção assina (digital/física) e secretaria registra</li>
+          <li>E4. Armazenamento imutável + numeração + trilha de auditoria</li>
+          <li>E5. Emissão de cópias autenticáveis (PDF com QR/validação)</li>
+        </ul>
+      </li>
+      <li><strong>F. Diploma/Certificado (conclusão)</strong>
+        <ul style="margin:.25rem 0 .25rem 1rem; list-style:disc;">
+          <li>F1. Checagem de elegibilidade (todas disciplinas aprovadas + carga horária + estágio/TCC + pendências)</li>
+          <li>F2. IA gera minuta do diploma/certificado + histórico final (se aplicável)</li>
+          <li>F3. Secretaria confere dados (nome, CPF, datas, ato autorizativo, livro/folha)</li>
+          <li>F4. Direção assina e registra (livro de registros)</li>
+          <li>F5. Emissão do documento final (PDF assinado + QR de validação + número de registro)</li>
+          <li>F6. Entrega e 2ª via (com protocolo e motivo)</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin: 1rem 0; padding: 1rem; background:#f0fdf4; border:1px solid #c7f0d0;">
+    <h2 style="margin-top:0;">Integração e atalhos de módulos</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+      <a class="btn btn-secondary btn-sm" href="/notas/">Diário de Classe</a>
+      <a class="btn btn-secondary btn-sm" href="/documentos/">Ata dos Professores</a>
+      <a class="btn btn-secondary btn-sm" href="/processos/">Documentos/Processos</a>
+      <a class="btn btn-secondary btn-sm" href="/dashboard/">Programa de Gestão</a>
+      <a class="btn btn-secondary btn-sm" href="/cursos/">Ensino</a>
+      <a class="btn btn-secondary btn-sm" href="#">Pesquisa (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Extensão (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="/usuarios/">Gestão de Pessoas</a>
+      <a class="btn btn-secondary btn-sm" href="/admin/">Administração</a>
+      <a class="btn btn-secondary btn-sm" href="#">Tec. da Informação (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Des. Institucional (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Central de Serviços (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Internacionalização (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Atividades Estudantis (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Comunicação Social (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="#">Segurança Institucional (ativar)</a>
+      <a class="btn btn-secondary btn-sm" href="/auditoria/">Auditoria</a>
+    </div>
+    <p style="margin:.75rem 0 0; font-size:.9rem; color:#155724;">
+      Atalhos ativos apontam para módulos existentes; os demais ficam como “ativar” até a integração ser disponibilizada.
+    </p>
+  </div>
+
   {# ── Dados do documento ──────────────────────────────────────────────── #}
   <table class="table" style="margin-bottom:1.5rem;">
     <tbody>
@@ -133,7 +273,6 @@
       </tbody>
     </table>
   </div>
-
   {# ── Log de Auditoria ──────────────────────────────────────────────────── #}
   <h2>Histórico do Fluxo</h2>
   <table class="table">
