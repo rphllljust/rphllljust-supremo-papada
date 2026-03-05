@@ -13,3 +13,9 @@ django = "^6.0.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.django]
+DJANGO_SETTINGS_MODULE = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
