@@ -12,3 +12,8 @@ class UnidadeForm(forms.ModelForm):
             "codigo": "Codigo",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["codigo"].choices = Unidade.FIXED_UNITS
+        for field in self.fields.values():
+            field.disabled = True

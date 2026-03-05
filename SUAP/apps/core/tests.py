@@ -38,7 +38,7 @@ class SmokeRoutesTests(TestCase):
             self.assertEqual(response.status_code, 200, msg=f"Falha em {path}")
 
     def test_api_v1_detail_routes_are_available(self):
-        unidade = Unidade.objects.create(nome="Unidade Teste", codigo="UT001")
+        unidade = Unidade.objects.get(codigo="sede")
 
         for path in [
             "/api/v1/usuarios/1/",

@@ -15,7 +15,7 @@ from .models import Nota
 
 class NotaCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Notas", codigo="NTS")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
         self.professor = Usuario.objects.create_user(
             username="prof_notas",
@@ -85,4 +85,3 @@ class NotaCrudTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Nota.objects.filter(pk=nota.pk).exists())
-

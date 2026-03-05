@@ -14,7 +14,7 @@ from .models import EventoAgenda
 
 class AgendaCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Agenda", codigo="AGD")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900)
         self.professor = Usuario.objects.create_user(
             username="prof_agenda",

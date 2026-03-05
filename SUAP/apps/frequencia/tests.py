@@ -14,7 +14,7 @@ from .models import Frequencia
 
 class FrequenciaCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Frequencia", codigo="FRQ")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
         self.professor = Usuario.objects.create_user(
             username="prof_freq",
@@ -76,4 +76,3 @@ class FrequenciaCrudTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Frequencia.objects.filter(pk=registro.pk).exists())
-

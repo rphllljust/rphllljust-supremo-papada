@@ -9,7 +9,7 @@ from .models import Curso
 
 class CursoCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Norte", codigo="NOR")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.secretaria = Usuario.objects.create_user(
             username="sec_cursos",
             cpf="92345678901",

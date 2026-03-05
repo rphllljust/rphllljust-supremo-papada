@@ -10,7 +10,7 @@ from .models import Turma
 
 class TurmaCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Central", codigo="CEN")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
         self.secretaria = Usuario.objects.create_user(
             username="sec_turma",

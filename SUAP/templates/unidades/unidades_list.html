@@ -1,17 +1,12 @@
 {% extends "components/organisms/crud_list_card.html" %}
 
 {% block page_title %}Unidades{% endblock %}
-{% block header_title %}Unidades{% endblock %}
-{% block header_action %}
-  {% url 'unidades:unidades_create' as create_url %}
-  {% include "components/atoms/button_link.html" with url=create_url label='Nova unidade' variant='primary' %}
-{% endblock %}
+{% block header_title %}Unidades oficiais{% endblock %}
 
 {% block table_head %}
 <tr>
   <th>Nome</th>
   <th>Codigo</th>
-  <th class="table-actions">Acoes</th>
 </tr>
 {% endblock %}
 
@@ -20,15 +15,10 @@
 <tr>
   <td>{{ unidade.nome }}</td>
   <td>{{ unidade.codigo }}</td>
-  <td class="table-actions">
-    <a href="{% url 'unidades:unidades_update' unidade.pk %}">Editar</a>
-    |
-    <a href="{% url 'unidades:unidades_delete' unidade.pk %}">Excluir</a>
-  </td>
 </tr>
 {% empty %}
 <tr>
-  <td colspan="3">Nenhuma unidade cadastrada.</td>
+  <td colspan="2">Nenhuma unidade cadastrada.</td>
 </tr>
 {% endfor %}
 {% endblock %}

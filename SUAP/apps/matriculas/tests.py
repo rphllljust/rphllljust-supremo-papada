@@ -11,7 +11,7 @@ from .models import Matricula
 
 class MatriculaCrudTests(TestCase):
     def setUp(self):
-        self.unidade = Unidade.objects.create(nome="Campus Zona Sul", codigo="ZSU")
+        self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
         self.secretaria = Usuario.objects.create_user(
             username="sec_matricula",
