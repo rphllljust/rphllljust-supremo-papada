@@ -1,23 +1,40 @@
 
 {% extends "base/base.html" %}
-{% block title %}Atas / Ofícios / Memorandos{% endblock %}
+{% block title %}Atas Escolares Digitais{% endblock %}
 {% block content %}
 <section class="card">
   <div class="crud-header">
-    <h1 class="crud-title">Atas / Ofícios / Memorandos</h1>
-    <a href="{% url 'documentos:ata_create' %}" class="btn btn-primary">+ Emitir</a>
+    <h1 class="crud-title">Atas Escolares Digitais</h1>
+    <a href="{% url 'documentos:ata_create' %}" class="btn btn-primary">+ Nova Ata</a>
   </div>
   <table class="table">
-    <thead><tr><th>Protocolo</th><th>Tipo</th><th>Assunto</th><th>Matrícula</th><th>Emitido em</th><th>Ações</th></tr></thead>
+    <thead><tr><th>Protocolo</th><th>Nº Ata</th><th>Tipo de Reunião</th><th>Situação</th><th>Data</th><th>Ações</th></tr></thead>
     <tbody>
       {% for doc in docs %}
       <tr>
         <td>{{ doc.numero_protocolo }}</td>
-        {% if doc.tipo %}<td>{{ doc.get_tipo_display }}</td>{% endif %}
-        <td>{{ doc.assunto }}</td>
-        <td>{{ doc.matricula|default:'–' }}</td>
-        <td>{{ doc.data_emissao|date:'d/m/Y' }}</td>
-        <td><a href="{% url 'documentos:ata_detalhe' doc.pk %}" class="btn btn-secondary btn-sm">Ver</a></td>
+        <td>{{ doc.numero_ata|default:'-' }}</td>
+        <td>
+          {% if doc.tipo_reuniao_registro == 'OUTRO' %}
+            {{ doc.tipo_reuniao_outro|default:'Outro' }}
+          {% else %}
+            {{ doc.get_tipo_reuniao_registro_display|default:'-' }}
+          {% endif %}
+        </td>
+        <td>
+          {% if doc.situacao == 'EMITIDO' %}
+            <span class="badge badge-success">Emitido</span>
+          {% else %}
+            <span class="badge badge-warning">Rascunho</span>
+          {% endif %}
+        </td>
+        <td>{{ doc.data_reuniao|date:'d/m/Y'|default:'-' }}</td>
+        <td>
+          <a href="{% url 'documentos:ata_detalhe' doc.pk %}" class="btn btn-secondary btn-sm">Ver</a>
+          {% if doc.situacao != 'EMITIDO' %}
+            <a href="{% url 'documentos:ata_update' doc.pk %}" class="btn btn-primary btn-sm">Editar</a>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
       <tr><td colspan="6">Nenhum registro.</td></tr>

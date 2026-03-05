@@ -21,5 +21,6 @@ urlpatterns = [
     # Ata / Ofício / Memorando
     path("atas/", views.ata_list, name="ata_list"),
     path("atas/novo/", views.ata_create, name="ata_create"),
+    path("atas/<int:pk>/editar/", views.ata_update, name="ata_update"),
     path("atas/<int:pk>/", views.ata_detalhe, name="ata_detalhe"),
 ]

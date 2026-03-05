@@ -1,0 +1,798 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ata-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 1rem; }
+  .ata-nav { position: sticky; top: 1rem; align-self: start; }
+  .ata-nav .step-btn { width: 100%; text-align: left; margin-bottom: .5rem; border-radius: 12px; border: 1px solid var(--suap-border); background: #fff; padding: .65rem .75rem; }
+  .ata-nav .step-btn:hover { background: #f8fbff; }
+  .ata-main .card { margin-bottom: 1rem; border-top-color: #0b57d0; }
+  .ata-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .ata-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+  .ata-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+  .ata-field { margin-bottom: .75rem; }
+  .ata-field label { display:block; font-weight: 600; margin-bottom: .35rem; }
+  .ata-field input, .ata-field select, .ata-field textarea { width:100%; border:1px solid var(--suap-border); border-radius:10px; padding:.55rem .65rem; }
+  .ata-dynamic-item { border: 1px dashed #9ab3da; border-radius: 12px; padding: .7rem; margin-bottom: .65rem; background: #fafcff; }
+  .ata-dynamic-head { display:flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+  .ata-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top: 1rem; }
+  .ata-help { font-size: .88rem; color: var(--text-soft); }
+  .ata-preview { background: #fff; border: 1px solid #d8dee9; border-radius: 12px; padding: 1rem; white-space: pre-wrap; line-height: 1.45; font-family: "Times New Roman", serif; }
+  .ata-banner { background: linear-gradient(120deg, #0a3f8a 0%, #0b57d0 72%, #2f78e1 100%); color:#fff; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+  .ata-banner h1 { margin:0 0 .3rem 0; font-size: 1.2rem; }
+  .hidden { display: none !important; }
+  .ata-validation-box { border: 1px solid #f3b4b4; background: #fff5f5; color: #7f1d1d; border-radius: 10px; padding: .75rem; margin-bottom: 1rem; }
+  .ata-validation-box ul { margin: .4rem 0 0 1rem; }
+  .ata-missing-link { background: transparent; border: 0; color: #9f1239; text-decoration: underline; cursor: pointer; padding: 0; font: inherit; }
+  .ata-missing-link:hover { color: #7a0f2b; }
+  .ata-required-missing { border-color: #c92a2a !important; box-shadow: 0 0 0 2px rgba(201, 42, 42, .15); }
+  @media (max-width: 1024px) {
+    .ata-shell { grid-template-columns: 1fr; }
+    .ata-nav { position: static; }
+    .ata-grid-2, .ata-grid-3, .ata-grid-4 { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="ata-banner">
+  <h1>{{ page_title }}</h1>
+  <div>Preencha as seções e acompanhe a prévia da ATA em tempo real antes da emissão.</div>
+</section>
+
+<form method="post" enctype="multipart/form-data" id="ata-form" novalidate>
+  {% csrf_token %}
+  {{ form.acao }}
+  {{ form.participantes_json }}
+  {{ form.pauta_json }}
+  {{ form.deliberacoes_json }}
+  {{ form.encaminhamentos_json }}
+  {{ form.anexos_json }}
+  {{ form.assinaturas_json }}
+
+  {% if form.non_field_errors %}
+  <section class="card">
+    <div class="message message-error">{{ form.non_field_errors }}</div>
+  </section>
+  {% endif %}
+
+  <div id="ata-validation-box" class="ata-validation-box hidden"></div>
+
+  <div class="ata-shell" id="ata-app"
+       data-escola-nome="{{ escola.nome|default:'[NOME DA ESCOLA]' }}"
+       data-escola-cnpj="{{ escola.cnpj|default:'00.000.000/0000-00' }}"
+       data-escola-inep="00000000"
+       data-escola-endereco="{{ escola.endereco|default:'Rua, nº, Bairro' }}"
+       data-escola-cidadeuf="{{ escola.cidade|default:'Cidade' }}-{{ escola.uf|default:'UF' }}"
+       data-escola-contato="[contato]">
+
+    <aside class="ata-nav card">
+      <button type="button" class="step-btn" data-go="identificacao">1. Identificação</button>
+      <button type="button" class="step-btn" data-go="reuniao">2. Dados da reunião</button>
+      <button type="button" class="step-btn" data-go="participantes">3. Participantes</button>
+      <button type="button" class="step-btn" data-go="pauta">4. Pauta</button>
+      <button type="button" class="step-btn" data-go="deliberacoes">5. Relato e deliberações</button>
+      <button type="button" class="step-btn" data-go="encaminhamentos">6. Encaminhamentos</button>
+      <button type="button" class="step-btn" data-go="anexos">7. Anexos</button>
+      <button type="button" class="step-btn" data-go="encerramento">8. Encerramento e assinaturas</button>
+      <button type="button" class="step-btn" data-go="previa">9. Prévia da ata</button>
+    </aside>
+
+    <div class="ata-main">
+      <section class="card" id="identificacao">
+        <h2 class="crud-title">1. Identificação</h2>
+        <div class="ata-grid-4">
+          <div class="ata-field"><label>{{ form.tipo.label }}</label>{{ form.tipo }}</div>
+          <div class="ata-field"><label>{{ form.numero_ata.label }}</label>{{ form.numero_ata }}</div>
+          <div class="ata-field"><label>{{ form.ano.label }}</label>{{ form.ano }}</div>
+          <div class="ata-field"><label>{{ form.tipo_reuniao_registro.label }}</label>{{ form.tipo_reuniao_registro }}</div>
+        </div>
+        <div class="ata-grid-3">
+          <div class="ata-field{% if form.tipo_reuniao_registro.value != 'OUTRO' %} hidden{% endif %}" id="box-tipo-outro">
+            <label>{{ form.tipo_reuniao_outro.label }}</label>{{ form.tipo_reuniao_outro }}
+          </div>
+          <div class="ata-field"><label>{{ form.livro.label }}</label>{{ form.livro }}</div>
+          <div class="ata-field"><label>{{ form.folha_pagina.label }}</label>{{ form.folha_pagina }}</div>
+          <div class="ata-field"><label>{{ form.processo.label }}</label>{{ form.processo }}</div>
+        </div>
+      </section>
+
+      <section class="card" id="reuniao">
+        <h2 class="crud-title">2. Dados da reunião</h2>
+        <div class="ata-grid-4">
+          <div class="ata-field"><label>{{ form.data_reuniao.label }}</label>{{ form.data_reuniao }}</div>
+          <div class="ata-field"><label>{{ form.horario_inicio.label }}</label>{{ form.horario_inicio }}</div>
+          <div class="ata-field"><label>{{ form.horario_termino.label }}</label>{{ form.horario_termino }}</div>
+          <div class="ata-field"><label>{{ form.modalidade.label }}</label>{{ form.modalidade }}</div>
+        </div>
+        <div class="ata-grid-3">
+          <div class="ata-field"><label>{{ form.local_reuniao.label }}</label>{{ form.local_reuniao }}</div>
+          <div class="ata-field hidden" id="box-plataforma"><label>{{ form.plataforma.label }}</label>{{ form.plataforma }}</div>
+          <div class="ata-field hidden" id="box-link"><label>{{ form.link_reuniao.label }}</label>{{ form.link_reuniao }}</div>
+          <div class="ata-field"><label>{{ form.cidade_uf.label }}</label>{{ form.cidade_uf }}</div>
+        </div>
+      </section>
+
+      <section class="card" id="participantes">
+        <h2 class="crud-title">3. Participantes</h2>
+        <div class="ata-grid-2">
+          <div class="ata-field"><label>{{ form.presidente_reuniao.label }}</label>{{ form.presidente_reuniao }}</div>
+          <div class="ata-field"><label>{{ form.responsavel_lavratura.label }}</label>{{ form.responsavel_lavratura }}</div>
+        </div>
+        <div id="participantes-list"></div>
+        <button type="button" class="btn btn-secondary" id="btn-add-participante">+ Adicionar participante</button>
+      </section>
+
+      <section class="card" id="pauta">
+        <h2 class="crud-title">4. Pauta</h2>
+        <div id="pauta-list"></div>
+        <button type="button" class="btn btn-secondary" id="btn-add-pauta">+ Adicionar item de pauta</button>
+      </section>
+
+      <section class="card" id="deliberacoes">
+        <h2 class="crud-title">5. Relato e deliberações</h2>
+        <p class="ata-help">Blocos gerados automaticamente com base na pauta. Numeração automática 4.1, 4.2, 4.3...</p>
+        <div id="deliberacoes-list"></div>
+      </section>
+
+      <section class="card" id="encaminhamentos">
+        <h2 class="crud-title">6. Encaminhamentos</h2>
+        <div id="encaminhamentos-list"></div>
+        <button type="button" class="btn btn-secondary" id="btn-add-enc">+ Adicionar encaminhamento</button>
+      </section>
+
+      <section class="card" id="anexos">
+        <h2 class="crud-title">7. Anexos</h2>
+        <div id="anexos-list"></div>
+        <button type="button" class="btn btn-secondary" id="btn-add-anexo">+ Adicionar anexo</button>
+      </section>
+
+      <section class="card" id="encerramento">
+        <h2 class="crud-title">8. Encerramento e assinaturas</h2>
+        <div class="ata-grid-3">
+          <div class="ata-field"><label>{{ form.horario_encerramento.label }}</label>{{ form.horario_encerramento }}</div>
+          <div class="ata-field"><label>{{ form.forma_assinatura.label }}</label>{{ form.forma_assinatura }}</div>
+          <div class="ata-field"><label>{{ form.assunto.label }}</label>{{ form.assunto }}</div>
+        </div>
+        <div class="ata-field"><label>{{ form.texto_final.label }}</label>{{ form.texto_final }}</div>
+        <div class="ata-field"><label>{{ form.observacao.label }}</label>{{ form.observacao }}</div>
+
+        {% if doc and doc.situacao == 'EMITIDO' %}
+          <p><strong>Chave/registro de autenticidade:</strong> {{ doc.chave_autenticidade|default:'-' }}</p>
+        {% endif %}
+
+        <h3>Assinaturas</h3>
+        <div id="assinaturas-list"></div>
+        <button type="button" class="btn btn-secondary" id="btn-add-ass">+ Adicionar assinatura</button>
+      </section>
+
+      <section class="card" id="previa">
+        <h2 class="crud-title">9. Prévia da ata</h2>
+        <div class="ata-preview" id="preview-output">Preencha os campos para gerar a prévia.</div>
+      </section>
+
+      <section class="card">
+        <div class="ata-actions">
+          <button type="submit" class="btn btn-secondary" data-acao="rascunho">Salvar como rascunho</button>
+          <button type="button" class="btn btn-primary" id="btn-gerar-previa">Gerar prévia</button>
+          <button type="submit" class="btn btn-success" data-acao="emitir">Emitir ata</button>
+          <a href="{% url 'documentos:ata_list' %}" class="btn">Cancelar</a>
+        </div>
+        <p class="ata-help">Após emissão a ata ficará bloqueada para edição.</p>
+      </section>
+    </div>
+  </div>
+</form>
+
+{{ form.instance.participantes|json_script:"initial-participantes" }}
+{{ form.instance.pauta|json_script:"initial-pauta" }}
+{{ form.instance.deliberacoes|json_script:"initial-deliberacoes" }}
+{{ form.instance.encaminhamentos|json_script:"initial-encaminhamentos" }}
+{{ form.instance.assinaturas|json_script:"initial-assinaturas" }}
+{{ initial_anexos|json_script:"initial-anexos" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const form = document.getElementById('ata-form');
+  const app = document.getElementById('ata-app');
+  const acaoInput = document.getElementById('id_acao');
+
+  const getInit = (id) => {
+    try {
+      const el = document.getElementById(id);
+      if (!el) return [];
+      const parsed = JSON.parse(el.textContent || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_e) {
+      return [];
+    }
+  };
+
+  let state = {
+    participantes: getInit('initial-participantes'),
+    pauta: getInit('initial-pauta'),
+    deliberacoes: getInit('initial-deliberacoes'),
+    encaminhamentos: getInit('initial-encaminhamentos'),
+    anexos: getInit('initial-anexos'),
+    assinaturas: getInit('initial-assinaturas')
+  };
+
+  if (!state.participantes.length) state.participantes.push({nome:'', cargo:'', presente:true, justificativa:''});
+  if (!state.pauta.length) state.pauta.push({titulo:'', descricao:''});
+  if (!state.encaminhamentos.length) state.encaminhamentos.push({descricao:'', responsavel:'', prazo:''});
+  if (!state.assinaturas.length) state.assinaturas.push({nome:'', cargo:'', tipo_assinatura:'eletronica'});
+
+  const ui = {
+    participantes: document.getElementById('participantes-list'),
+    pauta: document.getElementById('pauta-list'),
+    deliberacoes: document.getElementById('deliberacoes-list'),
+    encaminhamentos: document.getElementById('encaminhamentos-list'),
+    anexos: document.getElementById('anexos-list'),
+    assinaturas: document.getElementById('assinaturas-list'),
+    preview: document.getElementById('preview-output'),
+    validationBox: document.getElementById('ata-validation-box')
+  };
+  const btnEmitir = form.querySelector('button[data-acao="emitir"]');
+  let emissaoConfirmada = false;
+
+  const requiredSelectorsEmitir = [
+    '#id_numero_ata',
+    '#id_ano',
+    '#id_tipo_reuniao_registro',
+    '#id_data_reuniao',
+    '#id_horario_inicio',
+    '#id_local_reuniao',
+    '#id_modalidade',
+    '#id_cidade_uf',
+    '#id_presidente_reuniao',
+    '#id_responsavel_lavratura'
+  ];
+
+  function esc(text) {
+    const val = text == null ? '' : String(text);
+    return val.replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function syncDeliberacoesWithPauta() {
+    while (state.deliberacoes.length < state.pauta.length) {
+      const pautaRef = state.pauta[state.deliberacoes.length] || {};
+      state.deliberacoes.push({
+        titulo: pautaRef.titulo || '',
+        relato:'',
+        decisao:'',
+        responsavel:'',
+        prazo:'',
+        observacoes:''
+      });
+    }
+    if (state.deliberacoes.length > state.pauta.length) {
+      state.deliberacoes = state.deliberacoes.slice(0, state.pauta.length);
+    }
+  }
+
+  function renderParticipantes() {
+    ui.participantes.innerHTML = state.participantes.map((p, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head">
+          <strong>Participante ${i + 1}</strong>
+          <button type="button" class="btn btn-danger btn-sm" data-del-part="${i}">Remover</button>
+        </div>
+        <div class="ata-grid-4">
+          <div class="ata-field"><label>Nome</label><input data-part="${i}" data-key="nome" value="${esc(p.nome)}"></div>
+          <div class="ata-field"><label>Cargo/Função</label><input data-part="${i}" data-key="cargo" value="${esc(p.cargo)}"></div>
+          <div class="ata-field"><label>Presente?</label><select data-part="${i}" data-key="presente"><option value="sim" ${p.presente ? 'selected' : ''}>Sim</option><option value="nao" ${!p.presente ? 'selected' : ''}>Não</option></select></div>
+          <div class="ata-field ${p.presente ? 'hidden' : ''}" id="just-${i}"><label>Justificativa de ausência</label><input data-part="${i}" data-key="justificativa" value="${esc(p.justificativa || '')}"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderPauta() {
+    ui.pauta.innerHTML = state.pauta.map((item, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head">
+          <strong>Item ${i + 1}</strong>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" data-up-pauta="${i}">↑</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-down-pauta="${i}">↓</button>
+            <button type="button" class="btn btn-danger btn-sm" data-del-pauta="${i}">Remover</button>
+          </div>
+        </div>
+        <div class="ata-grid-2">
+          <div class="ata-field"><label>Título do item</label><input data-pauta="${i}" data-key="titulo" value="${esc(item.titulo)}"></div>
+          <div class="ata-field"><label>Descrição curta</label><input data-pauta="${i}" data-key="descricao" value="${esc(item.descricao || '')}"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderDeliberacoes() {
+    syncDeliberacoesWithPauta();
+    ui.deliberacoes.innerHTML = state.deliberacoes.map((d, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head"><strong>4.${i + 1} ${esc(d.titulo || (state.pauta[i] && state.pauta[i].titulo) || 'Item sem título')}</strong></div>
+        <div class="ata-grid-2">
+          <div class="ata-field"><label>Título/assunto</label><input data-delib="${i}" data-key="titulo" value="${esc(d.titulo || '')}"></div>
+          <div class="ata-field"><label>Responsável</label><input data-delib="${i}" data-key="responsavel" value="${esc(d.responsavel || '')}"></div>
+          <div class="ata-field"><label>Relato/Resumo</label><textarea data-delib="${i}" data-key="relato">${esc(d.relato || '')}</textarea></div>
+          <div class="ata-field"><label>Decisão</label><textarea data-delib="${i}" data-key="decisao">${esc(d.decisao || '')}</textarea></div>
+          <div class="ata-field"><label>Prazo</label><input type="date" data-delib="${i}" data-key="prazo" value="${esc(d.prazo || '')}"></div>
+          <div class="ata-field"><label>Observações</label><textarea data-delib="${i}" data-key="observacoes">${esc(d.observacoes || '')}</textarea></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderEncaminhamentos() {
+    ui.encaminhamentos.innerHTML = state.encaminhamentos.map((e, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head"><strong>Encaminhamento ${i + 1}</strong><button type="button" class="btn btn-danger btn-sm" data-del-enc="${i}">Remover</button></div>
+        <div class="ata-grid-3">
+          <div class="ata-field"><label>Descrição</label><input data-enc="${i}" data-key="descricao" value="${esc(e.descricao || '')}"></div>
+          <div class="ata-field"><label>Responsável</label><input data-enc="${i}" data-key="responsavel" value="${esc(e.responsavel || '')}"></div>
+          <div class="ata-field"><label>Prazo</label><input type="date" data-enc="${i}" data-key="prazo" value="${esc(e.prazo || '')}"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAnexos() {
+    ui.anexos.innerHTML = state.anexos.map((a, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head"><strong>Anexo ${i + 1}</strong><button type="button" class="btn btn-danger btn-sm" data-del-anexo="${i}">Remover</button></div>
+        <div class="ata-grid-3">
+          <div class="ata-field"><label>Tipo do anexo</label>
+            <select data-anexo="${i}" data-key="tipo">
+              <option value="LISTA_PRESENCA" ${(a.tipo || '') === 'LISTA_PRESENCA' ? 'selected' : ''}>Lista de presença</option>
+              <option value="RELATORIO" ${(a.tipo || '') === 'RELATORIO' ? 'selected' : ''}>Relatório</option>
+              <option value="FOTOS" ${(a.tipo || '') === 'FOTOS' ? 'selected' : ''}>Fotos</option>
+              <option value="PRINTS" ${(a.tipo || '') === 'PRINTS' ? 'selected' : ''}>Prints</option>
+              <option value="OUTROS" ${(a.tipo || 'OUTROS') === 'OUTROS' ? 'selected' : ''}>Outros</option>
+            </select>
+          </div>
+          <div class="ata-field"><label>Descrição</label><input data-anexo="${i}" data-key="descricao" value="${esc(a.descricao || '')}"></div>
+          <div class="ata-field"><label>Arquivo (opcional)</label><input type="file" name="anexo_arquivo_${i}" data-anexo-arq="${i}"><small>${esc(a.arquivo_nome || '')}</small></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAssinaturas() {
+    ui.assinaturas.innerHTML = state.assinaturas.map((a, i) => `
+      <div class="ata-dynamic-item">
+        <div class="ata-dynamic-head"><strong>Assinatura ${i + 1}</strong><button type="button" class="btn btn-danger btn-sm" data-del-ass="${i}">Remover</button></div>
+        <div class="ata-grid-3">
+          <div class="ata-field"><label>Nome</label><input data-ass="${i}" data-key="nome" value="${esc(a.nome || '')}"></div>
+          <div class="ata-field"><label>Cargo/Função</label><input data-ass="${i}" data-key="cargo" value="${esc(a.cargo || '')}"></div>
+          <div class="ata-field"><label>Tipo de assinatura</label><input data-ass="${i}" data-key="tipo_assinatura" value="${esc(a.tipo_assinatura || '')}" placeholder="eletrônica, gov.br, certificado"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toBRDate(input) {
+    if (!input) return '[dd/mm/aaaa]';
+    const [y, m, d] = input.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  function mesExtenso(input) {
+    if (!input) return '[mês]';
+    const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    return meses[Number(input.split('-')[1]) - 1] || '[mês]';
+  }
+
+  function generatePreview() {
+    syncDeliberacoesWithPauta();
+    const tipoReuniaoSel = document.getElementById('id_tipo_reuniao_registro');
+    const tipoReuniaoTxt = (tipoReuniaoSel.options[tipoReuniaoSel.selectedIndex] || {}).text || '[TIPO DE REUNIÃO/REGISTRO]';
+    const tipoOutro = val('id_tipo_reuniao_outro');
+    const tipoReuniao = tipoReuniaoSel.value === 'OUTRO' && tipoOutro ? tipoOutro : tipoReuniaoTxt;
+
+    const data = val('id_data_reuniao');
+    const inicio = val('id_horario_inicio') || '[início]';
+    const termino = val('id_horario_termino') || '[término]';
+    const local = val('id_local_reuniao') || '[local]';
+    const numeroAta = val('id_numero_ata') || '[000]/[ANO]';
+    const ano = val('id_ano') || '[ANO]';
+    const livro = val('id_livro') || '[nº]';
+    const folha = val('id_folha_pagina') || '[nº]';
+    const modalidade = val('id_modalidade');
+    const plataforma = val('id_plataforma');
+    const cidadeUf = val('id_cidade_uf') || '[Cidade-UF]';
+    const presidente = val('id_presidente_reuniao') || '[nome + cargo]';
+    const lavratura = val('id_responsavel_lavratura') || '[nome]';
+    const encerramentoHora = val('id_horario_encerramento') || termino;
+    const textoFinal = val('id_texto_final') || 'Nada mais havendo a tratar, deu-se por encerrada a reunião.';
+
+    const presentes = state.participantes.filter((p) => p.presente);
+    const ausentes = state.participantes.filter((p) => !p.presente);
+
+    const pautaTxt = state.pauta.map((p, i) => `${i + 1}. ${p.titulo || '[Item]'}`).join('\n') || '[Sem pauta cadastrada]';
+
+    const delibTxt = state.deliberacoes.map((d, i) =>
+      `4.${i + 1} ${d.titulo || '[Assunto]'}\n` +
+      `Foi apresentado(a) ${d.relato || '[resumo]'}. Após discussões, deliberou-se:\n\n` +
+      `Decisão: ${d.decisao || '[texto]'}\n` +
+      `Responsável: ${d.responsavel || '[nome/cargo]'}\n` +
+      `Prazo: ${d.prazo ? toBRDate(d.prazo) : '[data]'}\n` +
+      `Observações: ${d.observacoes || '[texto]'}\n`
+    ).join('\n');
+
+    const encTxt = state.encaminhamentos.map((e) => `- ${e.descricao || '[Encaminhamento]'} - ${e.responsavel || '[responsável]'} - ${e.prazo ? toBRDate(e.prazo) : '[prazo]'}`).join('\n') || '[Sem encaminhamentos]';
+    const anexosTxt = state.anexos.map((a, i) => `Anexo ${String.fromCharCode(73 + i)} - ${a.descricao || '[nome]'}`).join('\n') || '[Sem anexos]';
+    const assTxt = state.assinaturas.map((a) => `${a.nome || '[Nome]'} - ${a.cargo || '[Cargo/Função]'}`).join('\n') || '[Sem assinaturas]';
+
+    const localLinha = modalidade === 'ONLINE' || modalidade === 'HIBRIDA'
+      ? `${local} - ${plataforma || '[plataforma]'}`
+      : local;
+
+    ui.preview.textContent =
+`${app.dataset.escolaNome}
+CNPJ: ${app.dataset.escolaCnpj} - INEP: ${app.dataset.escolaInep}
+Endereço: ${app.dataset.escolaEndereco}, ${app.dataset.escolaCidadeuf}
+E-mail/Telefone: ${app.dataset.escolaContato}
+
+ATA Nº ${numeroAta} - ${tipoReuniao}
+
+Livro: ${livro} - Folha/Página: ${folha}
+Data: ${toBRDate(data)} - Horário: ${inicio} às ${termino}
+Local: ${localLinha}
+
+1. Abertura
+
+Aos ${data ? data.split('-')[2] : '[dia]'} dias do mês de ${mesExtenso(data)} de ${ano}, às ${inicio}, no(a) ${local}, reuniu-se ${tipoReuniao}, sob a presidência/coordenação de ${presidente}, para tratar da pauta descrita nesta ata.
+
+2. Participantes
+
+Estiveram presentes:
+${presentes.map((p) => `${p.nome || '[Nome]'}, ${p.cargo || '[cargo/função]'}`).join('\n') || '[Sem participantes presentes]'}
+
+Ausentes/Justificativas:
+${ausentes.map((p) => `${p.nome || '[Nome]'}, ${p.justificativa || '[justificativa]'}`).join('\n') || '[Sem ausências registradas]'}
+
+3. Pauta
+
+${pautaTxt}
+
+4. Relato e deliberações
+
+${delibTxt || '[Sem deliberações]'}
+
+5. Encaminhamentos
+
+${encTxt}
+
+6. Anexos
+
+${anexosTxt}
+
+7. Encerramento
+
+${textoFinal}
+
+${cidadeUf}, ${toBRDate(data)}.
+
+Assinaturas:
+${assTxt}`;
+  }
+
+  function renderAll() {
+    renderParticipantes();
+    renderPauta();
+    renderDeliberacoes();
+    renderEncaminhamentos();
+    renderAnexos();
+    renderAssinaturas();
+    generatePreview();
+  }
+
+  function limparErrosVisuais() {
+    form.querySelectorAll('.ata-required-missing').forEach((el) => el.classList.remove('ata-required-missing'));
+    ui.validationBox.classList.add('hidden');
+    ui.validationBox.innerHTML = '';
+  }
+
+  function irParaCampo(targetId) {
+    if (!targetId) return;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) {
+      target.focus();
+      return;
+    }
+    const foco = target.querySelector('input, select, textarea');
+    if (foco) foco.focus();
+  }
+
+  function confirmarEmissaoAmigavel() {
+    const numeroAta = val('id_numero_ata') || '[sem numero]';
+    const dataReuniao = val('id_data_reuniao') || '[sem data]';
+    return window.confirm(
+      `Confirma a emissao definitiva da ATA ${numeroAta}?\n` +
+      `Data da reuniao: ${dataReuniao}\n\n` +
+      `Apos emitir, a ata ficara bloqueada para edicao.`
+    );
+  }
+
+  function validarAntesDeEmitir() {
+    limparErrosVisuais();
+    const faltantes = [];
+
+    requiredSelectorsEmitir.forEach((selector) => {
+      const field = document.querySelector(selector);
+      if (!field) return;
+      if (!String(field.value || '').trim()) {
+        const label = (field.closest('.ata-field') || {}).querySelector ? (field.closest('.ata-field').querySelector('label') || {}).textContent : field.name;
+        faltantes.push({
+          label: label || field.name,
+          targetId: field.id,
+        });
+        field.classList.add('ata-required-missing');
+      }
+    });
+
+    const modalidade = val('id_modalidade');
+    if (['ONLINE', 'HIBRIDA'].includes(modalidade) && !val('id_plataforma')) {
+      const plataforma = document.getElementById('id_plataforma');
+      if (plataforma) plataforma.classList.add('ata-required-missing');
+      faltantes.push({ label: 'Plataforma', targetId: 'id_plataforma' });
+    }
+
+    if (val('id_tipo_reuniao_registro') === 'OUTRO' && !val('id_tipo_reuniao_outro')) {
+      const outro = document.getElementById('id_tipo_reuniao_outro');
+      if (outro) outro.classList.add('ata-required-missing');
+      faltantes.push({ label: 'Outro Tipo de Reunião', targetId: 'id_tipo_reuniao_outro' });
+    }
+
+    if (state.participantes.filter((p) => p.nome && p.cargo).length === 0) {
+      faltantes.push({ label: 'Ao menos um participante com nome e cargo', targetId: 'participantes' });
+    }
+    if (state.pauta.filter((p) => p.titulo).length === 0) {
+      faltantes.push({ label: 'Ao menos um item de pauta', targetId: 'pauta' });
+    }
+    if (state.deliberacoes.filter((d) => d.titulo && d.decisao).length === 0) {
+      faltantes.push({ label: 'Ao menos uma deliberação com título e decisão', targetId: 'deliberacoes' });
+    }
+    if (state.assinaturas.filter((a) => a.nome && a.cargo).length === 0) {
+      faltantes.push({ label: 'Ao menos uma assinatura com nome e cargo', targetId: 'encerramento' });
+    }
+
+    if (faltantes.length) {
+      ui.validationBox.innerHTML = `<strong>Campos obrigatórios pendentes para emissão:</strong><ul>${faltantes.map((f) => `<li><button type="button" class="ata-missing-link" data-target-id="${esc(f.targetId)}">${esc(f.label)}</button></li>`).join('')}</ul>`;
+      ui.validationBox.classList.remove('hidden');
+      ui.validationBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+
+    return true;
+  }
+
+  document.querySelectorAll('[data-go]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.getElementById(btn.dataset.go).scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+  });
+
+  document.getElementById('btn-add-participante').addEventListener('click', () => {
+    state.participantes.push({nome:'', cargo:'', presente:true, justificativa:''});
+    renderAll();
+  });
+  document.getElementById('btn-add-pauta').addEventListener('click', () => {
+    state.pauta.push({titulo:'', descricao:''});
+    renderAll();
+  });
+  document.getElementById('btn-add-enc').addEventListener('click', () => {
+    state.encaminhamentos.push({descricao:'', responsavel:'', prazo:''});
+    renderAll();
+  });
+  document.getElementById('btn-add-anexo').addEventListener('click', () => {
+    state.anexos.push({tipo:'OUTROS', descricao:'', arquivo_nome:''});
+    renderAll();
+  });
+  document.getElementById('btn-add-ass').addEventListener('click', () => {
+    state.assinaturas.push({nome:'', cargo:'', tipo_assinatura:''});
+    renderAll();
+  });
+  document.getElementById('btn-gerar-previa').addEventListener('click', generatePreview);
+
+  form.addEventListener('input', (e) => {
+    const part = e.target.dataset.part;
+    const pauta = e.target.dataset.pauta;
+    const delib = e.target.dataset.delib;
+    const enc = e.target.dataset.enc;
+    const anexo = e.target.dataset.anexo;
+    const ass = e.target.dataset.ass;
+    const key = e.target.dataset.key;
+
+    if (part != null) {
+      state.participantes[Number(part)][key] = key === 'presente' ? e.target.value === 'sim' : e.target.value;
+      generatePreview();
+      return;
+    }
+    if (pauta != null) {
+      state.pauta[Number(pauta)][key] = e.target.value;
+      renderDeliberacoes();
+      generatePreview();
+      return;
+    }
+    if (delib != null) {
+      state.deliberacoes[Number(delib)][key] = e.target.value;
+      generatePreview();
+      return;
+    }
+    if (enc != null) {
+      state.encaminhamentos[Number(enc)][key] = e.target.value;
+      generatePreview();
+      return;
+    }
+    if (anexo != null) {
+      state.anexos[Number(anexo)][key] = e.target.value;
+      generatePreview();
+      return;
+    }
+    if (ass != null) {
+      state.assinaturas[Number(ass)][key] = e.target.value;
+      generatePreview();
+      return;
+    }
+
+    generatePreview();
+  });
+
+  form.addEventListener('change', (e) => {
+    const part = e.target.dataset.part;
+    const key = e.target.dataset.key;
+
+    if (part != null && key === 'presente') {
+      state.participantes[Number(part)][key] = e.target.value === 'sim';
+      renderParticipantes();
+      generatePreview();
+      return;
+    }
+
+    if (e.target.matches('[data-anexo-arq]')) {
+      const idx = Number(e.target.dataset.anexoArq);
+      const file = e.target.files && e.target.files.length ? e.target.files[0].name : '';
+      state.anexos[idx].arquivo_nome = file;
+      generatePreview();
+    }
+
+    if (e.target.id === 'id_modalidade') {
+      const online = ['ONLINE', 'HIBRIDA'].includes(e.target.value);
+      document.getElementById('box-plataforma').classList.toggle('hidden', !online);
+      document.getElementById('box-link').classList.toggle('hidden', !online);
+    }
+
+    if (e.target.id === 'id_tipo_reuniao_registro') {
+      const outro = e.target.value === 'OUTRO';
+      document.getElementById('box-tipo-outro').classList.toggle('hidden', !outro);
+    }
+  });
+
+  form.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+
+    if (b.dataset.delPart != null) {
+      e.preventDefault();
+      state.participantes.splice(Number(b.dataset.delPart), 1);
+      if (!state.participantes.length) state.participantes.push({nome:'', cargo:'', presente:true, justificativa:''});
+      renderAll();
+      return;
+    }
+    if (b.dataset.delPauta != null) {
+      e.preventDefault();
+      state.pauta.splice(Number(b.dataset.delPauta), 1);
+      if (!state.pauta.length) state.pauta.push({titulo:'', descricao:''});
+      renderAll();
+      return;
+    }
+    if (b.dataset.delEnc != null) {
+      e.preventDefault();
+      state.encaminhamentos.splice(Number(b.dataset.delEnc), 1);
+      if (!state.encaminhamentos.length) state.encaminhamentos.push({descricao:'', responsavel:'', prazo:''});
+      renderAll();
+      return;
+    }
+    if (b.dataset.delAnexo != null) {
+      e.preventDefault();
+      state.anexos.splice(Number(b.dataset.delAnexo), 1);
+      renderAll();
+      return;
+    }
+    if (b.dataset.delAss != null) {
+      e.preventDefault();
+      state.assinaturas.splice(Number(b.dataset.delAss), 1);
+      if (!state.assinaturas.length) state.assinaturas.push({nome:'', cargo:'', tipo_assinatura:''});
+      renderAll();
+      return;
+    }
+
+    if (b.dataset.upPauta != null) {
+      const i = Number(b.dataset.upPauta);
+      if (i > 0) {
+        [state.pauta[i - 1], state.pauta[i]] = [state.pauta[i], state.pauta[i - 1]];
+        [state.deliberacoes[i - 1], state.deliberacoes[i]] = [state.deliberacoes[i], state.deliberacoes[i - 1]];
+        renderAll();
+      }
+      return;
+    }
+
+    if (b.dataset.downPauta != null) {
+      const i = Number(b.dataset.downPauta);
+      if (i < state.pauta.length - 1) {
+        [state.pauta[i + 1], state.pauta[i]] = [state.pauta[i], state.pauta[i + 1]];
+        [state.deliberacoes[i + 1], state.deliberacoes[i]] = [state.deliberacoes[i], state.deliberacoes[i + 1]];
+        renderAll();
+      }
+      return;
+    }
+  });
+
+  form.querySelectorAll('button[data-acao]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      acaoInput.value = btn.dataset.acao;
+      emissaoConfirmada = false;
+      if (btn.dataset.acao === 'rascunho') {
+        limparErrosVisuais();
+      }
+      if (btn.dataset.acao === 'emitir') {
+        if (!validarAntesDeEmitir()) {
+          e.preventDefault();
+          return;
+        }
+        if (!confirmarEmissaoAmigavel()) {
+          e.preventDefault();
+          return;
+        }
+        emissaoConfirmada = true;
+      }
+    });
+  });
+
+  ui.validationBox.addEventListener('click', (e) => {
+    const targetBtn = e.target.closest('button[data-target-id]');
+    if (!targetBtn) return;
+    irParaCampo(targetBtn.dataset.targetId);
+  });
+
+  form.addEventListener('submit', (e) => {
+    if (acaoInput.value === 'emitir') {
+      if (!validarAntesDeEmitir()) {
+        e.preventDefault();
+        return;
+      }
+      if (!emissaoConfirmada && !confirmarEmissaoAmigavel()) {
+        e.preventDefault();
+        return;
+      }
+      btnEmitir.disabled = true;
+      btnEmitir.textContent = 'Emitindo ata...';
+    }
+    syncDeliberacoesWithPauta();
+    document.getElementById('id_participantes_json').value = JSON.stringify(state.participantes);
+    document.getElementById('id_pauta_json').value = JSON.stringify(state.pauta);
+    document.getElementById('id_deliberacoes_json').value = JSON.stringify(state.deliberacoes);
+    document.getElementById('id_encaminhamentos_json').value = JSON.stringify(state.encaminhamentos);
+    document.getElementById('id_anexos_json').value = JSON.stringify(state.anexos.map((a) => ({tipo: a.tipo, descricao: a.descricao, arquivo_nome: a.arquivo_nome || ''})));
+    document.getElementById('id_assinaturas_json').value = JSON.stringify(state.assinaturas);
+    if (!acaoInput.value) acaoInput.value = 'rascunho';
+  });
+
+  document.getElementById('id_modalidade').dispatchEvent(new Event('change'));
+  document.getElementById('id_tipo_reuniao_registro').dispatchEvent(new Event('change'));
+  renderAll();
+})();
+</script>
+{% endblock %}
