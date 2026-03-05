@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+
+{% block title %}Cadastro | {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="card section-box" style="max-width: 560px; margin: 24px auto;">
+  <h2>Criar conta</h2>
+  <p>Preencha os dados para acessar o sistema.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-warning">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="form-group"><label for="id_username">Usuario</label>{{ form.username }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_first_name">Nome</label>{{ form.first_name }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_last_name">Sobrenome</label>{{ form.last_name }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_email">E-mail</label>{{ form.email }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_cpf">CPF</label>{{ form.cpf }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_perfil">Perfil</label>{{ form.perfil }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_password1">Senha</label>{{ form.password1 }}</div>
+    <div class="form-group" style="margin-top:12px;"><label for="id_password2">Confirmar senha</label>{{ form.password2 }}</div>
+
+    <div class="button-row" style="margin-top:16px;">
+      <button class="btn btn-success" type="submit">Cadastrar</button>
+      <a class="btn btn-primary" href="{% url 'dashboard:login' %}">Já tenho conta</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

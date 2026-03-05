@@ -88,3 +88,12 @@ def dashboard(request):
     }
 
     return render(request, "core/dashboard.html", context)
+
+
+def acesso_negado(request, exception=None):
+    return render(
+        request,
+        "base/acesso_negado.html",
+        {"mensagem": "Você não possui permissão para acessar este recurso."},
+        status=403,
+    )

@@ -13,6 +13,12 @@ class MatriculaCrudTests(TestCase):
     def setUp(self):
         self.unidade = Unidade.objects.create(nome="Campus Zona Sul", codigo="ZSU")
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
+        self.secretaria = Usuario.objects.create_user(
+            username="sec_matricula",
+            cpf="92345678903",
+            tipo="SECRETARIA",
+            password="x",
+        )
         self.professor = Usuario.objects.create_user(
             username="prof_matricula",
             cpf="32345678901",
@@ -30,7 +36,9 @@ class MatriculaCrudTests(TestCase):
             nome="ADM-1",
             ano_letivo=2026,
             professor_responsavel=self.professor,
+            status="ATIVA",
         )
+        self.client.force_login(self.secretaria)
 
     def test_create_matricula(self):
         response = self.client.post(
@@ -39,6 +47,7 @@ class MatriculaCrudTests(TestCase):
                 "aluno": self.aluno.pk,
                 "curso": self.curso.pk,
                 "turma": self.turma.pk,
+                "tipo_matricula": "NOVA",
                 "status": "ATIVA",
             },
             follow=True,

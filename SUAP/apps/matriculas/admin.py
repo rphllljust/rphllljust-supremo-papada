@@ -20,6 +20,7 @@ from .models import (
 class DocumentoMatriculaInline(admin.TabularInline):
     model = DocumentoMatricula
     extra = 0
+    readonly_fields = ("validado_por",)
 
 
 class PendenciaDocumentalInline(admin.TabularInline):
@@ -35,16 +36,16 @@ class DocumentoEmitidoInline(admin.TabularInline):
 
 @admin.register(Matricula)
 class MatriculaAdmin(admin.ModelAdmin):
-    list_display = ("aluno", "curso", "turma", "tipo_matricula", "status", "data_matricula")
+    list_display = ("numero_matricula", "aluno", "curso", "turma", "tipo_matricula", "status", "data_matricula")
     list_filter = ("tipo_matricula", "status", "curso")
-    search_fields = ("aluno__username", "aluno__first_name", "aluno__last_name")
+    search_fields = ("numero_matricula", "aluno__username", "aluno__first_name", "aluno__last_name")
     inlines = [DocumentoMatriculaInline, PendenciaDocumentalInline, DocumentoEmitidoInline]
 
 
 @admin.register(DocumentoMatricula)
 class DocumentoMatriculaAdmin(admin.ModelAdmin):
-    list_display = ("matricula", "tipo_documento", "entregue", "data_entrega")
-    list_filter = ("tipo_documento", "entregue")
+    list_display = ("matricula", "tipo_documento", "status", "data_recebimento", "data_validacao", "validado_por")
+    list_filter = ("tipo_documento", "status")
 
 
 @admin.register(PendenciaDocumental)

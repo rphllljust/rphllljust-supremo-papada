@@ -3,10 +3,13 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
+handler403 = "apps.core.views.acesso_negado"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 
     path("", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
+    path("accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
 
     path("usuarios/", include(("apps.usuarios.urls", "usuarios"), namespace="usuarios")),
     path("cursos/", include(("apps.cursos.urls", "cursos"), namespace="cursos")),

@@ -1,0 +1,15 @@
+{% extends "base/base.html" %}
+
+{% block title %}Sessao encerrada | {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="card section-box" style="max-width: 680px; margin: 24px auto;">
+  <h2>Logout realizado</h2>
+  <p>Sua sessao foi encerrada com sucesso.</p>
+
+  <div class="button-row" style="margin-top: 16px;">
+    <a class="btn btn-primary" href="{% url 'accounts:login' %}">Entrar novamente</a>
+  </div>
+</section>
+{% endblock %}
+

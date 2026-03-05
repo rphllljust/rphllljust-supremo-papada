@@ -6,41 +6,33 @@
       <div class="brand-sub">Instituto Estadual de Desenvolvimento da Educação Profissional</div>
     </div>
 
-    <nav class="main-nav">
-      <a
-        class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
-        href="{% url 'dashboard:index' %}"
-      >
-        Painel
-      </a>
+    {% if request.user.is_authenticated %}
+      <nav class="main-nav">
+        <a class="{% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">Painel</a>
 
-      <a
-        class="{% if request.resolver_match.namespace == 'usuarios' %}active{% endif %}"
-        href="{% url 'usuarios:index' %}"
-      >
-        Alunos
-      </a>
+        {% if request.user.tipo == 'SECRETARIA' or request.user.tipo == 'COORDENACAO' or request.user.tipo == 'ADMIN' %}
+          <a class="{% if request.resolver_match.namespace == 'usuarios' %}active{% endif %}" href="{% url 'usuarios:index' %}">Usuários</a>
+          <a class="{% if request.resolver_match.namespace == 'cursos' %}active{% endif %}" href="{% url 'cursos:index' %}">Cursos</a>
+          <a class="{% if request.resolver_match.namespace == 'turmas' %}active{% endif %}" href="{% url 'turmas:index' %}">Turmas</a>
+          <a class="{% if request.resolver_match.namespace == 'matriculas' %}active{% endif %}" href="{% url 'matriculas:index' %}">Matrículas</a>
+        {% endif %}
 
-      <a
-        class="{% if request.resolver_match.namespace == 'cursos' %}active{% endif %}"
-        href="{% url 'cursos:index' %}"
-      >
-        Cursos
-      </a>
-
-      <a
-        class="{% if request.resolver_match.namespace == 'turmas' %}active{% endif %}"
-        href="{% url 'turmas:index' %}"
-      >
-        Turmas
-      </a>
-
-      <a
-        class="{% if request.resolver_match.namespace == 'matriculas' %}active{% endif %}"
-        href="{% url 'matriculas:index' %}"
-      >
-        Matrículas
-      </a>
-    </nav>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline; margin:0;">
+          {% csrf_token %}
+          <button type="submit" style="background:none; border:none; color:inherit; cursor:pointer; padding:0; font:inherit;">Sair</button>
+        </form>
+      </nav>
+    {% else %}
+      <nav class="main-nav">
+        <a class="{% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'accounts:login' %}">Entrar</a>
+        <a class="{% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'accounts:register' %}">Cadastro</a>
+      </nav>
+    {% endif %}
   </div>
+
+  {% if request.user.is_authenticated %}
+    <div class="container" style="padding-top: 8px; padding-bottom: 8px; font-size: 13px; color: #334155;">
+      Perfil: <strong>{{ request.user.get_tipo_display|default:request.user.tipo }}</strong> | Usuário: {{ request.user.get_full_name|default:request.user.username }}
+    </div>
+  {% endif %}
 </header>

@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.unidades.models import Unidade
+from apps.usuarios.models import Usuario
 
 from .models import Curso
 
@@ -9,6 +10,13 @@ from .models import Curso
 class CursoCrudTests(TestCase):
     def setUp(self):
         self.unidade = Unidade.objects.create(nome="Campus Norte", codigo="NOR")
+        self.secretaria = Usuario.objects.create_user(
+            username="sec_cursos",
+            cpf="92345678901",
+            tipo="SECRETARIA",
+            password="x",
+        )
+        self.client.force_login(self.secretaria)
 
     def test_create_curso(self):
         response = self.client.post(

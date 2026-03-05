@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.turmas",
     "apps.unidades",
     "apps.usuarios",
+    "apps.accounts",
     "apps.notas",
     "apps.frequencia",
     "apps.agenda",
@@ -98,3 +99,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "usuarios.Usuario"
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "dashboard:index"
+LOGOUT_REDIRECT_URL = "accounts:login"

@@ -19,14 +19,19 @@
 
   {% include "components/navbar.html" %}
 
-  <div class="page shell" id="pageContent">
-    {% include "components/sidebar.html" %}
+  {% if request.user.is_authenticated %}
+    <div class="page shell" id="pageContent">
+      {% include "components/sidebar.html" %}
+  {% endif %}
 
-    <main class="container content-area">
-      {% include "components/messages.html" %}
-      {% block content %}{% endblock %}
-    </main>
-  </div>
+  <main class="container content-area" {% if not request.user.is_authenticated %}style="max-width: 980px; margin: 24px auto;"{% endif %}>
+    {% include "components/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if request.user.is_authenticated %}
+    </div>
+  {% endif %}
 
   {% include "components/footer.html" %}
 

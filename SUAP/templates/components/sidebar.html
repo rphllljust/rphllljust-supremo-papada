@@ -2,112 +2,40 @@
   <div class="sidebar-title">Módulos</div>
 
   <nav class="sidebar-nav">
-    <a class="sidebar-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+    <a class="sidebar-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
       Início
     </a>
 
-    <a class="sidebar-link {% if '/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">
-      Alunos
-    </a>
+    {% if request.user.tipo == 'SECRETARIA' or request.user.tipo == 'ADMIN' %}
+      <a class="sidebar-link {% if '/usuarios/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">Alunos</a>
+      <a class="sidebar-link {% if '/usuarios/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">Professores</a>
+      <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">Cursos</a>
+      <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">Turmas</a>
+      <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">Matrículas</a>
+      <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">Notas</a>
+      <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">Frequência</a>
+      <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">Agenda</a>
+    {% elif request.user.tipo == 'COORDENACAO' %}
+      <a class="sidebar-link {% if '/usuarios/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">Alunos</a>
+      <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">Cursos</a>
+      <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">Turmas</a>
+      <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">Matrículas</a>
+      <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">Notas</a>
+      <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">Frequência</a>
+    {% elif request.user.tipo == 'PROFESSOR' %}
+      <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">Turmas</a>
+      <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">Notas</a>
+      <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">Frequência</a>
+      <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">Agenda</a>
+    {% else %}
+      <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">Matrículas</a>
+      <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">Agenda</a>
+    {% endif %}
 
-    <a class="sidebar-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">
-      Professores
-    </a>
-
-    <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">
-      Cursos
-    </a>
-
-    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">
-      Turmas
-    </a>
-
-    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">
-      Matrículas
-    </a>
-
-    <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">
-      Notas
-    </a>
-
-    <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">
-      Frequência
-    </a>
-
-    <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">
-      Agenda
-    </a>
-
-    <a class="sidebar-link {% if '/diario-classe/' in request.path %}active{% endif %}" href="/alunos/">
-      Diário de Classe
-    </a>
-
-    <a class="sidebar-link {% if '/ata-professores/' in request.path %}active{% endif %}" href="/alunos/">
-      Ata dos Professores
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Documentos/Processos
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Programa de Gestão
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Ensino
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Pesquisa
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Extensão
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Gestão de Pessoas
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Administração
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Tec. da Informação
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Des. Institucional
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Central de Serviços
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Internacionalização
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Atividades Estudantis
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Comunicação Social
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Segurança Institucional
-    </a>
-
-    <a class="sidebar-link" href="/alunos/">
-      Auditoria
-    </a>
-
-    <a class="sidebar-link sidebar-exit" href="/alunos/">
-      Sair
-    </a>
+    <form method="post" action="{% url 'accounts:logout' %}" style="margin-top:8px;">
+      {% csrf_token %}
+      <button class="sidebar-link sidebar-exit" type="submit" style="width:100%; text-align:left; border:none; cursor:pointer;">Sair</button>
+    </form>
   </nav>
 </aside>
+

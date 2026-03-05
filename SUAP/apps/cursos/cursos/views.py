@@ -1,15 +1,18 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.core.permissions import role_required
 from apps.cursos.models import Curso
 from .forms import CursoForm
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def cursos_list(request):
     cursos = Curso.objects.select_related("unidade").all().order_by("nome")
     return render(request, "cursos/cursos_list.html", {"cursos": cursos})
 
 
+@role_required("SECRETARIA")
 def cursos_create(request):
     form = CursoForm(request.POST or None)
     if form.is_valid():
@@ -19,6 +22,7 @@ def cursos_create(request):
     return render(request, "cursos/cursos_form.html", {"form": form, "page_title": "Novo curso"})
 
 
+@role_required("SECRETARIA")
 def cursos_update(request, pk):
     curso = get_object_or_404(Curso, pk=pk)
     form = CursoForm(request.POST or None, instance=curso)
@@ -29,6 +33,7 @@ def cursos_update(request, pk):
     return render(request, "cursos/cursos_form.html", {"form": form, "page_title": "Editar curso"})
 
 
+@role_required("SECRETARIA")
 def cursos_delete(request, pk):
     curso = get_object_or_404(Curso, pk=pk)
     if request.method == "POST":

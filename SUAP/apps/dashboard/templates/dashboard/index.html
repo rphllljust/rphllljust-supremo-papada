@@ -7,51 +7,51 @@
 {% url 'cursos:cursos_create' as course_create_url %}
 {% url 'matriculas:matriculas_create' as enrollments_page_url %}
 {% url 'turmas:turmas_list' as classes_page_url %}
+{% url 'matriculas:matriculas_list' as enrollments_list_url %}
 
 <section class="breadcrumb">Navegação &gt; Painel &gt; Gestão Escolar</section>
+
+<section class="card section-box" style="margin-bottom: 16px;">
+  <h2>Bem-vindo ao painel</h2>
+  <p>
+    Você está no perfil
+    <strong>{{ request.user.get_tipo_display|default:perfil }}</strong>.
+    {% if is_secretaria %}
+      Acesso completo aos cadastros, matrículas e validações da secretaria.
+    {% elif is_coordenacao %}
+      Acesso de consulta e acompanhamento acadêmico.
+    {% elif is_professor %}
+      Acesso a turmas e rotinas pedagógicas.
+    {% else %}
+      Acesso às informações acadêmicas do aluno.
+    {% endif %}
+  </p>
+</section>
 
 <section class="grid four">
  <article class="card section-box"><h3>Alunos</h3><p class="kpi">{{ total_students }}</p></article>
  <article class="card section-box"><h3>Cursos</h3><p class="kpi">{{ total_courses }}</p></article>
  <article class="card section-box"><h3>Turmas</h3><p class="kpi">{{ total_classes }}</p></article>
  <article class="card section-box"><h3>Matrículas Ativas</h3><p class="kpi">{{ total_enrollments }}</p></article>
- <article class="card section-box"><h3>Média Geral</h3><p class="kpi">{{ avg_grade }}</p></article>
 </section>
 
 <section class="grid two">
  <article class="card section-box">
- <h3>Modalidade Presencial</h3>
- <p class="kpi">{{ in_person_students|default:"0" }}</p>
- <span class="badge badge-success">Cursos presenciais</span>
- </article>
- <article class="card section-box">
- <h3>Modalidade Remota</h3>
- <p class="kpi">{{ remote_students|default:"0" }}</p>
- <span class="badge badge-info">Cursos remotos</span>
- </article>
-</section>
-
-<section class="grid two">
- <article class="card section-box">
- <h3>Turmas Presenciais</h3>
- <p class="kpi">{{ in_person_classes|default:"0" }}</p>
- <span class="badge badge-success">Operação em sala</span>
- </article>
- <article class="card section-box">
- <h3>Turmas Remotas</h3>
- <p class="kpi">{{ remote_classes|default:"0" }}</p>
- <span class="badge badge-info">Operação online</span>
- </article>
-</section>
-
-<section class="grid two">
- <article class="card section-box">
- <h2>Botões e Ações</h2>
+ <h2>Ações rápidas</h2>
  <div class="button-row">
-  <a class="btn btn-success" href="{{ student_create_url|default:'#' }}">Novo Aluno</a>
-  <a class="btn btn-success" href="{{ course_create_url|default:'#' }}">Novo Curso</a>
-  <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
-<a class="btn btn-success" href="{{ enrollments_page_url|default:'#' }}">Nova Matrícula</a>
+  {% if is_secretaria %}
+    <a class="btn btn-success" href="{{ student_create_url|default:'#' }}">Novo Aluno</a>
+    <a class="btn btn-success" href="{{ course_create_url|default:'#' }}">Novo Curso</a>
+    <a class="btn btn-success" href="{{ enrollments_page_url|default:'#' }}">Nova Matrícula</a>
+    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
+  {% elif is_coordenacao %}
+    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
+    <a class="btn btn-primary" href="{{ enrollments_list_url|default:'#' }}">Ver Matrículas</a>
+  {% elif is_professor %}
+    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Minhas Turmas</a>
+  {% else %}
+    <a class="btn btn-primary" href="{{ enrollments_list_url|default:'#' }}">Minhas Matrículas</a>
+  {% endif %}
  </div>
  </article>
 
@@ -110,18 +110,6 @@
  <div class="alert alert-info">Nenhum registro recente.</div>
  {% endfor %}
  </div>
- </article>
-</section>
-
-<section class="grid two">
- <article class="card section-box">
- <h2>Barra de carregamento</h2>
- <div class="loading-bar"><span></span></div>
- </article>
- <article class="card section-box">
- <h2>Gráfico de Matrículas por Turma</h2>
- {{ class_distribution|json_script:"chart-data" }}
- <canvas id="suapChart" height="120"></canvas>
  </article>
 </section>
 {% endblock %}

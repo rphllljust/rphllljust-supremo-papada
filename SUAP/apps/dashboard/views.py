@@ -1,4 +1,6 @@
-from django.shortcuts import render
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect, render
 
 from apps.cursos.models import Curso
 from apps.matriculas.models import Matricula
@@ -6,7 +8,22 @@ from apps.turmas.models import Turma
 from apps.usuarios.models import Usuario
 
 
+@login_required
 def index(request):
+    if not request.user.is_active:
+        logout(request)
+        return redirect("accounts:login")
+
+    perfil = getattr(request.user, "tipo", "")
+    perfis_validos = {"SECRETARIA", "COORDENACAO", "PROFESSOR", "ALUNO", "ADMIN"}
+    if perfil not in perfis_validos:
+        return render(
+            request,
+            "base/acesso_negado.html",
+            {"mensagem": "Seu perfil ainda não está habilitado para o painel."},
+            status=403,
+        )
+
     total_students = Usuario.objects.filter(tipo="ALUNO").count()
     total_courses = Curso.objects.count()
     total_classes = Turma.objects.count()
@@ -25,7 +42,17 @@ def index(request):
         for matricula in latest_matriculas
     ]
 
+    is_secretaria = perfil in {"SECRETARIA", "ADMIN"}
+    is_coordenacao = perfil == "COORDENACAO"
+    is_professor = perfil == "PROFESSOR"
+    is_aluno = perfil == "ALUNO"
+
     context = {
+        "perfil": perfil,
+        "is_secretaria": is_secretaria,
+        "is_coordenacao": is_coordenacao,
+        "is_professor": is_professor,
+        "is_aluno": is_aluno,
         "total_students": total_students,
         "total_courses": total_courses,
         "total_classes": total_classes,

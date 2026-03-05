@@ -83,23 +83,45 @@ class DocumentoMatriculaForm(forms.ModelForm):
 
     class Meta:
         model = DocumentoMatricula
-        fields = ["tipo_documento", "entregue", "data_entrega", "observacao"]
+        fields = [
+            "tipo_documento",
+            "status",
+            "data_recebimento",
+            "data_validacao",
+            "motivo_recusa",
+            "arquivo",
+            "observacao",
+        ]
         labels = {
             "tipo_documento": "Tipo de Documento",
-            "entregue": "Entregue",
-            "data_entrega": "Data de Entrega",
+            "status": "Status",
+            "data_recebimento": "Data de Recebimento",
+            "data_validacao": "Data de Validação",
+            "motivo_recusa": "Motivo da Recusa",
+            "arquivo": "Arquivo",
             "observacao": "Observação",
         }
         widgets = {
-            "data_entrega": forms.DateInput(attrs={"type": "date"}),
+            "data_recebimento": forms.DateInput(attrs={"type": "date"}),
+            "data_validacao": forms.DateInput(attrs={"type": "date"}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        entregue = cleaned_data.get("entregue")
-        data_entrega = cleaned_data.get("data_entrega")
-        if entregue and not data_entrega:
-            self.add_error("data_entrega", "Informe a data de entrega do documento.")
+        status = cleaned_data.get("status")
+        data_recebimento = cleaned_data.get("data_recebimento")
+        data_validacao = cleaned_data.get("data_validacao")
+        motivo_recusa = cleaned_data.get("motivo_recusa")
+
+        if status in {"RECEBIDO", "VALIDADO", "RECUSADO"} and not data_recebimento:
+            self.add_error("data_recebimento", "Informe a data de recebimento.")
+
+        if status == "VALIDADO" and not data_validacao:
+            self.add_error("data_validacao", "Informe a data de validação.")
+
+        if status == "RECUSADO" and not motivo_recusa:
+            self.add_error("motivo_recusa", "Informe o motivo da recusa.")
+
         return cleaned_data
 
 

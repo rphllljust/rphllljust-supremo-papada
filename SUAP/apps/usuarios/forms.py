@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Usuario
+from .models import Pessoa, Usuario
 
 
 class TipoUsuarioForm(forms.ModelForm):
@@ -34,8 +34,32 @@ class TipoUsuarioForm(forms.ModelForm):
         if not self.tipo_valor:
             raise ValueError("tipo_valor deve ser definido no formulario filho.")
         usuario.tipo = self.tipo_valor
+        if not usuario.username:
+            usuario.username = usuario.cpf
         if not usuario.password:
             usuario.set_unusable_password()
+
+        nome_completo = " ".join(
+            part for part in [usuario.first_name, usuario.last_name] if part
+        ).strip() or usuario.username
+
+        pessoa = usuario.pessoa
+        if pessoa is None:
+            pessoa = Pessoa(
+                nome_completo=nome_completo,
+                cpf=usuario.cpf,
+                email=usuario.email or "",
+                telefone="",
+            )
+        else:
+            pessoa.nome_completo = nome_completo
+            pessoa.cpf = usuario.cpf
+            pessoa.email = usuario.email or ""
+
         if commit:
+            pessoa.save()
+            usuario.pessoa = pessoa
             usuario.save()
+        else:
+            usuario.pessoa = pessoa
         return usuario

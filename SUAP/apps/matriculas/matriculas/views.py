@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.core.permissions import role_required
 from apps.matriculas.models import (
     ConsolidacaoAcademica,
     DocumentoEmitido,
@@ -41,11 +42,13 @@ from .forms import (
 
 # ── Matrícula (UC01 – Realizar Matrícula/Rematrícula) ────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def matriculas_list(request):
     matriculas = Matricula.objects.select_related("aluno", "curso", "turma", "turma__curso").all().order_by("-id")
     return render(request, "matriculas/matriculas_list.html", {"matriculas": matriculas})
 
 
+@role_required("SECRETARIA")
 def matriculas_create(request):
     form = MatriculaForm(request.POST or None)
     if form.is_valid():
@@ -55,6 +58,7 @@ def matriculas_create(request):
     return render(request, "matriculas/matriculas_form_atomic.html", {"form": form, "page_title": "Nova matrícula"})
 
 
+@role_required("SECRETARIA")
 def matriculas_update(request, pk):
     matricula = get_object_or_404(Matricula, pk=pk)
     form = MatriculaForm(request.POST or None, instance=matricula)
@@ -65,6 +69,7 @@ def matriculas_update(request, pk):
     return render(request, "matriculas/matriculas_form_atomic.html", {"form": form, "page_title": "Editar matrícula"})
 
 
+@role_required("SECRETARIA")
 def matriculas_delete(request, pk):
     matricula = get_object_or_404(Matricula, pk=pk)
     if request.method == "POST":
@@ -76,6 +81,7 @@ def matriculas_delete(request, pk):
 
 # ── Documentos (UC01 – include: Conferir Documentação) ──────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def matricula_documentos(request, pk):
     """UC01 – include: Conferir Documentação / Registrar no Sistema"""
     matricula = get_object_or_404(Matricula, pk=pk)
@@ -86,12 +92,15 @@ def matricula_documentos(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_create(request, matricula_pk):
     matricula = get_object_or_404(Matricula, pk=matricula_pk)
-    form = DocumentoMatriculaForm(request.POST or None)
+    form = DocumentoMatriculaForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         doc = form.save(commit=False)
         doc.matricula = matricula
+        if doc.status == "VALIDADO":
+            doc.validado_por = request.user
         doc.save()
         messages.success(request, "Documento registrado com sucesso.")
         return redirect("matriculas:matricula_documentos", pk=matricula_pk)
@@ -102,11 +111,15 @@ def documento_create(request, matricula_pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_update(request, pk):
     documento = get_object_or_404(DocumentoMatricula, pk=pk)
-    form = DocumentoMatriculaForm(request.POST or None, instance=documento)
+    form = DocumentoMatriculaForm(request.POST or None, request.FILES or None, instance=documento)
     if form.is_valid():
-        form.save()
+        atualizado = form.save(commit=False)
+        if atualizado.status == "VALIDADO":
+            atualizado.validado_por = request.user
+        atualizado.save()
         messages.success(request, "Documento atualizado com sucesso.")
         return redirect("matriculas:matricula_documentos", pk=documento.matricula_id)
     return render(request, "matriculas/documento_form.html", {
@@ -116,6 +129,7 @@ def documento_update(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_delete(request, pk):
     documento = get_object_or_404(DocumentoMatricula, pk=pk)
     matricula_pk = documento.matricula_id
@@ -128,6 +142,7 @@ def documento_delete(request, pk):
 
 # ── Pendências (UC01 – extend: Abrir Pendência Documental) ──────────────────
 
+@role_required("SECRETARIA")
 def matricula_pendencias(request, pk):
     """UC01 – extend: Abrir Pendência Documental"""
     matricula = get_object_or_404(Matricula, pk=pk)
@@ -138,6 +153,7 @@ def matricula_pendencias(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def pendencia_create(request, matricula_pk):
     matricula = get_object_or_404(Matricula, pk=matricula_pk)
     form = PendenciaDocumentalForm(request.POST or None)
@@ -154,6 +170,7 @@ def pendencia_create(request, matricula_pk):
     })
 
 
+@role_required("SECRETARIA")
 def pendencia_update(request, pk):
     pendencia = get_object_or_404(PendenciaDocumental, pk=pk)
     form = PendenciaDocumentalForm(request.POST or None, instance=pendencia)
@@ -168,6 +185,7 @@ def pendencia_update(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def pendencia_delete(request, pk):
     pendencia = get_object_or_404(PendenciaDocumental, pk=pk)
     matricula_pk = pendencia.matricula_id
@@ -180,6 +198,7 @@ def pendencia_delete(request, pk):
 
 # ── Documentos Emitidos (UC02 – Emitir Documentos) ──────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def documentos_emitidos_list(request):
     """Lista geral de todos os documentos emitidos."""
     documentos = (
@@ -190,6 +209,7 @@ def documentos_emitidos_list(request):
     return render(request, "matriculas/documentos_emitidos_list.html", {"documentos": documentos})
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def matricula_documentos_emitidos(request, pk):
     """Documentos emitidos de uma matrícula específica."""
     matricula = get_object_or_404(Matricula, pk=pk)
@@ -200,6 +220,7 @@ def matricula_documentos_emitidos(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_emitido_create(request, matricula_pk):
     matricula = get_object_or_404(Matricula, pk=matricula_pk)
     form = DocumentoEmitidoForm(request.POST or None)
@@ -217,6 +238,7 @@ def documento_emitido_create(request, matricula_pk):
     })
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def documento_emitido_detalhe(request, pk):
     """Visualização/impressão do documento emitido."""
     doc = get_object_or_404(
@@ -243,6 +265,7 @@ def documento_emitido_detalhe(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_emitido_validar(request, pk):
     """UC02 – include: Assinar/Validar"""
     doc = get_object_or_404(DocumentoEmitido, pk=pk)
@@ -264,6 +287,7 @@ def documento_emitido_validar(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_emitido_entrega(request, pk):
     """UC02 – include: Registrar Entrega (Protocolo)"""
     doc = get_object_or_404(DocumentoEmitido, pk=pk)
@@ -279,6 +303,7 @@ def documento_emitido_entrega(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def documento_emitido_delete(request, pk):
     doc = get_object_or_404(DocumentoEmitido, pk=pk)
     matricula_pk = doc.matricula_id
@@ -291,11 +316,13 @@ def documento_emitido_delete(request, pk):
 
 # ── Transferência (UC03) ─────────────────────────────────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def transferencias_list(request):
     transferencias = Transferencia.objects.select_related("matricula", "matricula__aluno", "matricula__curso").all()
     return render(request, "matriculas/transferencias_list.html", {"transferencias": transferencias})
 
 
+@role_required("SECRETARIA")
 def transferencia_create(request, matricula_pk):
     matricula = get_object_or_404(Matricula, pk=matricula_pk)
     form = TransferenciaForm(request.POST or None)
@@ -312,6 +339,7 @@ def transferencia_create(request, matricula_pk):
     })
 
 
+@role_required("SECRETARIA")
 def transferencia_update(request, pk):
     transferencia = get_object_or_404(Transferencia, pk=pk)
     form = TransferenciaForm(request.POST or None, instance=transferencia)
@@ -326,6 +354,7 @@ def transferencia_update(request, pk):
     })
 
 
+@role_required("SECRETARIA")
 def transferencia_delete(request, pk):
     transferencia = get_object_or_404(Transferencia, pk=pk)
     if request.method == "POST":
@@ -337,11 +366,13 @@ def transferencia_delete(request, pk):
 
 # ── Regras Acadêmicas e Consolidação (UC04) ──────────────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def regras_list(request):
     regras = RegraAcademica.objects.select_related("curso").all()
     return render(request, "matriculas/regras_list.html", {"regras": regras})
 
 
+@role_required("SECRETARIA")
 def regra_create(request):
     form = RegraAcademicaForm(request.POST or None)
     if form.is_valid():
@@ -351,6 +382,7 @@ def regra_create(request):
     return render(request, "matriculas/regra_form.html", {"form": form, "page_title": "Nova Regra Acadêmica"})
 
 
+@role_required("SECRETARIA")
 def regra_update(request, pk):
     regra = get_object_or_404(RegraAcademica, pk=pk)
     form = RegraAcademicaForm(request.POST or None, instance=regra)
@@ -361,6 +393,7 @@ def regra_update(request, pk):
     return render(request, "matriculas/regra_form.html", {"form": form, "page_title": "Editar Regra Acadêmica"})
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def consolidacao_view(request, matricula_pk):
     """UC04 – Lançar/Consolidar Notas e Frequência"""
     matricula = get_object_or_404(
@@ -400,12 +433,14 @@ def consolidacao_view(request, matricula_pk):
 
 # ── P01 – Fluxo de Matrícula ─────────────────────────────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def fluxo_list(request):
     """Lista todos os fluxos P01 em andamento e concluídos."""
     fluxos = FluxoMatricula.objects.select_related("aluno", "matricula").all()
     return render(request, "matriculas/fluxo_list.html", {"fluxos": fluxos})
 
 
+@role_required("SECRETARIA")
 def fluxo_create(request):
     """Etapa 1 – Receber Requerimento."""
     form = FluxoMatriculaIniciarForm(request.POST or None)
@@ -422,6 +457,7 @@ def fluxo_create(request):
     return render(request, "matriculas/fluxo_form.html", {"form": form, "page_title": "Receber Requerimento"})
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def fluxo_detalhe(request, pk):
     """Painel principal do P01 com swimlanes e ações por etapa."""
     fluxo = get_object_or_404(
@@ -447,6 +483,7 @@ def fluxo_detalhe(request, pk):
     return render(request, "matriculas/fluxo_detalhe.html", ctx)
 
 
+@role_required("SECRETARIA")
 def fluxo_avancar(request, pk):
     """POST: avança o P01 para a próxima etapa, processando a lógica da etapa atual."""
     if request.method != "POST":
@@ -489,7 +526,7 @@ def fluxo_avancar(request, pk):
     elif etapa_atual == 'REQUISITOS_VALIDADOS':
         fluxo.avancar('MATRICULA_REGISTRADA')
 
-    # ── Etapa 5→6: Enturmar / Alocar Turno ──────────────────────────────────
+    # ── Etapa 5→6: Enturmar / Alocar Turno ──────────────────���───────────────
     elif etapa_atual == 'MATRICULA_REGISTRADA':
         if fluxo.matricula:
             form = FluxoEnturmarForm(request.POST, instance=fluxo.matricula)
@@ -537,6 +574,7 @@ def fluxo_avancar(request, pk):
     return redirect("matriculas:fluxo_detalhe", pk=pk)
 
 
+@role_required("SECRETARIA")
 def fluxo_vincular_matricula(request, pk):
     """Vincula uma matrícula existente ao fluxo P01 (etapa 1)."""
     fluxo = get_object_or_404(FluxoMatricula, pk=pk)
@@ -556,6 +594,7 @@ def fluxo_vincular_matricula(request, pk):
 
 # ── P02 – Fluxo de Emissão de Histórico/Declaração ───────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def emissao_list(request):
     fluxos = FluxoEmissaoDocumento.objects.select_related(
         "solicitante", "matricula", "processo", "documento_emitido"
@@ -563,6 +602,7 @@ def emissao_list(request):
     return render(request, "matriculas/emissao_list.html", {"fluxos": fluxos})
 
 
+@role_required("SECRETARIA")
 def emissao_create(request):
     """Etapa 1 – Abrir Protocolo."""
     form = FluxoEmissaoIniciarForm(request.POST or None)
@@ -592,6 +632,7 @@ def emissao_create(request):
     })
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def emissao_detalhe(request, pk):
     """Painel principal do P02 com swimlanes."""
     fluxo = get_object_or_404(
@@ -619,6 +660,7 @@ def emissao_detalhe(request, pk):
     return render(request, "matriculas/emissao_detalhe.html", ctx)
 
 
+@role_required("SECRETARIA")
 def emissao_avancar(request, pk):
     """POST: avança P02 para a próxima etapa processando a lógica de cada step."""
     if request.method != "POST":
@@ -715,6 +757,7 @@ def emissao_avancar(request, pk):
 
 # ── P03 – Fluxo de Transferência ─────────────────────────────────────────────
 
+@role_required("SECRETARIA", "COORDENACAO")
 def transferencia_fluxo_list(request):
     fluxos = FluxoTransferencia.objects.select_related(
         "matricula", "matricula__aluno", "matricula__curso",
@@ -723,6 +766,7 @@ def transferencia_fluxo_list(request):
     return render(request, "matriculas/transferencia_fluxo_list.html", {"fluxos": fluxos})
 
 
+@role_required("SECRETARIA")
 def transferencia_fluxo_create(request):
     """Etapa 1 – Solicitação: abre o fluxo P03 e registra a transferência."""
     form_fluxo = FluxoTransferenciaIniciarForm(request.POST or None)
@@ -758,6 +802,7 @@ def transferencia_fluxo_create(request):
     })
 
 
+@role_required("SECRETARIA", "COORDENACAO")
 def transferencia_fluxo_detalhe(request, pk):
     fluxo = get_object_or_404(
         FluxoTransferencia.objects.select_related(
@@ -777,6 +822,7 @@ def transferencia_fluxo_detalhe(request, pk):
     return render(request, "matriculas/transferencia_fluxo_detalhe.html", ctx)
 
 
+@role_required("SECRETARIA")
 def transferencia_fluxo_avancar(request, pk):
     if request.method != "POST":
         return redirect("matriculas:transferencia_fluxo_detalhe", pk=pk)

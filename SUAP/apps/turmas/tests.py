@@ -12,12 +12,19 @@ class TurmaCrudTests(TestCase):
     def setUp(self):
         self.unidade = Unidade.objects.create(nome="Campus Central", codigo="CEN")
         self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
+        self.secretaria = Usuario.objects.create_user(
+            username="sec_turma",
+            cpf="92345678902",
+            tipo="SECRETARIA",
+            password="x",
+        )
         self.professor = Usuario.objects.create_user(
             username="prof_turma",
             cpf="22345678901",
             tipo="PROFESSOR",
             password="x",
         )
+        self.client.force_login(self.secretaria)
 
     def test_create_turma(self):
         response = self.client.post(

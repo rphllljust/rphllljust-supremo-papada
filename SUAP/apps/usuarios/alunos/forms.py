@@ -1,4 +1,5 @@
 from apps.usuarios.forms import TipoUsuarioForm
+from apps.usuarios.models import Aluno
 
 
 class AlunoForm(TipoUsuarioForm):
@@ -8,9 +9,10 @@ class AlunoForm(TipoUsuarioForm):
         fields = ["first_name", "last_name", "email", "cpf", "is_active"]
 
     def save(self, commit=True):
-        usuario = super().save(commit=False)
-        if not usuario.username:
-            usuario.username = usuario.cpf
+        usuario = super().save(commit=commit)
         if commit:
-            usuario.save()
+            Aluno.objects.update_or_create(
+                pessoa=usuario.pessoa,
+                defaults={"usuario": usuario},
+            )
         return usuario

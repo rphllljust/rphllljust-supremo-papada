@@ -1,0 +1,18 @@
+{% extends "base/base.html" %}
+
+{% block title %}Acesso negado | {{ APP_NAME }}{% endblock %}
+
+{% block content %}
+<section class="card section-box" style="max-width: 760px; margin: 24px auto;">
+  <h2>Acesso negado</h2>
+  <p>{{ mensagem|default:"Você não tem permissão para acessar esta área." }}</p>
+  <p>Se necessário, solicite acesso ao administrador do sistema.</p>
+
+  <div class="button-row" style="margin-top: 16px;">
+    <a class="btn btn-primary" href="{% url 'dashboard:index' %}">Voltar ao painel</a>
+    {% if not request.user.is_authenticated %}
+      <a class="btn btn-success" href="{% url 'accounts:login' %}">Entrar</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -14,6 +14,13 @@ class Matricula(models.Model):
         ('CONCLUIDA', 'Concluída'),
     )
 
+    TRANSICOES_STATUS = {
+        'ATIVA': {'TRANCADA', 'CANCELADA', 'CONCLUIDA'},
+        'TRANCADA': {'ATIVA', 'CANCELADA'},
+        'CANCELADA': set(),
+        'CONCLUIDA': set(),
+    }
+
     TIPO_CHOICES = (
         ('NOVA', 'Nova Matrícula'),
         ('REMATRICULA', 'Rematrícula'),
@@ -26,6 +33,7 @@ class Matricula(models.Model):
         ('INTEGRAL', 'Integral'),
     )
 
+    numero_matricula = models.CharField(max_length=24, unique=True, editable=False, blank=True)
     aluno = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -46,12 +54,49 @@ class Matricula(models.Model):
         if self.curso_id and self.turma_id and self.turma.curso_id != self.curso_id:
             raise ValidationError({'turma': 'A turma selecionada nao pertence ao curso informado.'})
 
+        if not self.pk:
+            return
+
+        original = Matricula.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+        if not original or original == self.status:
+            return
+
+        permitidos = self.TRANSICOES_STATUS.get(original, set())
+        if self.status not in permitidos:
+            raise ValidationError({'status': f'Transicao de status invalida: {original} -> {self.status}.'})
+
     def save(self, *args, **kwargs):
+        if not self.numero_matricula:
+            self.numero_matricula = self._gerar_numero_matricula()
         self.full_clean()
         return super().save(*args, **kwargs)
 
+    def _gerar_numero_matricula(self):
+        from django.utils import timezone
+
+        ano = self.turma.ano_letivo if self.turma_id else timezone.now().year
+        sigla = (self.curso.sigla or '').strip().upper() if self.curso_id else ''
+        if not sigla:
+            nome = (self.curso.nome if self.curso_id else 'CURSO').upper()
+            sigla = ''.join(ch for ch in nome if ch.isalpha())[:3] or 'CUR'
+
+        prefixo = f'{ano}-{sigla}-'
+        ultima = (
+            Matricula.objects
+            .filter(numero_matricula__startswith=prefixo)
+            .order_by('-numero_matricula')
+            .first()
+        )
+        seq = 1
+        if ultima:
+            try:
+                seq = int(ultima.numero_matricula.split('-')[-1]) + 1
+            except (ValueError, IndexError):
+                seq = Matricula.objects.filter(numero_matricula__startswith=prefixo).count() + 1
+        return f'{prefixo}{seq:06d}'
+
     def __str__(self):
-        return f"{self.aluno} - {self.curso} / {self.turma}"
+        return f"{self.numero_matricula} - {self.aluno} - {self.curso} / {self.turma}"
 
     @property
     def tem_pendencia(self):
@@ -59,7 +104,7 @@ class Matricula(models.Model):
 
     @property
     def documentos_conferidos(self):
-        return self.documentos.filter(entregue=True).count()
+        return self.documentos.filter(status='VALIDADO').count()
 
     @property
     def total_documentos(self):
@@ -67,37 +112,93 @@ class Matricula(models.Model):
 
 
 class DocumentoMatricula(models.Model):
-    """UC01 – include: Conferir Documentação / Registrar no Sistema"""
+    """UC01 - include: Conferir Documentacao / Registrar no Sistema"""
 
     TIPO_DOCUMENTO_CHOICES = (
         ('RG', 'RG / Documento de Identidade'),
         ('CPF', 'CPF'),
-        ('COMPROVANTE_RESIDENCIA', 'Comprovante de Residência'),
-        ('HISTORICO_ESCOLAR', 'Histórico Escolar'),
+        ('COMPROVANTE_RESIDENCIA', 'Comprovante de Residencia'),
+        ('HISTORICO_ESCOLAR', 'Historico Escolar'),
         ('FOTO', 'Foto 3x4'),
-        ('CERTIDAO_NASCIMENTO', 'Certidão de Nascimento'),
-        ('DECLARACAO_TRANSFERENCIA', 'Declaração de Transferência'),
+        ('CERTIDAO_NASCIMENTO', 'Certidao de Nascimento'),
+        ('DECLARACAO_TRANSFERENCIA', 'Declaracao de Transferencia'),
         ('OUTROS', 'Outros'),
     )
 
+    STATUS_CHOICES = (
+        ('PENDENTE', 'Pendente'),
+        ('RECEBIDO', 'Recebido'),
+        ('VALIDADO', 'Validado'),
+        ('RECUSADO', 'Recusado'),
+    )
+
+    TRANSICOES_STATUS = {
+        'PENDENTE': {'RECEBIDO'},
+        'RECEBIDO': {'VALIDADO', 'RECUSADO'},
+        'RECUSADO': {'RECEBIDO'},
+        'VALIDADO': set(),
+    }
+
     matricula = models.ForeignKey(Matricula, on_delete=models.CASCADE, related_name='documentos')
     tipo_documento = models.CharField(max_length=40, choices=TIPO_DOCUMENTO_CHOICES, verbose_name='Tipo de Documento')
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='PENDENTE', verbose_name='Status')
     entregue = models.BooleanField(default=False, verbose_name='Entregue')
     data_entrega = models.DateField(null=True, blank=True, verbose_name='Data de Entrega')
-    observacao = models.CharField(max_length=255, blank=True, verbose_name='Observação')
+    data_recebimento = models.DateField(null=True, blank=True, verbose_name='Data de Recebimento')
+    arquivo = models.FileField(upload_to='matriculas/documentos/', null=True, blank=True, verbose_name='Arquivo')
+    validado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='documentos_matricula_validados',
+        verbose_name='Validado por',
+    )
+    data_validacao = models.DateField(null=True, blank=True, verbose_name='Data de Validacao')
+    motivo_recusa = models.CharField(max_length=255, blank=True, verbose_name='Motivo da Recusa')
+    observacao = models.CharField(max_length=255, blank=True, verbose_name='Observacao')
 
     class Meta:
-        verbose_name = 'Documento da Matrícula'
-        verbose_name_plural = 'Documentos da Matrícula'
+        verbose_name = 'Documento da Matricula'
+        verbose_name_plural = 'Documentos da Matricula'
         unique_together = ('matricula', 'tipo_documento')
         ordering = ['tipo_documento']
 
+    def clean(self):
+        if not self.pk:
+            original = None
+        else:
+            original = DocumentoMatricula.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+
+        if original and original != self.status:
+            permitidos = self.TRANSICOES_STATUS.get(original, set())
+            if self.status not in permitidos:
+                raise ValidationError({'status': f'Transicao de status invalida: {original} -> {self.status}.'})
+
+        if self.status in {'RECEBIDO', 'VALIDADO', 'RECUSADO'} and not self.data_recebimento:
+            raise ValidationError({'data_recebimento': 'Informe a data de recebimento do documento.'})
+
+        if self.status == 'VALIDADO':
+            if not self.data_validacao:
+                raise ValidationError({'data_validacao': 'Informe a data de validacao.'})
+            if not self.validado_por_id:
+                raise ValidationError({'validado_por': 'Informe quem validou o documento.'})
+
+        if self.status == 'RECUSADO' and not self.motivo_recusa:
+            raise ValidationError({'motivo_recusa': 'Informe o motivo da recusa.'})
+
+    def save(self, *args, **kwargs):
+        self.entregue = self.status in {'RECEBIDO', 'VALIDADO', 'RECUSADO'}
+        self.data_entrega = self.data_recebimento if self.entregue else None
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.get_tipo_documento_display()} – {self.matricula}"
+        return f"{self.get_tipo_documento_display()} - {self.matricula} [{self.get_status_display()}]"
 
 
 class PendenciaDocumental(models.Model):
-    """UC01 – extend: Abrir Pendência Documental"""
+    """UC01 - extend: Abrir Pendência Documental"""
 
     STATUS_CHOICES = (
         ('ABERTA', 'Aberta'),
@@ -119,41 +220,40 @@ class PendenciaDocumental(models.Model):
         ordering = ['-data_abertura']
 
     def __str__(self):
-        return f"Pendência [{self.get_status_display()}] – {self.matricula}"
+        return f"Pendência [{self.get_status_display()}] - {self.matricula}"
 
 
 class DocumentoEmitido(models.Model):
-    """UC02 – Emitir Documentos (Declaração / Histórico / Guia de Transferência)"""
+    """UC02 - Emitir Documentos (Declaração / Histórico / Guia de Transferência)"""
 
     TIPO_CHOICES = (
-        ('DECLARACAO_MATRICULA',  'Declaração de Matrícula'),
+        ('DECLARACAO_MATRICULA', 'Declaração de Matrícula'),
         ('DECLARACAO_FREQUENCIA', 'Declaração de Frequência'),
-        ('DECLARACAO_CONCLUSAO',  'Declaração de Conclusão de Curso'),
-        ('HISTORICO_ESCOLAR',     'Histórico Escolar'),
-        ('GUIA_TRANSFERENCIA',    'Guia de Transferência'),
+        ('DECLARACAO_CONCLUSAO', 'Declaração de Conclusão de Curso'),
+        ('HISTORICO_ESCOLAR', 'Histórico Escolar'),
+        ('GUIA_TRANSFERENCIA', 'Guia de Transferência'),
     )
 
-    matricula    = models.ForeignKey(Matricula, on_delete=models.CASCADE, related_name='documentos_emitidos')
-    tipo         = models.CharField(max_length=30, choices=TIPO_CHOICES, verbose_name='Tipo de Documento')
+    matricula = models.ForeignKey(Matricula, on_delete=models.CASCADE, related_name='documentos_emitidos')
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, verbose_name='Tipo de Documento')
     numero_protocolo = models.CharField(max_length=20, unique=True, editable=False, verbose_name='Nº de Protocolo')
     data_emissao = models.DateField(auto_now_add=True, verbose_name='Data de Emissão')
-    observacao   = models.TextField(blank=True, verbose_name='Observação')
+    observacao = models.TextField(blank=True, verbose_name='Observação')
 
-    # include: Assinar/Validar
-    validado        = models.BooleanField(default=False, verbose_name='Validado')
-    data_validacao  = models.DateField(null=True, blank=True, verbose_name='Data de Validação')
-    validado_por    = models.ForeignKey(
+    validado = models.BooleanField(default=False, verbose_name='Validado')
+    data_validacao = models.DateField(null=True, blank=True, verbose_name='Data de Validação')
+    validado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name='documentos_validados',
         verbose_name='Validado por',
     )
 
-    # include: Registrar Entrega (Protocolo)
-    entregue        = models.BooleanField(default=False, verbose_name='Entregue')
-    data_entrega    = models.DateField(null=True, blank=True, verbose_name='Data de Entrega')
-    recebido_por    = models.CharField(max_length=200, blank=True, verbose_name='Recebido por')
+    entregue = models.BooleanField(default=False, verbose_name='Entregue')
+    data_entrega = models.DateField(null=True, blank=True, verbose_name='Data de Entrega')
+    recebido_por = models.CharField(max_length=200, blank=True, verbose_name='Recebido por')
 
     class Meta:
         verbose_name = 'Documento Emitido'
@@ -168,6 +268,7 @@ class DocumentoEmitido(models.Model):
     @staticmethod
     def _gerar_protocolo():
         from django.utils import timezone
+
         ano = timezone.now().year
         ultimo = (
             DocumentoEmitido.objects
@@ -186,7 +287,31 @@ class DocumentoEmitido(models.Model):
         return f'DOC-{ano}-{seq:04d}'
 
     def __str__(self):
-        return f'{self.numero_protocolo} – {self.get_tipo_display()} ({self.matricula.aluno})'
+        return f"{self.numero_protocolo} - {self.get_tipo_display()} ({self.matricula.aluno})"
+
+
+class TermoAssinado(models.Model):
+    TIPO_CHOICES = (
+        ('MATRICULA', 'Termo de Matricula'),
+        ('CIENCIA_PENDENCIA', 'Ciencia de Pendencia Documental'),
+        ('LGPD', 'Ciencia de Tratamento de Dados (LGPD)'),
+        ('OUTRO', 'Outro'),
+    )
+
+    matricula = models.ForeignKey(Matricula, on_delete=models.CASCADE, related_name='termos_assinados')
+    tipo_termo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    data_assinatura = models.DateField()
+    assinado_por = models.CharField(max_length=200)
+    arquivo = models.FileField(upload_to='matriculas/termos/', null=True, blank=True)
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Termo Assinado'
+        verbose_name_plural = 'Termos Assinados'
+        ordering = ['-data_assinatura', '-id']
+
+    def __str__(self):
+        return f'{self.get_tipo_termo_display()} - {self.matricula.numero_matricula}'
 
 
 # ── UC03 – Transferência (Entrada/Saída) ─────────────────────────────────────
@@ -470,7 +595,7 @@ class FluxoEmissaoDocumento(models.Model):
         ('DOCUMENTO_GERADO',        'Gerar Documento Padrão'),
         ('DOCUMENTO_VALIDADO',      'Assinar / Validar'),
         ('ENTREGA_REGISTRADA',      'Registrar Entrega'),
-        ('ARQUIVADO',               'Arquivar via Protocolo'),
+        ('ARQUIVADO',               'Arquivamento'),
     )
 
     ATOR_ETAPA = {
