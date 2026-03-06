@@ -1,21 +1,93 @@
 
 {% extends "base/base.html" %}
-{% block title %}Ata / Ofício / Memorando {{ doc.numero_protocolo }}{% endblock %}
+{% block title %}Ata Escolar {{ doc.numero_protocolo }}{% endblock %}
 {% block content %}
 <section class="card">
   <div class="crud-header">
-    <h1 class="crud-title">Ata / Ofício / Memorando</h1>
-    <button onclick="window.print()" class="btn btn-secondary">Imprimir</button>
+    <h1 class="crud-title">Ata Escolar Digital</h1>
+    <div>
+      {% if doc.situacao != 'EMITIDO' %}
+        <a href="{% url 'documentos:ata_update' doc.pk %}" class="btn btn-primary">Editar rascunho</a>
+      {% endif %}
+      <button onclick="window.print()" class="btn btn-secondary">Imprimir</button>
+    </div>
   </div>
+
   <table class="table">
     <tbody>
-      <tr><th>Protocolo</th><td>{{ doc.numero_protocolo }}</td><th>Data</th><td>{{ doc.data_emissao|date:'d/m/Y' }}</td></tr>
-      <tr><th>Assunto</th><td colspan="3">{{ doc.assunto }}</td></tr>
-      <tr><th>Matrícula</th><td>{{ doc.matricula|default:'–' }}</td><th>Emitido por</th><td>{{ doc.emitido_por.get_full_name|default:doc.emitido_por.username|default:'–' }}</td></tr>
-      <tr><th>Tipo</th><td>{{ doc.get_tipo_display }}</td><th>Destinatário</th><td>{{ doc.destinatario|default:"–" }}</td></tr><tr><th>Referência</th><td>{{ doc.referencia|default:"–" }}</td><th>Processo</th><td>{{ doc.processo.numero|default:"–" }}</td></tr>
-      {% if doc.observacao %}<tr><th>Observação</th><td colspan="3">{{ doc.observacao }}</td></tr>{% endif %}
+      <tr><th>Protocolo</th><td>{{ doc.numero_protocolo }}</td><th>Situação</th><td>{{ doc.get_situacao_display }}</td></tr>
+      <tr><th>Número da Ata</th><td>{{ doc.numero_ata|default:'-' }}</td><th>Ano</th><td>{{ doc.ano|default:'-' }}</td></tr>
+      <tr><th>Tipo de Reunião</th><td colspan="3">{% if doc.tipo_reuniao_registro == 'OUTRO' %}{{ doc.tipo_reuniao_outro }}{% else %}{{ doc.get_tipo_reuniao_registro_display }}{% endif %}</td></tr>
+      <tr><th>Data</th><td>{{ doc.data_reuniao|date:'d/m/Y'|default:'-' }}</td><th>Horário</th><td>{{ doc.horario_inicio|time:'H:i'|default:'-' }} às {{ doc.horario_termino|time:'H:i'|default:'-' }}</td></tr>
+      <tr><th>Local</th><td>{{ doc.local_reuniao|default:'-' }}</td><th>Modalidade</th><td>{{ doc.get_modalidade_display|default:'-' }}</td></tr>
+      <tr><th>Presidente</th><td>{{ doc.presidente_reuniao|default:'-' }}</td><th>Lavratura</th><td>{{ doc.responsavel_lavratura|default:'-' }}</td></tr>
+      <tr><th>Emitido por</th><td>{{ doc.emitido_por.get_full_name|default:doc.emitido_por.username|default:'-' }}</td><th>Processo</th><td>{{ doc.processo.numero|default:'-' }}</td></tr>
+      {% if doc.situacao == 'EMITIDO' %}
+      <tr><th>Chave de autenticidade</th><td>{{ doc.chave_autenticidade|default:'-' }}</td><th>Data de emissão final</th><td>{{ doc.data_emissao_final|date:'d/m/Y H:i'|default:'-' }}</td></tr>
+      {% endif %}
     </tbody>
   </table>
+
+  <h3>Participantes</h3>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Cargo</th><th>Presença</th><th>Justificativa</th></tr></thead>
+    <tbody>
+      {% for p in doc.participantes %}
+        <tr>
+          <td>{{ p.nome|default:'-' }}</td>
+          <td>{{ p.cargo|default:'-' }}</td>
+          <td>{% if p.presente %}Sim{% else %}Não{% endif %}</td>
+          <td>{{ p.justificativa|default:'-' }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">Sem participantes cadastrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Pauta</h3>
+  <ol>
+    {% for item in doc.pauta %}
+      <li>{{ item.titulo|default:'Item sem título' }}{% if item.descricao %} - {{ item.descricao }}{% endif %}</li>
+    {% empty %}
+      <li>Sem pauta cadastrada.</li>
+    {% endfor %}
+  </ol>
+
+  <h3>Relato e Deliberações</h3>
+  {% for d in doc.deliberacoes %}
+    <div class="card" style="margin-top:.6rem;">
+      <strong>4.{{ forloop.counter }} {{ d.titulo|default:'Sem título' }}</strong>
+      <p><strong>Relato:</strong> {{ d.relato|default:'-' }}</p>
+      <p><strong>Decisão:</strong> {{ d.decisao|default:'-' }}</p>
+      <p><strong>Responsável:</strong> {{ d.responsavel|default:'-' }} | <strong>Prazo:</strong> {{ d.prazo|default:'-' }}</p>
+      <p><strong>Observações:</strong> {{ d.observacoes|default:'-' }}</p>
+    </div>
+  {% empty %}
+    <p>Sem deliberações cadastradas.</p>
+  {% endfor %}
+
+  <h3>Encaminhamentos</h3>
+  <ul>
+    {% for e in doc.encaminhamentos %}
+      <li>{{ e.descricao|default:'-' }} - {{ e.responsavel|default:'-' }} - {{ e.prazo|default:'-' }}</li>
+    {% empty %}
+      <li>Sem encaminhamentos.</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Anexos</h3>
+  <ul>
+    {% for anexo in doc.anexos_upload.all %}
+      <li>{{ anexo.get_tipo_anexo_display }} - {{ anexo.descricao|default:'-' }} {% if anexo.arquivo %}<a href="{{ anexo.arquivo.url }}" target="_blank" rel="noopener">(abrir)</a>{% endif %}</li>
+    {% empty %}
+      <li>Sem anexos.</li>
+    {% endfor %}
+  </ul>
+
+  <h3>Texto Final</h3>
+  <p>{{ doc.texto_final|default:'-' }}</p>
+
   <div style="margin-top:1rem;"><a href="javascript:history.back()">← Voltar</a></div>
 </section>
 {% endblock %}

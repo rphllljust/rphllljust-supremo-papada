@@ -5,6 +5,7 @@ from apps.unidades.models import Unidade
 class Curso(models.Model):
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='cursos')
     nome = models.CharField(max_length=200)
+    sigla = models.CharField(max_length=16, blank=True, default='', verbose_name='Sigla')
     eixo_tecnologico = models.CharField(max_length=200, blank=True, default='', verbose_name='Eixo Tecnológico')
     carga_horaria = models.PositiveIntegerField()
 

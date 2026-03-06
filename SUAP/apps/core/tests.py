@@ -48,3 +48,8 @@ class SmokeRoutesTests(TestCase):
         ]:
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200, msg=f"Falha em {path}")
+
+
+class HelloWorldTestCase(TestCase):
+    def test_hello_world(self):
+        self.assertEqual("hello", "hello")
