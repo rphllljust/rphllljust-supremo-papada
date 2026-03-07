@@ -118,6 +118,10 @@ py manage.py test apps.cursos
 
 A API REST utiliza JWT com `djangorestframework-simplejwt`.
 
+Documento detalhado para integração com AVA:
+
+* [docs/integracao-ava-jwt.md](docs/integracao-ava-jwt.md)
+
 ### Obter token
 
 Endpoint:
@@ -148,10 +152,40 @@ Resposta esperada:
     "perfil": "SECRETARIA",
     "username": "12345678909",
     "first_name": "Ana",
-    "last_name": "Secretaria"
+    "last_name": "Secretaria",
+    "access_context": {
+      "is_admin": false,
+      "module_access": {
+        "api": {
+          "usuarios": ["view"]
+        },
+        "api_ava": {
+          "usuarios": ["export"]
+        },
+        "web": {
+          "matriculas": ["documents", "flows", "manage", "rule_management", "rules", "transfer_management", "transfers", "view"]
+        }
+      },
+      "permission_claims": [
+        "api:usuarios:view",
+        "api_ava:usuarios:export",
+        "web:matriculas:view"
+      ],
+      "ava_export_modules": ["matriculas", "turmas", "unidades", "usuarios"]
+    }
   }
 }
 ```
+
+### Claims extras no JWT
+
+O `access token` e o `refresh token` carregam claims adicionais calculadas a partir da matriz de acesso:
+
+* `perfil`
+* `is_admin`
+* `module_access`
+* `permission_claims`
+* `ava_export_modules`
 
 ### Usar Bearer token
 
