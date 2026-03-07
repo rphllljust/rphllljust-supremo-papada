@@ -10,7 +10,7 @@ urlpatterns = [
     path("ensino/", include(("apps.core.urls", "core"), namespace="core")),
 
     path("", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
-    path("dashboard/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
+    path("accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),
 
     path("usuarios/", include(("apps.usuarios.urls", "usuarios"), namespace="usuarios")),
     path("alunos/", include("apps.usuarios.alunos.urls")),
