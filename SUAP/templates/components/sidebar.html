@@ -46,37 +46,21 @@
       Início
     </a>
 
-    <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">
-      Cursos
-    </a>
-
-    <a class="sidebar-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">
-      Turmas
-    </a>
-
-    <a class="sidebar-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">
-      Matrículas
-    </a>
-
-    <a class="sidebar-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">
-      Notas
-    </a>
-
-    <a class="sidebar-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">
-      Frequência
-    </a>
-
-    <a class="sidebar-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">
-      Agenda
-    </a>
-
-    <a class="sidebar-link {% if '/diario-classe/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">
-      Diário de Classe
-    </a>
-
-    <a class="sidebar-link {% if '/ata-professores/' in request.path %}active{% endif %}" href="{% url 'documentos:ata_list' %}">
-      Ata dos Professores
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/cursos/' in request.path or '/turmas/' in request.path or '/matriculas/' in request.path or '/notas/' in request.path or '/frequencia/' in request.path or '/agenda/' in request.path or '/diario-classe/' in request.path or '/ata-professores/' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Acesso Rápido</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">Cursos</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/turmas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">Turmas</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/matriculas/' in request.path %}active{% endif %}" href="{% url 'matriculas:matriculas_list' %}">Matrículas</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/notas/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">Notas</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/frequencia/' in request.path %}active{% endif %}" href="{% url 'frequencia:frequencia_list' %}">Frequência</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/agenda/' in request.path %}active{% endif %}" href="{% url 'agenda:agenda_list' %}">Agenda</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/diario-classe/' in request.path %}active{% endif %}" href="{% url 'notas:notas_list' %}">Diário de Classe</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/ata-professores/' in request.path %}active{% endif %}" href="{% url 'documentos:ata_list' %}">Ata dos Professores</a></li>
+        </ul>
+      </details>
+    </div>
 
     <div class="sidebar-group">
       <details class="sidebar-collapsible" {% if '/documentos/' in request.path or '/processos/' in request.path or '/arquivo/' in request.path or '/ensino/indisponivel/documentos-eletronicos-dashboard/' in request.path or '/ensino/indisponivel/documentos-pessoais/' in request.path or '/ensino/indisponivel/documentos-pessoais-digitalizados/' in request.path or '/ensino/indisponivel/requerimentos/' in request.path or '/ensino/indisponivel/caixa-de-entrada-e-saida/' in request.path or '/ensino/indisponivel/caixa-de-tramitacao-externa/' in request.path or '/ensino/indisponivel/minhas-permissoes/' in request.path or '/ensino/indisponivel/solitacoes-alteracao-nivel-acesso/' in request.path %}open{% endif %}>
@@ -121,9 +105,16 @@
       </details>
     </div>
 
-    <a class="sidebar-link" href="{% url 'dashboard:index' %}">
-      Programa de Gestão
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if request.path == '/' or '/admin/' in request.path or '/auditoria/' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Gestão e Sistema</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">Programa de Gestão</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/admin/' in request.path %}active{% endif %}" href="/admin/">Administração</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/auditoria/' in request.path %}active{% endif %}" href="{% url 'auditoria:log_list' %}">Auditoria</a></li>
+        </ul>
+      </details>
+    </div>
 
     <div class="sidebar-group">
       <details class="sidebar-collapsible" {% if '/alunos/' in request.path or '/professores/' in request.path or '/cursos/' in request.path or '/estagio/' in request.path or '/inscricoes/' in request.path or '/turmas/' in request.path or '/ensino/indisponivel/' in request.path %}open{% endif %}>
@@ -369,41 +360,20 @@
       </details>
     </div>
 
-    <a class="sidebar-link" href="/admin/">
-      Administração
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Tec. da Informação (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Des. Institucional (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Central de Serviços (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Internacionalização (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Atividades Estudantis (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Comunicação Social (ativar)
-    </a>
-
-    <a class="sidebar-link" href="#">
-      Segurança Institucional (ativar)
-    </a>
-
-    <a class="sidebar-link" href="{% url 'auditoria:log_list' %}">
-      Auditoria
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible">
+        <summary class="sidebar-group-title">Módulos em Ativação</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Tec. da Informação (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Des. Institucional (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Central de Serviços (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Internacionalização (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Atividades Estudantis (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Comunicação Social (ativar)</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="#">Segurança Institucional (ativar)</a></li>
+        </ul>
+      </details>
+    </div>
 
     <a class="sidebar-link sidebar-exit" href="{% url 'dashboard:index' %}">
       Sair
