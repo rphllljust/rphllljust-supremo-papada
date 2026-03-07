@@ -7,6 +7,7 @@ handler403 = "apps.core.views.acesso_negado"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("ensino/", include(("apps.core.urls", "core"), namespace="core")),
 
     path("", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
     path("dashboard/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),

@@ -1,4 +1,5 @@
 # File: apps/core/views.py
+from django.http import Http404
 from django.shortcuts import render
 
 
@@ -97,3 +98,7 @@ def acesso_negado(request, exception=None):
         {"mensagem": "Você não possui permissão para acessar este recurso."},
         status=403,
     )
+
+
+def ensino_item_indisponivel(request, item_slug):
+    raise Http404(f"A funcionalidade de ensino '{item_slug}' ainda não foi implementada.")

@@ -565,6 +565,91 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+.sidebar-group {
+  margin: 6px 0;
+}
+
+.sidebar-group-title {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  color: #1f2937;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sidebar-group-title::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-collapsible > .sidebar-group-title::after {
+  content: "+";
+  float: right;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.sidebar-collapsible[open] > .sidebar-group-title::after {
+  content: "-";
+}
+
+.sidebar-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 1px solid #d0d7e2;
+}
+
+.sidebar-tree .sidebar-tree {
+  margin-top: 6px;
+  padding-left: 12px;
+}
+
+.sidebar-tree-item {
+  margin: 4px 0;
+}
+
+.sidebar-tree-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #334155;
+  font-size: 0.95rem;
+  transition: 0.2s ease;
+}
+
+.sidebar-tree-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-tree-link.active {
+  background: #0b57d0;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar-collapsible-item > .sidebar-tree-link {
+  cursor: pointer;
+  list-style: none;
+}
+
+.sidebar-collapsible-item > .sidebar-tree-link::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-collapsible-item > .sidebar-tree-link::after {
+  content: "+";
+  float: right;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.sidebar-collapsible-item[open] > .sidebar-tree-link::after {
+  content: "-";
+}
+
 .sidebar-exit {
   margin-top: 12px;
   color: #b42318;

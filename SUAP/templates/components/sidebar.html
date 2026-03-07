@@ -6,14 +6,6 @@
       Início
     </a>
 
-    <a class="sidebar-link {% if '/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">
-      Alunos
-    </a>
-
-    <a class="sidebar-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">
-      Professores
-    </a>
-
     <a class="sidebar-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">
       Cursos
     </a>
@@ -46,29 +38,296 @@
       Ata dos Professores
     </a>
 
-    <a class="sidebar-link" href="{% url 'processos:processos_list' %}">
-      Documentos/Processos
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/documentos/' in request.path or '/processos/' in request.path or '/arquivo/' in request.path or '/ensino/indisponivel/documentos-eletronicos-dashboard/' in request.path or '/ensino/indisponivel/documentos-pessoais/' in request.path or '/ensino/indisponivel/documentos-pessoais-digitalizados/' in request.path or '/ensino/indisponivel/requerimentos/' in request.path or '/ensino/indisponivel/caixa-de-entrada-e-saida/' in request.path or '/ensino/indisponivel/caixa-de-tramitacao-externa/' in request.path or '/ensino/indisponivel/minhas-permissoes/' in request.path or '/ensino/indisponivel/solitacoes-alteracao-nivel-acesso/' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Documentos/Processos</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/documentos/' in request.path or '/ensino/indisponivel/documentos-eletronicos-dashboard/' in request.path or '/ensino/indisponivel/documentos-pessoais/' in request.path or '/ensino/indisponivel/documentos-pessoais-digitalizados/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Documentos Eletrônicos</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='documentos-eletronicos-dashboard' %}">Dashboard</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/documentos/' in request.path %}active{% endif %}" href="{% url 'documentos:ata_list' %}">Documentos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='documentos-pessoais' %}">Documentos Pessoais</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='documentos-pessoais-digitalizados' %}">Documentos Pessoais Digitalizados</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/processos/' in request.path or '/ensino/indisponivel/requerimentos/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Processos Eletrônicos</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/processos/' in request.path %}active{% endif %}" href="{% url 'processos:processos_list' %}">Processos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='requerimentos' %}">Requerimentos</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/arquivo/' in request.path or '/ensino/indisponivel/caixa-de-entrada-e-saida/' in request.path or '/ensino/indisponivel/caixa-de-tramitacao-externa/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Processos Físicos</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='caixa-de-entrada-e-saida' %}">Caixa de Entrada e Saída</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='caixa-de-tramitacao-externa' %}">Caixa de Tramitação Externa</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/arquivo/' in request.path %}active{% endif %}" href="{% url 'arquivo:arquivo_list' %}">Processos</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='minhas-permissoes' %}">Minhas Permissões</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='solitacoes-alteracao-nivel-acesso' %}">Solitações de Alteração de Nível de Acesso</a></li>
+        </ul>
+      </details>
+    </div>
 
     <a class="sidebar-link" href="{% url 'dashboard:index' %}">
       Programa de Gestão
     </a>
 
-    <a class="sidebar-link" href="{% url 'cursos:cursos_list' %}">
-      Ensino
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/alunos/' in request.path or '/professores/' in request.path or '/cursos/' in request.path or '/estagio/' in request.path or '/inscricoes/' in request.path or '/turmas/' in request.path or '/ensino/indisponivel/' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Ensino</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/alunos/' in request.path or '/professores/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Alunos e Professores</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item">
+                  <a class="sidebar-tree-link {% if '/alunos/' in request.path %}active{% endif %}" href="{% url 'usuarios:alunos_list' %}">Alunos</a>
+                </li>
+                <li class="sidebar-tree-item">
+                  <a class="sidebar-tree-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">Professores</a>
+                </li>
+              </ul>
+            </details>
+          </li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='cadastros-gerais' %}">Cadastros Gerais</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='dados-de-ensino' %}">Dados de Ensino</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='certificados-enem' %}">Certificados ENEM</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='comunicador' %}">Comunicador</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/cursos/' in request.path %}active{% endif %}" href="{% url 'cursos:cursos_list' %}">Cursos, Matrizes e Componentes</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='diplomas-e-certificados' %}">Diplomas e Certificados</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='ead' %}">EAD</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/estagio/' in request.path %}active{% endif %}" href="/estagio/">Estágios Docentes</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='etep' %}">ETEP</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">Painel de Controle</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='procedimentos-de-apoio' %}">Procedimentos de Apoio</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/inscricoes/' in request.path %}active{% endif %}" href="/inscricoes/">Processos Seletivos</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='relatorios' %}">Relatórios</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/turmas/' in request.path or '/notas/' in request.path %}active{% endif %}" href="{% url 'turmas:turmas_list' %}">Turmas e Diários</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='programas' %}">Programas</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='atas-eletronicas' %}">Atas Eletrônicas</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='plano-de-oferta' %}">Plano de Oferta</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='regulacao' %}">Regulação</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='migracao-de-dados' %}">Migração de dados</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='napne' %}">Napne</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='variaveis-de-gestao' %}">Variáveis de Gestão</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='acervo-academico' %}">Acervo Acadêmico</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='atividade-profissional-efetiva' %}">Atividade Profissional Efetiva</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='planos-individuais-de-trabalho' %}">Planos Individuais de Trabalho</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='laboratorios-remotos' %}">Laboratórios Remotos</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='projetos' %}">Projetos</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='ppc' %}">PPC</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pafc' %}">PAFC</a></li>
+        </ul>
+      </details>
+    </div>
 
-    <a class="sidebar-link" href="#">
-      Pesquisa (ativar)
-    </a>
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/ensino/indisponivel/pesquisa-' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Pesquisa</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-editais-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Editais</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-editais' %}">Editais</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-editais-resultado-final' %}">Resultado Final</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-editais-resultado-parcial' %}">Resultado Parcial</a></li>
+              </ul>
+            </details>
+          </li>
 
-    <a class="sidebar-link" href="#">
-      Extensão (ativar)
-    </a>
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-projetos-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Projetos</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-projetos-meus-projetos' %}">Meus Projetos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-projetos-meus-recursos' %}">Meus Recursos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-projetos-submeter-projetos' %}">Submeter Projetos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-projetos-tornar-se-avaliador' %}">Tornar-se Avaliador</a></li>
+              </ul>
+            </details>
+          </li>
 
-    <a class="sidebar-link" href="{% url 'usuarios:professores_list' %}">
-      Gestão de Pessoas
-    </a>
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-declaracoes-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Declarações</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-declaracoes-avaliador-de-projetos' %}">Avaliador de Projetos</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-editora-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Editora</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-editora-submissoes' %}">Submissões</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-editora-doacoes-realizadas' %}">Doações Realizadas</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-laboratorios-multiusuario-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Laboratórios Multiusuário</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-laboratorios-multiusuario-laboratorios' %}">Laboratórios</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-laboratorios-multiusuario-minhas-solicitacoes' %}">Minhas Solicitações</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-incubadoras-tecnologicas-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Incubadoras Tecnológicas</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-incubadoras-tecnologicas-incubadoras-tecnologicas' %}">Incubadoras Tecnológicas</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-incubadoras-tecnologicas-equipe-tecnica-eta' %}">Equipe Técnica (ETA)</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-relatorios-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Relatórios</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-relatorios-empreendimentos-incubados' %}">Empreendimentos Incubados</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/pesquisa-cnpq-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">CNPQ</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-estatistica-importacoes-lattes' %}">Estatística de Importações do Lattes</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-indicadores' %}">Indicadores</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-producao-por-campus' %}">Produção por Campus</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-producao-por-servidor' %}">Produção por Servidor</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-relatorio-importacoes-lattes' %}">Relatório de Importações do Lattes</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-cnpq-titulacao-area-atuacao' %}">Titulação e Área de Atuação</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pesquisa-variaveis-de-gestao' %}">Variáveis de Gestão</a></li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/estagio/' in request.path or '/ensino/indisponivel/extensao-' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Extensão</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/estagio/convenios/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Convênios</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/estagio/convenios/' in request.path %}active{% endif %}" href="/estagio/convenios/">Convênios</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/estagio/' in request.path and '/estagio/convenios/' not in request.path or '/ensino/indisponivel/extensao-estagio-afins-aprendizagens/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Estágio e Afins</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-estagio-afins-aprendizagens' %}">Aprendizagens</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/estagio/' in request.path and '/estagio/convenios/' not in request.path %}active{% endif %}" href="/estagio/">Estágios</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/extensao-projetos-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Projetos</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-editais' %}">Editais</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-meus-projetos' %}">Meus Projetos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-meus-recursos' %}">Meus Recursos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-projetos' %}">Projetos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-submeter-projetos' %}">Submeter Projetos</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-projetos-tornar-se-avaliador' %}">Tornar-se Avaliador</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/extensao-demandas-externas-' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Demandas Externas</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-demandas-externas-demandas' %}">Demandas</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-nepp' %}">Núcleos de Extensão e Prática Profissional - NEPP</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='extensao-variaveis-de-gestao' %}">Variáveis de Gestão</a></li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="sidebar-group">
+      <details class="sidebar-collapsible" {% if '/professores/' in request.path or '/unidades/' in request.path or '/ensino/indisponivel/' in request.path %}open{% endif %}>
+        <summary class="sidebar-group-title">Gestão de Pessoas</summary>
+        <ul class="sidebar-tree">
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">Servidores</a></li>
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/unidades/' in request.path %}active{% endif %}" href="{% url 'unidades:unidades_list' %}">Setores</a></li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/organograma/' in request.path or '/ensino/indisponivel/ponto/' in request.path or '/ensino/indisponivel/solicitacoes/' in request.path or '/ensino/indisponivel/acumulo-de-cargo/' in request.path or '/ensino/indisponivel/acompanhamento-funcional/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Administração de Pessoal</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='organograma' %}">Organograma</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='ponto' %}">Ponto</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='solicitacoes' %}">Solicitações</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='acumulo-de-cargo' %}">Acúmulo de Cargo</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='acompanhamento-funcional' %}">Acompanhamento Funcional</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/ensino/indisponivel/remocao-interna/' in request.path or '/ensino/indisponivel/avaliacao-de-desempenho/' in request.path or '/ensino/indisponivel/licenca-capacitacao/' in request.path or '/ensino/indisponivel/pdp/' in request.path or '/professores/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Desenvolvimento de Pessoal</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='remocao-interna' %}">Remoção Interna</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='avaliacao-de-desempenho' %}">Avaliação de Desempenho</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='licenca-capacitacao' %}">Licença Capacitação</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='pdp' %}">PDP</a></li>
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/professores/' in request.path %}active{% endif %}" href="{% url 'usuarios:professores_list' %}">Docentes</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='atencao-a-saude-do-servidor' %}">Atenção a Saúde do Servidor</a></li>
+
+          <li class="sidebar-tree-item">
+            <details class="sidebar-collapsible-item" {% if '/unidades/' in request.path %}open{% endif %}>
+              <summary class="sidebar-tree-link">Cadastros</summary>
+              <ul class="sidebar-tree">
+                <li class="sidebar-tree-item"><a class="sidebar-tree-link {% if '/unidades/' in request.path %}active{% endif %}" href="{% url 'unidades:unidades_list' %}">Instituições</a></li>
+              </ul>
+            </details>
+          </li>
+
+          <li class="sidebar-tree-item"><a class="sidebar-tree-link" href="{% url 'core:ensino_item_indisponivel' item_slug='variaveis-de-gestao-pessoas' %}">Variáveis de Gestão</a></li>
+        </ul>
+      </details>
+    </div>
 
     <a class="sidebar-link" href="/admin/">
       Administração
