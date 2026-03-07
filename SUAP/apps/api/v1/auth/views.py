@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.access.policies import build_access_context
+
 from .serializers import LogoutSerializer, PerfilTokenObtainPairSerializer
 
 
@@ -29,6 +31,7 @@ class AuthMeApiView(APIView):
 
     def get(self, request):
         user = request.user
+        access_context = build_access_context(user)
         return Response(
             {
                 "id": user.id,
@@ -37,5 +40,6 @@ class AuthMeApiView(APIView):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
+                "access_context": access_context,
             }
         )

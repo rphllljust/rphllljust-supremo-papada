@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Iterable
 
 from apps.usuarios.models import PerfilUsuario
@@ -112,3 +113,49 @@ def filter_queryset_for_user(user, queryset, *, action: str = "view", surface: s
     if not can_access_module(user, app_label, action=action, surface=surface):
         return queryset.none()
     return queryset
+
+
+def build_module_access_map(user) -> dict[str, dict[str, list[str]]]:
+    if not is_authenticated_user(user):
+        return {}
+
+    access_map = defaultdict(dict)
+    for module_name, surfaces in ACCESS_MATRIX.items():
+        for surface, actions in surfaces.items():
+            allowed_actions = [
+                action
+                for action in actions
+                if can_access_module(user, module_name, action=action, surface=surface)
+            ]
+            if allowed_actions:
+                access_map[surface][module_name] = sorted(allowed_actions)
+
+    return {surface: modules for surface, modules in access_map.items()}
+
+
+def build_permission_claims(user) -> list[str]:
+    claims = []
+    for surface, modules in build_module_access_map(user).items():
+        for module_name, actions in modules.items():
+            for action in actions:
+                claims.append(f"{surface}:{module_name}:{action}")
+    return sorted(claims)
+
+
+def get_ava_export_modules(user) -> list[str]:
+    access_map = build_module_access_map(user)
+    modules = access_map.get("api_ava", {})
+    return sorted(
+        module_name
+        for module_name, actions in modules.items()
+        if "export" in actions
+    )
+
+
+def build_access_context(user) -> dict[str, object]:
+    return {
+        "is_admin": is_admin_user(user),
+        "module_access": build_module_access_map(user),
+        "permission_claims": build_permission_claims(user),
+        "ava_export_modules": get_ava_export_modules(user),
+    }

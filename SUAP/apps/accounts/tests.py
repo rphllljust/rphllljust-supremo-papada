@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.usuarios.models import PerfilUsuario, Pessoa, Usuario
 
@@ -221,6 +222,28 @@ class ApiJwtAuthenticationTests(TestCase):
         self.assertIn("refresh", response.data)
         self.assertEqual(response.data["user"]["cpf"], self.cpf_secretaria)
         self.assertEqual(response.data["user"]["perfil"], PerfilUsuario.SECRETARIA)
+        self.assertIn("access_context", response.data["user"])
+        self.assertIn("web:matriculas:view", response.data["user"]["access_context"]["permission_claims"])
+
+    def test_access_token_contains_computed_access_claims(self):
+        response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+
+        token = AccessToken(response.data["access"])
+
+        self.assertEqual(token["perfil"], PerfilUsuario.SECRETARIA)
+        self.assertIn("module_access", token)
+        self.assertIn("permission_claims", token)
+        self.assertIn("ava_export_modules", token)
+        self.assertIn("usuarios", token["module_access"]["api"])
+        self.assertIn("api:usuarios:view", token["permission_claims"])
 
     def test_token_obtain_pair_rejects_profile_mismatch(self):
         response = self.api_client.post(
@@ -345,3 +368,5 @@ class ApiJwtAuthenticationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["cpf"], self.cpf_secretaria)
         self.assertEqual(response.data["perfil"], PerfilUsuario.SECRETARIA)
+        self.assertIn("access_context", response.data)
+        self.assertIn("api:usuarios:view", response.data["access_context"]["permission_claims"])
