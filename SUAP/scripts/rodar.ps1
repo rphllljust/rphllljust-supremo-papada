@@ -1,0 +1,33 @@
+[CmdletBinding()]
+param(
+	[string]$HostAddress = "127.0.0.1",
+	[int]$Port = 8000
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+# scripts/rodar.ps1 -> volta para a raiz do projeto (pasta pai de scripts)
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$activateScript = Join-Path $projectRoot ".venv\Scripts\Activate.ps1"
+$managePy = Join-Path $projectRoot "manage.py"
+
+if (-not (Test-Path -Path $managePy)) {
+	Write-Error "Arquivo manage.py não encontrado em: $managePy"
+}
+
+if (-not (Test-Path -Path $activateScript)) {
+	Write-Error "Virtual environment não encontrado em: $activateScript"
+}
+
+Push-Location $projectRoot
+try {
+	Write-Host "Ativando ambiente virtual..." -ForegroundColor Cyan
+	. $activateScript
+
+	Write-Host "Iniciando servidor Django em $HostAddress`:$Port..." -ForegroundColor Green
+	python manage.py runserver "$HostAddress`:$Port"
+}
+finally {
+	Pop-Location
+}
