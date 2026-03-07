@@ -3,113 +3,64 @@
 {% block title %}Painel | {{ APP_NAME|default:"SUAP" }}{% endblock %}
 
 {% block content %}
-{% url 'usuarios:alunos_create' as student_create_url %}
-{% url 'cursos:cursos_create' as course_create_url %}
-{% url 'matriculas:matriculas_create' as enrollments_page_url %}
-{% url 'turmas:turmas_list' as classes_page_url %}
-{% url 'matriculas:matriculas_list' as enrollments_list_url %}
-
-<section class="breadcrumb">Navegação &gt; Painel &gt; Gestão Escolar</section>
-
-<section class="card section-box" style="margin-bottom: 16px;">
-  <h2>Bem-vindo ao painel</h2>
-  <p>
-    Você está no perfil
-    <strong>{{ request.user.get_tipo_display|default:perfil }}</strong>.
-    {% if is_secretaria %}
-      Acesso completo aos cadastros, matrículas e validações da secretaria.
-    {% elif is_coordenacao %}
-      Acesso de consulta e acompanhamento acadêmico.
-    {% elif is_professor %}
-      Acesso a turmas e rotinas pedagógicas.
-    {% else %}
-      Acesso às informações acadêmicas do aluno.
-    {% endif %}
-  </p>
+<section class="dashboard-welcome card">
+  <div>
+    <h1 class="dashboard-title">Bem-vindo, {% firstof request.user.get_full_name request.user.username %}</h1>
+    <p class="dashboard-subtitle">Matrícula: {{ request.user.username }}</p>
+  </div>
 </section>
 
-<section class="grid four">
- <article class="card section-box"><h3>Alunos</h3><p class="kpi">{{ total_students }}</p></article>
- <article class="card section-box"><h3>Cursos</h3><p class="kpi">{{ total_courses }}</p></article>
- <article class="card section-box"><h3>Turmas</h3><p class="kpi">{{ total_classes }}</p></article>
- <article class="card section-box"><h3>Matrículas Ativas</h3><p class="kpi">{{ total_enrollments }}</p></article>
+<section class="dashboard-kpi-grid">
+  <article class="dashboard-kpi-card card">
+    <p class="dashboard-kpi-label">Alunos</p>
+    <p class="dashboard-kpi-value">{{ total_students }}</p>
+  </article>
+
+  <article class="dashboard-kpi-card card">
+    <p class="dashboard-kpi-label">Turmas</p>
+    <p class="dashboard-kpi-value">{{ total_classes }}</p>
+  </article>
+
+  <article class="dashboard-kpi-card card">
+    <p class="dashboard-kpi-label">Matrículas Ativas</p>
+    <p class="dashboard-kpi-value">{{ total_enrollments }}</p>
+  </article>
 </section>
 
-<section class="grid two">
- <article class="card section-box">
- <h2>Ações rápidas</h2>
- <div class="button-row">
-  {% if is_secretaria %}
-    <a class="btn btn-success" href="{{ student_create_url|default:'#' }}">Novo Aluno</a>
-    <a class="btn btn-success" href="{{ course_create_url|default:'#' }}">Novo Curso</a>
-    <a class="btn btn-success" href="{{ enrollments_page_url|default:'#' }}">Nova Matrícula</a>
-    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
-  {% elif is_coordenacao %}
-    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Ver Turmas</a>
-    <a class="btn btn-primary" href="{{ enrollments_list_url|default:'#' }}">Ver Matrículas</a>
-  {% elif is_professor %}
-    <a class="btn btn-primary" href="{{ classes_page_url|default:'#' }}">Minhas Turmas</a>
-  {% else %}
-    <a class="btn btn-primary" href="{{ enrollments_list_url|default:'#' }}">Minhas Matrículas</a>
-  {% endif %}
- </div>
- </article>
+<section class="dashboard-panels-grid">
+  <article class="dashboard-panel card">
+    <h2 class="dashboard-panel-title">Avisos Recentes</h2>
+    <div class="dashboard-list">
+      {% for alert in announcements %}
+        <div class="dashboard-list-item">
+          <h3 class="dashboard-item-title">{{ alert.title }}</h3>
+          <p class="dashboard-item-subtitle">{{ alert.body }}</p>
+        </div>
+      {% empty %}
+        <div class="dashboard-list-item">
+          <h3 class="dashboard-item-title">Sem avisos</h3>
+          <p class="dashboard-item-subtitle">Nenhum comunicado recente foi publicado.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
 
- <article class="card section-box">
- <h2>Mensagens</h2>
- {% for alert in announcements %}
- <div class="alert alert-{{ alert.level }}">
- <strong>{{ alert.title }}</strong>
- <p>{{ alert.body }}</p>
- </div>
- {% empty %}
- <div class="alert alert-info">Sem avisos publicados.</div>
- {% endfor %}
- </article>
-</section>
-
-<section class="grid two">
- <article class="card section-box">
- <h2>Matrículas Recentes</h2>
- <table class="table">
- <thead><tr><th>Aluno</th><th>Turma</th><th>Status</th></tr></thead>
- <tbody>
- {% for item in recent_enrollments %}
- <tr>
- <td>{{ item.student.full_name }}</td>
- <td>{{ item.school_class }}</td>
- <td>
- {% if item.status == 'ATIVA' %}
- <span class="badge badge-success">Ativa</span>
- {% elif item.status == 'TRANCADA' %}
- <span class="badge badge-warning">Trancada</span>
- {% elif item.status == 'CONCLUIDA' %}
- <span class="badge badge-neutral">Concluída</span>
- {% else %}
- <span class="badge badge-info">{{ item.status }}</span>
- {% endif %}
- </td>
- </tr>
- {% empty %}
- <tr><td colspan="3">Nenhuma matrícula recente.</td></tr>
- {% endfor %}
- </tbody>
- </table>
- </article>
-
- <article class="card section-box">
- <h2>Timeline de Frequência</h2>
- <div class="timeline">
- {% for rec in recent_attendance %}
- <div class="timeline-item {% if rec.present %}done{% endif %}">
- <small>{{ rec.attendance_date|date:"d/m/Y" }}</small>
- <strong>{{ rec.enrollment.student.full_name }}</strong>
- <p>{% if rec.present %}Presença registrada{% else %}Falta registrada{% endif %}</p>
- </div>
- {% empty %}
- <div class="alert alert-info">Nenhum registro recente.</div>
- {% endfor %}
- </div>
- </article>
+  <article class="dashboard-panel card">
+    <h2 class="dashboard-panel-title">Próximas Aulas</h2>
+    <div class="dashboard-list">
+      {% for item in recent_enrollments|slice:":5" %}
+        <div class="dashboard-list-item">
+          <h3 class="dashboard-item-title">{{ item.school_class }}</h3>
+          <p class="dashboard-item-subtitle">Horário: {% cycle '07:30 - 09:10' '09:20 - 11:00' '13:30 - 15:10' '15:20 - 17:00' '19:00 - 20:40' %}</p>
+          <p class="dashboard-item-subtitle">Docente: Professor responsável</p>
+        </div>
+      {% empty %}
+        <div class="dashboard-list-item">
+          <h3 class="dashboard-item-title">Sem aulas previstas</h3>
+          <p class="dashboard-item-subtitle">Ainda não há aulas cadastradas para os próximos horários.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
 </section>
 {% endblock %}

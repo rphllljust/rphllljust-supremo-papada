@@ -10,15 +10,6 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
-  <div class="govbar">
-    <div class="govbar-inner">
-      <span class="govbar-badge">Gov.br</span>
-      <span class="govbar-text">Portal institucional de gestão escolar</span>
-    </div>
-  </div>
-
-  {% include "components/navbar.html" %}
-
   {% if request.user.is_authenticated %}
     <div class="page shell" id="pageContent">
       {% include "components/sidebar.html" %}
@@ -35,6 +26,7 @@
 
   {% include "components/footer.html" %}
 
+  <script src="{% static 'js/sidebar-search.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

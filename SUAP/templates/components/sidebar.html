@@ -1,7 +1,47 @@
-<aside class="sidebar-menu card">
-  <div class="sidebar-title">Módulos</div>
+{% load static %}
 
-  <nav class="sidebar-nav">
+<aside class="sidebar-menu card">
+  <div class="sidebar-branding">
+    <img class="sidebar-logo" src="{% static 'img/idep-ro-logo.png' %}" alt="IDEP/RO">
+    <div class="sidebar-system-title">SUAP Escola</div>
+    <p class="sidebar-system-subtitle">Portal institucional de gestão escolar</p>
+  </div>
+
+  <details class="sidebar-user-menu">
+    <summary class="sidebar-user-trigger">
+      <span class="sidebar-user-avatar">
+        {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+      </span>
+      <span class="sidebar-user-meta">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        <span class="sidebar-user-role">{{ request.user.get_tipo_display|default:request.user.tipo }}</span>
+      </span>
+      <span class="sidebar-user-caret" aria-hidden="true"></span>
+    </summary>
+
+    <div class="sidebar-user-dropdown">
+      <button type="button" class="sidebar-dropdown-button is-placeholder">Meu perfil</button>
+      <button type="button" class="sidebar-dropdown-button is-placeholder">Configurações</button>
+      <a class="sidebar-dropdown-link" href="{% url 'accounts:password_reset' %}">Alterar senha</a>
+      <form method="post" action="{% url 'accounts:logout' %}" class="sidebar-dropdown-form">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-dropdown-button">Sair</button>
+      </form>
+    </div>
+  </details>
+
+  <div class="sidebar-search" data-sidebar-search>
+    <span class="sidebar-search-icon" aria-hidden="true"></span>
+    <input
+      class="sidebar-search-input"
+      type="search"
+      placeholder="Pesquisar módulo, página ou função"
+      aria-label="Pesquisar módulo, página ou função"
+      data-sidebar-search-input
+    >
+  </div>
+
+  <nav class="sidebar-nav" data-sidebar-nav>
     <a class="sidebar-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard:index' %}">
       Início
     </a>
@@ -369,4 +409,8 @@
       Sair
     </a>
   </nav>
+
+  <p class="sidebar-search-empty" hidden data-sidebar-search-empty>
+    Nenhum item localizado no menu.
+  </p>
 </aside>
