@@ -43,6 +43,7 @@ Resposta de exemplo:
     "first_name": "Ana",
     "last_name": "Secretaria",
     "access_context": {
+      "claims_version": 1,
       "is_admin": false,
       "module_access": {
         "api": {
@@ -140,6 +141,7 @@ Esse endpoint retorna os dados do usuario autenticado e o mesmo `access_context`
 
 Os tokens emitidos incluem claims extras para facilitar integrações e auditoria:
 
+* `claims_version`: versão do formato das claims retornadas (atual: 1)
 * `cpf`: CPF normalizado do usuario
 * `perfil`: perfil autenticado no momento do login
 * `is_admin`: se o usuario possui acesso administrativo efetivo

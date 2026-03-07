@@ -154,6 +154,7 @@ Resposta esperada:
     "first_name": "Ana",
     "last_name": "Secretaria",
     "access_context": {
+      "claims_version": 1,
       "is_admin": false,
       "module_access": {
         "api": {
@@ -181,6 +182,7 @@ Resposta esperada:
 
 O `access token` e o `refresh token` carregam claims adicionais calculadas a partir da matriz de acesso:
 
+* `claims_version`: versão do formato das claims retornadas (atual: 1)
 * `perfil`
 * `is_admin`
 * `module_access`

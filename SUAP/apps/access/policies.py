@@ -154,6 +154,7 @@ def get_ava_export_modules(user) -> list[str]:
 
 def build_access_context(user) -> dict[str, object]:
     return {
+        "claims_version": 1,
         "is_admin": is_admin_user(user),
         "module_access": build_module_access_map(user),
         "permission_claims": build_permission_claims(user),

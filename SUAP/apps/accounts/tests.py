@@ -223,6 +223,8 @@ class ApiJwtAuthenticationTests(TestCase):
         self.assertEqual(response.data["user"]["cpf"], self.cpf_secretaria)
         self.assertEqual(response.data["user"]["perfil"], PerfilUsuario.SECRETARIA)
         self.assertIn("access_context", response.data["user"])
+        self.assertIn("claims_version", response.data["user"]["access_context"])
+        self.assertEqual(response.data["user"]["access_context"]["claims_version"], 1)
         self.assertIn("web:matriculas:view", response.data["user"]["access_context"]["permission_claims"])
 
     def test_access_token_contains_computed_access_claims(self):
@@ -239,6 +241,8 @@ class ApiJwtAuthenticationTests(TestCase):
         token = AccessToken(response.data["access"])
 
         self.assertEqual(token["perfil"], PerfilUsuario.SECRETARIA)
+        self.assertIn("claims_version", token)
+        self.assertEqual(token["claims_version"], 1)
         self.assertIn("module_access", token)
         self.assertIn("permission_claims", token)
         self.assertIn("ava_export_modules", token)

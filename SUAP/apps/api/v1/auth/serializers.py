@@ -28,6 +28,7 @@ class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["perfil"] = user.tipo
         token["first_name"] = user.first_name
         token["last_name"] = user.last_name
+        token["claims_version"] = access_context["claims_version"]
         token["is_admin"] = access_context["is_admin"]
         token["module_access"] = access_context["module_access"]
         token["permission_claims"] = access_context["permission_claims"]
