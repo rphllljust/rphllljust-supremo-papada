@@ -1,10 +1,25 @@
 
-# python
-# file: `apps/api/v1/usuarios/views.py`
-from django.http import JsonResponse
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-def usuario_list(request):
-    return JsonResponse({"message": "Lista de usuários (exemplo)"})
+from apps.access.api.permissions import CanAccessModule
 
-def usuario_detail(request, pk):
-    return JsonResponse({"message": f"Detalhe do usuário {pk} (exemplo)"})
+
+class UsuarioListApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "usuarios"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request):
+        return Response({"message": "Lista de usuarios (exemplo)"})
+
+
+class UsuarioDetailApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "usuarios"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, pk):
+        return Response({"message": f"Detalhe do usuario {pk} (exemplo)"})

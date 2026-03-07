@@ -1,11 +1,10 @@
-# python
-# file: `apps/api/v1/matriculas/urls.py`
 from django.urls import path
-from . import views
+
+from .views import MatriculaDetailApiView, MatriculaListApiView
 
 app_name = "api_v1_matriculas"
 
 urlpatterns = [
-    path("", views.matriculas_list, name="list"),
-    path("<int:pk>/", views.matriculas_detail, name="detail"),
+    path("", MatriculaListApiView.as_view(), name="list"),
+    path("<int:pk>/", MatriculaDetailApiView.as_view(), name="detail"),
 ]

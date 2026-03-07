@@ -5,6 +5,7 @@ from django.core.validators import validate_email
 
 from apps.usuarios.models import PerfilUsuario, Pessoa, Usuario
 
+from .services import authenticate_user_by_cpf_profile
 from .utils import normalize_cpf
 
 
@@ -36,21 +37,10 @@ class PerfilAuthenticationForm(AuthenticationForm):
         if not cpf or not senha or not perfil:
             return cleaned_data
 
-        usuario = Usuario.objects.filter(cpf=cpf).first()
-        if not usuario:
-            raise forms.ValidationError("Conta nao encontrada para o CPF informado.")
-
-        if not usuario.is_active:
-            raise forms.ValidationError("Sua conta esta inativa. Procure a secretaria.")
-
-        if usuario.tipo == PerfilUsuario.ALUNO:
-            raise forms.ValidationError("Perfil Aluno nao possui acesso ao sistema SUAP.")
-
-        if usuario.tipo != perfil:
-            raise forms.ValidationError("O perfil selecionado nao corresponde ao perfil da sua conta.")
-
-        if not usuario.check_password(senha):
-            raise forms.ValidationError("Senha incorreta para o CPF informado.")
+        try:
+            usuario = authenticate_user_by_cpf_profile(cpf=cpf, password=senha, perfil=perfil)
+        except ValidationError as exc:
+            raise forms.ValidationError(exc.messages) from exc
 
         self.confirm_login_allowed(usuario)
         self.user_cache = usuario

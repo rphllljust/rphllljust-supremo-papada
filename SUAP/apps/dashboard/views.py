@@ -2,6 +2,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
+from apps.access.views import render_access_denied
 from apps.cursos.models import Curso
 from apps.matriculas.models import Matricula
 from apps.turmas.models import Turma
@@ -17,19 +18,9 @@ def index(request):
     perfil = getattr(request.user, "tipo", "")
     perfis_validos = {PerfilUsuario.SECRETARIA, PerfilUsuario.COORDENACAO, PerfilUsuario.PROFESSOR, PerfilUsuario.ADMIN}
     if perfil == PerfilUsuario.ALUNO:
-        return render(
-            request,
-            "base/acesso_negado.html",
-            {"mensagem": "Perfil Aluno nao possui acesso ao sistema SUAP."},
-            status=403,
-        )
+        return render_access_denied(request, "Perfil Aluno nao possui acesso ao sistema SUAP.")
     if perfil not in perfis_validos:
-        return render(
-            request,
-            "base/acesso_negado.html",
-            {"mensagem": "Seu perfil ainda nao esta habilitado para o painel."},
-            status=403,
-        )
+        return render_access_denied(request, "Seu perfil ainda nao esta habilitado para o painel.")
 
     total_students = Usuario.objects.filter(tipo=PerfilUsuario.ALUNO).count()
     total_courses = Curso.objects.count()

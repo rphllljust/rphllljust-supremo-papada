@@ -91,14 +91,5 @@ def dashboard(request):
     return render(request, "core/dashboard.html", context)
 
 
-def acesso_negado(request, exception=None):
-    return render(
-        request,
-        "base/acesso_negado.html",
-        {"mensagem": "Você não possui permissão para acessar este recurso."},
-        status=403,
-    )
-
-
 def ensino_item_indisponivel(request, item_slug):
     raise Http404(f"A funcionalidade de ensino '{item_slug}' ainda não foi implementada.")

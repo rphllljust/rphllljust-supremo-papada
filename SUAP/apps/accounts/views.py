@@ -47,15 +47,6 @@ def logout_confirmado(request):
     return render(request, "accounts/logout_confirmado.html")
 
 
-def acesso_negado(request):
-    return render(
-        request,
-        "base/acesso_negado.html",
-        {"mensagem": "Seu perfil nao possui acesso ao sistema SUAP."},
-        status=403,
-    )
-
-
 def cadastro(request):
     if request.user.is_authenticated:
         return redirect("dashboard:index")

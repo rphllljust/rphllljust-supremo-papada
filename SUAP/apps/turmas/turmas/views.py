@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.core.permissions import role_required
+from apps.access.decorators import role_required
 from apps.turmas.models import DiarioAcademico, Turma
 from apps.usuarios.models import PerfilUsuario
 from .forms import DiarioAcademicoForm, DiarioFecharForm, TurmaForm

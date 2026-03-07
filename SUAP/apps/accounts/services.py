@@ -1,6 +1,29 @@
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
+from apps.accounts.utils import normalize_cpf
 from apps.usuarios.models import PerfilUsuario, Pessoa, Usuario
+
+
+def authenticate_user_by_cpf_profile(*, cpf: str, password: str, perfil: str):
+    normalized_cpf = normalize_cpf(cpf)
+    usuario = Usuario.objects.filter(cpf=normalized_cpf).first()
+    if not usuario:
+        raise ValidationError("Conta nao encontrada para o CPF informado.")
+
+    if not usuario.is_active:
+        raise ValidationError("Sua conta esta inativa. Procure a secretaria.")
+
+    if usuario.tipo == PerfilUsuario.ALUNO:
+        raise ValidationError("Perfil Aluno nao possui acesso ao sistema SUAP.")
+
+    if usuario.tipo != perfil:
+        raise ValidationError("O perfil selecionado nao corresponde ao perfil da sua conta.")
+
+    if not usuario.check_password(password):
+        raise ValidationError("Senha incorreta para o CPF informado.")
+
+    return usuario
 
 
 def redirect_by_profile(user) -> str:
@@ -12,7 +35,7 @@ def redirect_by_profile(user) -> str:
     if tipo == PerfilUsuario.PROFESSOR:
         return reverse("turmas:turmas_list")
     if tipo == PerfilUsuario.ALUNO:
-        return reverse("accounts:acesso_negado")
+        return reverse("access:acesso_negado")
     return reverse("dashboard:index")
 
 

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
-from apps.core.permissions import role_required
+from apps.access.decorators import role_required
 from ..models import PerfilUsuario, Usuario
 from .forms import ProfessorForm
 

@@ -1,11 +1,24 @@
-# python
-# file: `apps/api/v1/turmas/views.py`
-from django.http import JsonResponse
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.access.api.permissions import CanAccessModule
 
 
-def turmas_list(request):
-    return JsonResponse({"message": "Lista de turmas (exemplo)"})
+class TurmaListApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "turmas"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request):
+        return Response({"message": "Lista de turmas (exemplo)"})
 
 
-def turmas_detail(request, pk):
-    return JsonResponse({"message": f"Detalhe da turma {pk} (exemplo)"})
+class TurmaDetailApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "turmas"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, pk):
+        return Response({"message": f"Detalhe da turma {pk} (exemplo)"})

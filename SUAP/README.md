@@ -114,6 +114,98 @@ py manage.py test
 py manage.py test apps.cursos
 ```
 
+## Autenticação da API
+
+A API REST utiliza JWT com `djangorestframework-simplejwt`.
+
+### Obter token
+
+Endpoint:
+
+```text
+POST /api/v1/auth/token/
+```
+
+Payload:
+
+```json
+{
+  "cpf": "123.456.789-09",
+  "password": "senha123",
+  "perfil": "SECRETARIA"
+}
+```
+
+Resposta esperada:
+
+```json
+{
+  "refresh": "<refresh_token>",
+  "access": "<access_token>",
+  "user": {
+    "id": 1,
+    "cpf": "12345678909",
+    "perfil": "SECRETARIA",
+    "username": "12345678909",
+    "first_name": "Ana",
+    "last_name": "Secretaria"
+  }
+}
+```
+
+### Usar Bearer token
+
+```powershell
+curl http://127.0.0.1:8000/api/v1/usuarios/ -H "Authorization: Bearer <access_token>"
+```
+
+### Renovar token
+
+Endpoint:
+
+```text
+POST /api/v1/auth/token/refresh/
+```
+
+Payload:
+
+```json
+{
+  "refresh": "<refresh_token>"
+}
+```
+
+### Logout da API
+
+O logout invalida o `refresh token` via blacklist.
+
+Endpoint:
+
+```text
+POST /api/v1/auth/logout/
+```
+
+Payload:
+
+```json
+{
+  "refresh": "<refresh_token>"
+}
+```
+
+### Consultar usuário autenticado
+
+Endpoint:
+
+```text
+GET /api/v1/auth/me/
+```
+
+### Semântica de resposta
+
+* `401` para requisição sem JWT válido
+* `403` para usuário autenticado sem permissão na matriz de acesso
+
 ## Estrutura básica
 
 * `apps/` — apps Django do sistema

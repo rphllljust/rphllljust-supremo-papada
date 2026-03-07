@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from rest_framework.test import APIClient
 
 from apps.usuarios.models import PerfilUsuario, Pessoa, Usuario
 
@@ -189,3 +190,158 @@ class AccountsFlowTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Revise os campos obrigatorios destacados no formulario")
+
+
+class ApiJwtAuthenticationTests(TestCase):
+    def setUp(self):
+        self.api_client = APIClient()
+        self.cpf_secretaria = gerar_cpf(123456789)
+        self.secretaria = Usuario.objects.create_user(
+            username=self.cpf_secretaria,
+            cpf=self.cpf_secretaria,
+            tipo=PerfilUsuario.SECRETARIA,
+            password="senha123",
+            first_name="Ana",
+            last_name="Secretaria",
+        )
+
+    def test_token_obtain_pair_returns_tokens_and_user_payload(self):
+        response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+        self.assertEqual(response.data["user"]["cpf"], self.cpf_secretaria)
+        self.assertEqual(response.data["user"]["perfil"], PerfilUsuario.SECRETARIA)
+
+    def test_token_obtain_pair_rejects_profile_mismatch(self):
+        response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.COORDENACAO,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("detail", response.data)
+        self.assertIn("nao corresponde ao perfil", response.data["detail"][0])
+
+    def test_token_obtain_pair_blocks_aluno(self):
+        cpf_aluno = gerar_cpf(123456790)
+        Usuario.objects.create_user(
+            username=cpf_aluno,
+            cpf=cpf_aluno,
+            tipo=PerfilUsuario.ALUNO,
+            password="senha123",
+        )
+
+        response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": cpf_aluno,
+                "password": "senha123",
+                "perfil": PerfilUsuario.PROFESSOR,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Perfil Aluno nao possui acesso", response.data["detail"][0])
+
+    def test_refresh_endpoint_returns_new_access_token(self):
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+
+        refresh_response = self.api_client.post(
+            reverse("api_v1_auth:token_refresh"),
+            {"refresh": token_response.data["refresh"]},
+            format="json",
+        )
+
+        self.assertEqual(refresh_response.status_code, 200)
+        self.assertIn("access", refresh_response.data)
+        self.assertIn("refresh", refresh_response.data)
+
+    def test_logout_blacklists_refresh_token(self):
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+
+        access_token = token_response.data["access"]
+        refresh_token = token_response.data["refresh"]
+
+        self.api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        logout_response = self.api_client.post(
+            reverse("api_v1_auth:logout"),
+            {"refresh": refresh_token},
+            format="json",
+        )
+
+        self.assertEqual(logout_response.status_code, 200)
+
+        refresh_response = self.api_client.post(
+            reverse("api_v1_auth:token_refresh"),
+            {"refresh": refresh_token},
+            format="json",
+        )
+        self.assertEqual(refresh_response.status_code, 401)
+
+    def test_bearer_token_grants_access_to_protected_api(self):
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+        access_token = token_response.data["access"]
+
+        self.api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        response = self.api_client.get(reverse("api_v1_usuarios:list"))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_me_endpoint_returns_authenticated_user(self):
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+        access_token = token_response.data["access"]
+
+        self.api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        response = self.api_client.get(reverse("api_v1_auth:me"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["cpf"], self.cpf_secretaria)
+        self.assertEqual(response.data["perfil"], PerfilUsuario.SECRETARIA)

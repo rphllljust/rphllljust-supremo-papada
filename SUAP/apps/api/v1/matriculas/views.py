@@ -1,11 +1,24 @@
-# python
-# file: `apps/api/v1/matriculas/views.py`
-from django.http import JsonResponse
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.access.api.permissions import CanAccessModule
 
 
-def matriculas_list(request):
-    return JsonResponse({"message": "Lista de matrículas (exemplo)"})
+class MatriculaListApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "matriculas"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request):
+        return Response({"message": "Lista de matriculas (exemplo)"})
 
 
-def matriculas_detail(request, pk):
-    return JsonResponse({"message": f"Detalhe da matrícula {pk} (exemplo)"})
+class MatriculaDetailApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "matriculas"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, pk):
+        return Response({"message": f"Detalhe da matricula {pk} (exemplo)"})
