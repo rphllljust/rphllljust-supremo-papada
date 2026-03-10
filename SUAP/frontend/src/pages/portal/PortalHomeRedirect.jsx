@@ -1,15 +1,9 @@
 import { useEffect } from 'react'
-
-function getDashboardHref() {
-  if (typeof window !== 'undefined' && window.location.port === '5173') {
-    return 'http://localhost:8000/'
-  }
-  return '/'
-}
+import { buildBackendUrl } from '@/utils/backendUrls'
 
 export default function PortalHomeRedirect() {
   useEffect(() => {
-    window.location.replace(getDashboardHref())
+    window.location.replace(buildBackendUrl('/'))
   }, [])
 
   return (

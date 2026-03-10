@@ -11,6 +11,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/context/AuthContext'
 import AppErrorBoundary from '@/components/ui/AppErrorBoundary'
+import BackendRouteRedirect from '@/components/ui/BackendRouteRedirect'
 import DevDiagnosticsPanel from '@/components/ui/DevDiagnosticsPanel'
 import ProtectedRoute from '@/components/ui/ProtectedRoute'
 import Layout from '@/components/layout/Layout'
@@ -26,17 +27,12 @@ const LoginPage      = lazy(() => import('@/pages/auth/LoginPage'))
 
 // ── Painel interno (requer JWT) ────────────────────────
 const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
-const MatriculasPage = lazy(() => import('@/pages/matriculas/MatriculasPage'))
 const TurmasPage     = lazy(() => import('@/pages/turmas/TurmasPage'))
-const ProcessosPage  = lazy(() => import('@/pages/processos/ProcessosPage'))
 const CursosPage     = lazy(() => import('@/pages/cursos/CursosPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
 const UsuariosPage   = lazy(() => import('@/pages/usuarios/UsuariosPage'))
 const UnidadesPage   = lazy(() => import('@/pages/unidades/UnidadesPage'))
 const AgendaPage     = lazy(() => import('@/pages/agenda/AgendaPage'))
-const ArquivoPage    = lazy(() => import('@/pages/arquivo/ArquivoPage'))
-const InscricoesPage = lazy(() => import('@/pages/inscricoes/InscricoesPage'))
-const EstagiosPage   = lazy(() => import('@/pages/estagios/EstagiosPage'))
 const AvaExportPreviewPage = lazy(() => import('@/pages/access/AvaExportPreviewPage'))
 const PlaceholderPage = lazy(() => import('@/pages/placeholder/PlaceholderPage'))
 
@@ -145,17 +141,17 @@ export default function App() {
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
                   <Route path="/dashboard"  element={<RouteShell><DashboardPage /></RouteShell>} />
-                  <Route path="/matriculas" element={<RouteShell><MatriculasPage /></RouteShell>} />
+                  <Route path="/matriculas" element={<BackendRouteRedirect path="/matriculas/" title="Abrindo Matriculas no Django..." />} />
                   <Route path="/turmas"     element={<RouteShell><TurmasPage /></RouteShell>} />
                   <Route path="/cursos"     element={<RouteShell><CursosPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/usuarios"   element={<RouteShell><UsuariosPage /></RouteShell>} />
                   <Route path="/unidades"   element={<RouteShell><UnidadesPage /></RouteShell>} />
                   <Route path="/agenda"     element={<RouteShell><AgendaPage /></RouteShell>} />
-                  <Route path="/processos"  element={<RouteShell><ProcessosPage /></RouteShell>} />
-                  <Route path="/arquivo"    element={<RouteShell><ArquivoPage /></RouteShell>} />
-                  <Route path="/inscricoes" element={<RouteShell><InscricoesPage /></RouteShell>} />
-                  <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
+                  <Route path="/processos"  element={<BackendRouteRedirect path="/processos/" title="Abrindo Processos no Django..." />} />
+                  <Route path="/arquivo"    element={<BackendRouteRedirect path="/arquivo/" title="Abrindo Arquivo no Django..." />} />
+                  <Route path="/inscricoes" element={<BackendRouteRedirect path="/inscricoes/" title="Abrindo Inscricoes no Django..." />} />
+                  <Route path="/estagio"    element={<BackendRouteRedirect path="/estagio/" title="Abrindo Estagio no Django..." />} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/indisponivel/:slug" element={<RouteShell><PlaceholderPage /></RouteShell>} />
                   <Route path="/app/dashboard"  element={<Navigate to="/dashboard" replace />} />

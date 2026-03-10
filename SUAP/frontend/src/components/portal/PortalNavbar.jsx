@@ -1,9 +1,8 @@
 import { NavLink } from 'react-router-dom'
+import { buildBackendUrl } from '@/utils/backendUrls'
 
 export default function PortalNavbar() {
-  const dashboardHref = typeof window !== 'undefined' && window.location.port === '5173'
-    ? 'http://localhost:8000/'
-    : '/'
+  const dashboardHref = buildBackendUrl('/')
 
   return (
     <>
@@ -18,7 +17,7 @@ export default function PortalNavbar() {
           <div className="govbar-right">
             <a href="#">Webmail</a>
             <span className="govbar-sep">|</span>
-            <a href="/dashboard/login/">SUAP</a>
+            <a href={buildBackendUrl('/accounts/login/')}>SUAP</a>
           </div>
         </div>
       </div>

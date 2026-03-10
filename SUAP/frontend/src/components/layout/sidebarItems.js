@@ -9,6 +9,7 @@ import {
   Users,
   Power,
 } from 'lucide-react'
+import { buildBackendUrl, getBackendPrefix } from '@/utils/backendUrls'
 
 function unavailable(slug, label, extra = {}) {
   return {
@@ -32,6 +33,20 @@ function activation(slug, label) {
   })
 }
 
+function serverLink(id, label, path, extra = {}) {
+  const prefix = getBackendPrefix(path)
+
+  return {
+    id,
+    type: 'external',
+    label,
+    backendPath: path,
+    href: buildBackendUrl(path),
+    activePrefixes: extra.activePrefixes || [prefix],
+    ...extra,
+  }
+}
+
 export const sidebarItems = [
   {
     id: 'inicio',
@@ -49,9 +64,9 @@ export const sidebarItems = [
     items: [
       { id: 'cursos', type: 'link', label: 'Cursos', to: '/cursos' },
       { id: 'turmas', type: 'link', label: 'Turmas', to: '/turmas' },
-      { id: 'matriculas', type: 'link', label: 'Matriculas', to: '/matriculas' },
-      unavailable('notas', 'Notas'),
-      unavailable('frequencia', 'Frequencia'),
+      serverLink('matriculas', 'Matriculas', '/matriculas/'),
+      serverLink('notas', 'Notas', '/notas/'),
+      serverLink('frequencia', 'Frequencia', '/frequencia/'),
       { id: 'agenda', type: 'link', label: 'Agenda', to: '/agenda' },
       unavailable('diario-classe', 'Diario de Classe'),
       unavailable('ata-professores', 'Ata dos Professores'),
@@ -69,7 +84,7 @@ export const sidebarItems = [
         label: 'Documentos Eletronicos',
         items: [
           unavailable('documentos-eletronicos-dashboard', 'Dashboard'),
-          unavailable('documentos', 'Documentos'),
+          serverLink('documentos', 'Documentos', '/documentos/'),
           unavailable('documentos-pessoais', 'Documentos Pessoais'),
           unavailable('documentos-pessoais-digitalizados', 'Documentos Pessoais Digitalizados'),
         ],
@@ -79,7 +94,7 @@ export const sidebarItems = [
         type: 'group',
         label: 'Processos Eletronicos',
         items: [
-          { id: 'processos-lista', type: 'link', label: 'Processos', to: '/processos' },
+          serverLink('processos-lista', 'Processos', '/processos/'),
           unavailable('requerimentos', 'Requerimentos'),
         ],
       },
@@ -90,7 +105,7 @@ export const sidebarItems = [
         items: [
           unavailable('caixa-de-entrada-e-saida', 'Caixa de Entrada e Saida'),
           unavailable('caixa-de-tramitacao-externa', 'Caixa de Tramitacao Externa'),
-          { id: 'arquivo-processos', type: 'link', label: 'Processos', to: '/arquivo' },
+          serverLink('arquivo-processos', 'Processos', '/arquivo/'),
         ],
       },
       unavailable('minhas-permissoes', 'Minhas Permissoes'),
@@ -142,11 +157,11 @@ export const sidebarItems = [
       { id: 'cursos-matrizes-componentes', type: 'link', label: 'Cursos, Matrizes e Componentes', to: '/cursos' },
       unavailable('diplomas-e-certificados', 'Diplomas e Certificados'),
       unavailable('ead', 'EAD'),
-      { id: 'estagios-docentes', type: 'link', label: 'Estagios Docentes', to: '/estagio' },
+      serverLink('estagios-docentes', 'Estagios Docentes', '/estagio/'),
       unavailable('etep', 'ETEP'),
       { id: 'painel-controle', type: 'link', label: 'Painel de Controle', to: '/dashboard' },
       unavailable('procedimentos-de-apoio', 'Procedimentos de Apoio'),
-      { id: 'processos-seletivos', type: 'link', label: 'Processos Seletivos', to: '/inscricoes' },
+      serverLink('processos-seletivos', 'Processos Seletivos', '/inscricoes/'),
       unavailable('relatorios-ensino', 'Relatorios'),
       { id: 'turmas-diarios', type: 'link', label: 'Turmas e Diarios', to: '/turmas' },
       unavailable('programas', 'Programas'),
@@ -271,7 +286,7 @@ export const sidebarItems = [
         label: 'Estagio e Afins',
         items: [
           unavailable('extensao-estagio-afins-aprendizagens', 'Aprendizagens'),
-          { id: 'estagios-extensao', type: 'link', label: 'Estagios', to: '/estagio' },
+          serverLink('estagios-extensao', 'Estagios', '/estagio/'),
         ],
       },
       {
