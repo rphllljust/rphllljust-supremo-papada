@@ -4,9 +4,12 @@
  */
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useLocation } from 'react-router-dom'
+import { buildLoginPath } from '@/utils/authNavigation'
 
 export default function ProtectedRoute() {
   const { isAuthenticated, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -17,5 +20,5 @@ export default function ProtectedRoute() {
     )
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/accounts/login" replace />
+  return isAuthenticated ? <Outlet /> : <Navigate to={buildLoginPath(`${location.pathname}${location.search}${location.hash}`)} replace />
 }

@@ -4,7 +4,7 @@
  */
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -18,6 +18,8 @@ const PERFIL_OPTIONS = [
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const nextPath = searchParams.get('next') || '/dashboard'
 
   const {
     register,
@@ -26,14 +28,14 @@ export default function LoginPage() {
   } = useForm()
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard', { replace: true })
-  }, [isAuthenticated, navigate])
+    if (isAuthenticated) navigate(nextPath, { replace: true })
+  }, [isAuthenticated, navigate, nextPath])
 
   const onSubmit = async (formData) => {
     try {
       await login(formData)
       toast.success('Login realizado com sucesso!')
-      navigate('/dashboard', { replace: true })
+      navigate(nextPath, { replace: true })
     } catch (err) {
       const data = err.response?.data
       const msg = data?.detail || data?.cpf?.[0] || data?.perfil?.[0] || 'Credenciais inválidas.'

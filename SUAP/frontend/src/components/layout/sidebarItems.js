@@ -9,7 +9,6 @@ import {
   Users,
   Power,
 } from 'lucide-react'
-import { buildBackendUrl, getBackendPrefix } from '@/utils/backendUrls'
 
 function unavailable(slug, label, extra = {}) {
   return {
@@ -33,20 +32,6 @@ function activation(slug, label) {
   })
 }
 
-function serverLink(id, label, path, extra = {}) {
-  const prefix = getBackendPrefix(path)
-
-  return {
-    id,
-    type: 'external',
-    label,
-    backendPath: path,
-    href: buildBackendUrl(path),
-    activePrefixes: extra.activePrefixes || [prefix],
-    ...extra,
-  }
-}
-
 export const sidebarItems = [
   {
     id: 'inicio',
@@ -64,12 +49,12 @@ export const sidebarItems = [
     items: [
       { id: 'cursos', type: 'link', label: 'Cursos', to: '/cursos' },
       { id: 'turmas', type: 'link', label: 'Turmas', to: '/turmas' },
-      serverLink('matriculas', 'Matriculas', '/matriculas/'),
-      serverLink('notas', 'Notas', '/notas/'),
-      serverLink('frequencia', 'Frequencia', '/frequencia/'),
+      { id: 'matriculas', type: 'link', label: 'Matriculas', to: '/matriculas' },
+      { id: 'notas', type: 'link', label: 'Notas', to: '/notas' },
+      { id: 'frequencia', type: 'link', label: 'Frequencia', to: '/frequencia' },
       { id: 'agenda', type: 'link', label: 'Agenda', to: '/agenda' },
       unavailable('diario-classe', 'Diario de Classe'),
-      unavailable('ata-professores', 'Ata dos Professores'),
+      { id: 'ata-professores', type: 'link', label: 'Ata dos Professores', to: '/ata-professores' },
     ],
   },
   {
@@ -84,7 +69,9 @@ export const sidebarItems = [
         label: 'Documentos Eletronicos',
         items: [
           unavailable('documentos-eletronicos-dashboard', 'Dashboard'),
-          serverLink('documentos', 'Documentos', '/documentos/'),
+          unavailable('documentos', 'Documentos', {
+            description: 'O modulo de documentos ainda nao foi portado para o frontend. O acesso ao template Django foi bloqueado.',
+          }),
           unavailable('documentos-pessoais', 'Documentos Pessoais'),
           unavailable('documentos-pessoais-digitalizados', 'Documentos Pessoais Digitalizados'),
         ],
@@ -94,7 +81,7 @@ export const sidebarItems = [
         type: 'group',
         label: 'Processos Eletronicos',
         items: [
-          serverLink('processos-lista', 'Processos', '/processos/'),
+          { id: 'processos-lista', type: 'link', label: 'Processos', to: '/processos' },
           unavailable('requerimentos', 'Requerimentos'),
         ],
       },
@@ -105,7 +92,7 @@ export const sidebarItems = [
         items: [
           unavailable('caixa-de-entrada-e-saida', 'Caixa de Entrada e Saida'),
           unavailable('caixa-de-tramitacao-externa', 'Caixa de Tramitacao Externa'),
-          serverLink('arquivo-processos', 'Processos', '/arquivo/'),
+          { id: 'arquivo-processos', type: 'link', label: 'Processos', to: '/arquivo' },
         ],
       },
       unavailable('minhas-permissoes', 'Minhas Permissoes'),
@@ -119,13 +106,9 @@ export const sidebarItems = [
     icon: Settings,
     items: [
       { id: 'programa-gestao', type: 'link', label: 'Programa de Gestao', to: '/dashboard' },
-      {
-        id: 'administracao',
-        type: 'external',
-        label: 'Administracao',
-        href: '/admin/',
-        activePrefixes: ['/admin'],
-      },
+      unavailable('administracao', 'Administracao', {
+        description: 'O acesso ao Django admin foi bloqueado dentro deste frontend. Use uma tela interna quando ela for portada.',
+      }),
       unavailable('auditoria', 'Auditoria'),
     ],
   },
@@ -157,11 +140,11 @@ export const sidebarItems = [
       { id: 'cursos-matrizes-componentes', type: 'link', label: 'Cursos, Matrizes e Componentes', to: '/cursos' },
       unavailable('diplomas-e-certificados', 'Diplomas e Certificados'),
       unavailable('ead', 'EAD'),
-      serverLink('estagios-docentes', 'Estagios Docentes', '/estagio/'),
+      { id: 'estagios-docentes', type: 'link', label: 'Estagios Docentes', to: '/estagio' },
       unavailable('etep', 'ETEP'),
       { id: 'painel-controle', type: 'link', label: 'Painel de Controle', to: '/dashboard' },
       unavailable('procedimentos-de-apoio', 'Procedimentos de Apoio'),
-      serverLink('processos-seletivos', 'Processos Seletivos', '/inscricoes/'),
+      { id: 'processos-seletivos', type: 'link', label: 'Processos Seletivos', to: '/inscricoes' },
       unavailable('relatorios-ensino', 'Relatorios'),
       { id: 'turmas-diarios', type: 'link', label: 'Turmas e Diarios', to: '/turmas' },
       unavailable('programas', 'Programas'),
@@ -286,7 +269,7 @@ export const sidebarItems = [
         label: 'Estagio e Afins',
         items: [
           unavailable('extensao-estagio-afins-aprendizagens', 'Aprendizagens'),
-          serverLink('estagios-extensao', 'Estagios', '/estagio/'),
+          { id: 'estagios-extensao', type: 'link', label: 'Estagios', to: '/estagio' },
         ],
       },
       {
@@ -324,10 +307,10 @@ export const sidebarItems = [
         id: 'servidores',
         type: 'link',
         label: 'Servidores',
-        to: { pathname: '/usuarios', search: '?tipo=PROFESSOR' },
-        activePrefixes: ['/usuarios'],
+        to: '/servidores',
+        activePrefixes: ['/servidores'],
       },
-      { id: 'setores', type: 'link', label: 'Setores', to: '/unidades' },
+      { id: 'setores', type: 'link', label: 'Setores', to: '/setores' },
       {
         id: 'administracao-pessoal',
         type: 'group',

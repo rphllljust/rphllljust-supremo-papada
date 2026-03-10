@@ -36,6 +36,7 @@ def env(key, default=None, cast=None):
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-troque-isso-depois")
 
 DEBUG = env("DEBUG", default=True, cast=bool)
+DJANGO_TEMPLATE_UI_ENABLED = env("DJANGO_TEMPLATE_UI_ENABLED", default=True, cast=bool)
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="", cast=Csv())
 
@@ -60,6 +61,7 @@ INSTALLED_APPS = [
     "apps.integracao_moodle",
     "apps.matriculas",
     "apps.turmas",
+    "apps.setores",
     "apps.unidades",
     "apps.usuarios",
     "apps.accounts",
@@ -80,6 +82,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'config.middleware.BlockDjangoTemplateUIMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

@@ -6,8 +6,6 @@ import { Link } from 'react-router-dom'
 import { cursosApi, matriculasApi, turmasApi, unidadesApi, usuariosApi } from '@/api/endpoints'
 import StatCard from '@/components/ui/StatCard'
 import { useAuth } from '@/context/AuthContext'
-import { navigateToBackendPath } from '@/utils/backendNavigation'
-import { buildBackendUrl } from '@/utils/backendUrls'
 import {
   ClipboardList, Users, BookOpen, GraduationCap,
   Building2
@@ -107,7 +105,7 @@ export default function DashboardPage() {
 
 function RecentSection() {
   const quickLinks = [
-    { href: buildBackendUrl('/matriculas/'), label: 'Nova Matrícula', external: true },
+    { href: '/matriculas', label: 'Nova Matrícula' },
     { href: '/cursos', label: 'Consultar Cursos' },
     { href: '/turmas', label: 'Gerenciar Turmas' },
     { href: '/alunos', label: 'Consultar Alunos' },
@@ -117,24 +115,10 @@ function RecentSection() {
     <div className="dashboard-card">
       <h2 className="dashboard-card__title">Acesso Rápido</h2>
       <div className="quick-links">
-        {quickLinks.map(({ href, label, external }) => (
-          external ? (
-            <a
-              key={href}
-              href={href}
-              className="quick-link"
-              onClick={(event) => {
-                event.preventDefault()
-                navigateToBackendPath('/matriculas/')
-              }}
-            >
-              {label}
-            </a>
-          ) : (
-            <Link key={href} to={href} className="quick-link">
-              {label}
-            </Link>
-          )
+        {quickLinks.map(({ href, label }) => (
+          <Link key={href} to={href} className="quick-link">
+            {label}
+          </Link>
         ))}
       </div>
     </div>

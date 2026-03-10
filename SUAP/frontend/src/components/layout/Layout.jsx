@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { ChevronDown, LogOut, Menu, Search, Settings, User, X } from 'lucide-react'
 import { sidebarItems } from '@/components/layout/sidebarItems'
-import { navigateToBackendPath } from '@/utils/backendNavigation'
 import { debugLog } from '@/utils/debug'
 
 function normalizeText(value) {
@@ -100,27 +99,12 @@ function isItemActive(item, pathname) {
   return pathname === path || pathname.startsWith(`${path}/`)
 }
 
-function shouldHandlePlainNavigation(event) {
-  return !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
-}
-
 function SidebarLeaf({ item, sidebarOpen }) {
   const label = sidebarOpen ? <span className="sidebar__label">{item.label}</span> : null
 
   if (item.type === 'external') {
     return (
-      <a
-        href={item.href}
-        className="sidebar__link"
-        onClick={(event) => {
-          if (!item.backendPath || !shouldHandlePlainNavigation(event)) {
-            return
-          }
-
-          event.preventDefault()
-          navigateToBackendPath(item.backendPath)
-        }}
-      >
+      <a href={item.href} className="sidebar__link">
         {item.icon ? <item.icon size={18} className="sidebar__icon" /> : null}
         {label}
       </a>
@@ -153,18 +137,7 @@ function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGr
     if (item.type === 'external') {
       return (
         <li className="sidebar__tree-item">
-          <a
-            href={item.href}
-            className={`sidebar__tree-link ${active ? 'sidebar__tree-link--active' : ''}`}
-            onClick={(event) => {
-              if (!item.backendPath || !shouldHandlePlainNavigation(event)) {
-                return
-              }
-
-              event.preventDefault()
-              navigateToBackendPath(item.backendPath)
-            }}
-          >
+          <a href={item.href} className={`sidebar__tree-link ${active ? 'sidebar__tree-link--active' : ''}`}>
             {item.label}
           </a>
         </li>
@@ -273,7 +246,7 @@ export default function Layout() {
   }, [location.pathname, sidebarOpen, menuQuery, visibleSidebarItems.length])
 
   const handleLogout = () => {
-    logout().finally(() => navigate('/accounts/login'))
+    logout().finally(() => navigate('/login'))
   }
 
   return (

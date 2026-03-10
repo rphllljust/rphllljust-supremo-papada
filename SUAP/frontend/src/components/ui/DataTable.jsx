@@ -11,6 +11,8 @@ export default function DataTable({
   onSearch,
   searchPlaceholder = 'Buscar...',
   actions,
+  rowActions,
+  rowActionsLabel = 'Acoes',
   emptyMessage = 'Nenhum registro encontrado.',
 }) {
   const [search, setSearch] = useState('')
@@ -32,6 +34,7 @@ export default function DataTable({
 
   const rows = data?.results ?? data ?? []
   const count = data?.count ?? rows.length
+  const hasRowActions = typeof rowActions === 'function'
 
   return (
     <div className="data-table">
@@ -55,12 +58,13 @@ export default function DataTable({
               {columns.map((col) => (
                 <th key={col.key}>{col.label}</th>
               ))}
+              {hasRowActions ? <th className="data-table__actions-header">{rowActionsLabel}</th> : null}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="empty-state">
+                <td colSpan={columns.length + (hasRowActions ? 1 : 0)} className="empty-state">
                   {emptyMessage}
                 </td>
               </tr>
@@ -72,6 +76,7 @@ export default function DataTable({
                       {col.render ? col.render(row) : row[col.key]}
                     </td>
                   ))}
+                  {hasRowActions ? <td className="data-table__actions-cell">{rowActions(row)}</td> : null}
                 </tr>
               ))
             )}

@@ -1,14 +1,5 @@
-import { useEffect } from 'react'
-import { buildBackendUrl } from '@/utils/backendUrls'
+import { Navigate } from 'react-router-dom'
 
 export default function PortalHomeRedirect() {
-  useEffect(() => {
-    window.location.replace(buildBackendUrl('/'))
-  }, [])
-
-  return (
-    <div className="loading-screen">
-      <div className="spinner" />
-    </div>
-  )
+  return <Navigate to="/portal/cursos" replace />
 }

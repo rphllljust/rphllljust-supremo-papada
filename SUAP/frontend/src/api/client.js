@@ -5,6 +5,7 @@
  * - Intercepta erros globais
  */
 import axios from 'axios'
+import { requestAuthRedirect } from '@/utils/authNavigation'
 import { debugLog, instrumentAxiosClient, normalizeError } from '@/utils/debug'
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
@@ -86,7 +87,7 @@ client.interceptors.response.use(
         // Sem refresh token — desloga
         debugLog('error', 'auth.refresh.missing_token')
         localStorage.clear()
-        window.location.href = '/accounts/login'
+        requestAuthRedirect('missing-refresh-token')
         return Promise.reject(error)
       }
 
@@ -105,7 +106,7 @@ client.interceptors.response.use(
         })
         processQueue(refreshError, null)
         localStorage.clear()
-        window.location.href = '/accounts/login'
+        requestAuthRedirect('refresh-failed')
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

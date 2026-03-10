@@ -22,7 +22,6 @@ export const authApi = {
   login: (credentials) => client.post('/auth/token/', credentials),
   refresh: (refresh) => client.post('/auth/token/refresh/', { refresh }),
   logout: (refresh) => client.post('/auth/logout/', { refresh }, { withCredentials: true }),
-  syncSession: () => client.post('/auth/session/', {}, { withCredentials: true }),
   me: () => client.get('/auth/me/'),
 }
 
@@ -43,6 +42,8 @@ const crud = (resource) => ({
 export const usuariosApi = {
   ...crud('usuarios'),
 }
+export const servidoresApi = crud('servidores')
+export const setoresApi = crud('setores')
 
 export const unidadesApi = crud('unidades')
 export const cursosApi = {
@@ -62,6 +63,7 @@ export const matriculasApi = {
 }
 export const notasApi = crud('notas')
 export const frequenciasApi = crud('frequencias')
+export const atasProfessoresApi = crud('atas-professores')
 export const eventosApi = crud('eventos')
 export const processosApi = {
   ...crud('processos'),

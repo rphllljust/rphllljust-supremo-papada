@@ -48,6 +48,16 @@ ACCESS_MATRIX = {
             "export": STAFF_VIEW,
         },
     },
+    "servidores": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
     "matriculas": {
         "web": {
             "view": STAFF_VIEW,
@@ -80,16 +90,32 @@ ACCESS_MATRIX = {
             "export": STAFF_VIEW,
         },
     },
+    "setores": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
     "notas": {
         "web": {
             "view": TEACHING_VIEW,
             "manage": TEACHING_MANAGE,
+        },
+        "api": {
+            "view": TEACHING_VIEW,
         },
     },
     "frequencia": {
         "web": {
             "view": TEACHING_VIEW,
             "manage": TEACHING_MANAGE,
+        },
+        "api": {
+            "view": TEACHING_VIEW,
         },
     },
     "agenda": {
@@ -115,6 +141,9 @@ ACCESS_MATRIX = {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
         },
+        "api": {
+            "view": STAFF_VIEW,
+        },
     },
     "estagio": {
         "web": {
@@ -130,6 +159,10 @@ ACCESS_MATRIX = {
     },
     "processos": {
         "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
         },
