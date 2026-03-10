@@ -8,13 +8,20 @@ from apps.frequencia.models import Frequencia
 from .serializers import FrequenciaSerializer
 
 
-class FrequenciaListApiView(generics.ListAPIView):
+class FrequenciaListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "frequencia"
     access_surface = "api"
     access_action = "view"
     serializer_class = FrequenciaSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = Frequencia.objects.select_related(
@@ -44,14 +51,20 @@ class FrequenciaListApiView(generics.ListAPIView):
         return queryset.distinct()
 
 
-class FrequenciaDetailApiView(generics.RetrieveAPIView):
+class FrequenciaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "frequencia"
     access_surface = "api"
-    access_action = "view"
     serializer_class = FrequenciaSerializer
     queryset = Frequencia.objects.select_related(
         "matricula__aluno__pessoa",
         "matricula__curso",
         "matricula__turma",
     )
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()

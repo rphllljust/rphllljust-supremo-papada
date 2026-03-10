@@ -8,13 +8,20 @@ from apps.matriculas.models import Matricula
 from .serializers import MatriculaSerializer
 
 
-class MatriculaListApiView(generics.ListAPIView):
+class MatriculaListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "matriculas"
     access_surface = "api"
     access_action = "view"
     serializer_class = MatriculaSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = Matricula.objects.select_related("aluno__pessoa", "curso", "turma").order_by(
@@ -42,10 +49,16 @@ class MatriculaListApiView(generics.ListAPIView):
         return queryset.distinct()
 
 
-class MatriculaDetailApiView(generics.RetrieveAPIView):
+class MatriculaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "matriculas"
     access_surface = "api"
-    access_action = "view"
     serializer_class = MatriculaSerializer
     queryset = Matricula.objects.select_related("aluno__pessoa", "curso", "turma")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()

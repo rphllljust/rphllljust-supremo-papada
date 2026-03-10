@@ -1,26 +1,71 @@
-/**
- * Página de Matrículas — lista com busca e filtros.
- * Demonstra: useQuery com params, DataTable, useMutation.
- */
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { matriculasApi } from '@/api/endpoints'
-import DataTable from '@/components/ui/DataTable'
-import { Plus, Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+import { cursosApi, matriculasApi, turmasApi, usuariosApi } from '@/api/endpoints'
+import DataTable from '@/components/ui/DataTable'
+import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
+import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
+
 const STATUS_BADGE = {
-  ATIVA:     'badge--success',
-  TRANCADA:  'badge--warning',
+  ATIVA: 'badge--success',
+  TRANCADA: 'badge--warning',
   CANCELADA: 'badge--danger',
   CONCLUIDA: 'badge--info',
 }
 
+const STATUS_OPTIONS = [
+  { value: 'ATIVA', label: 'Ativa' },
+  { value: 'TRANCADA', label: 'Trancada' },
+  { value: 'CANCELADA', label: 'Cancelada' },
+  { value: 'CONCLUIDA', label: 'Concluida' },
+]
+
+const TIPO_OPTIONS = [
+  { value: 'NOVA', label: 'Nova Matricula' },
+  { value: 'REMATRICULA', label: 'Rematricula' },
+]
+
+const TURNO_OPTIONS = [
+  { value: '', label: 'Nao informado' },
+  { value: 'MANHA', label: 'Manha' },
+  { value: 'TARDE', label: 'Tarde' },
+  { value: 'NOITE', label: 'Noite' },
+  { value: 'INTEGRAL', label: 'Integral' },
+]
+
+const DEFAULT_FORM = {
+  aluno: '',
+  curso: '',
+  turma: '',
+  status: 'ATIVA',
+  tipo_matricula: 'NOVA',
+  turno: '',
+}
+
+function formatDate(value) {
+  if (!value) {
+    return '-'
+  }
+
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
+}
+
+function getErrorMessage(error, fallback) {
+  const data = error?.response?.data
+  if (!data) return fallback
+  if (typeof data.detail === 'string') return data.detail
+  const firstValue = Object.values(data)[0]
+  return Array.isArray(firstValue) ? firstValue[0] : (firstValue || fallback)
+}
+
 const COLUMNS = [
   { key: 'numero_matricula', label: 'Nº Matrícula' },
-  { key: 'aluno_nome',       label: 'Aluno' },
-  { key: 'curso_nome',       label: 'Curso' },
-  { key: 'turma_nome',       label: 'Turma' },
+  { key: 'aluno_nome', label: 'Aluno' },
+  { key: 'curso_nome', label: 'Curso' },
+  { key: 'turma_nome', label: 'Turma' },
   {
     key: 'status',
     label: 'Status',
@@ -30,34 +75,157 @@ const COLUMNS = [
       </span>
     ),
   },
-  { key: 'data_matricula', label: 'Data' },
-  {
-    key: 'actions',
-    label: '',
-    render: (row) => (
-      <button className="btn btn--icon" title="Ver detalhes">
-        <Eye size={16} />
-      </button>
-    ),
-  },
+  { key: 'tipo_matricula_display', label: 'Tipo' },
+  { key: 'data_matricula', label: 'Data', render: (row) => formatDate(row.data_matricula) },
 ]
 
 export default function MatriculasPage() {
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedMatriculaId, setSelectedMatriculaId] = useState(null)
+  const [editingMatriculaId, setEditingMatriculaId] = useState(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [alunoSearch, setAlunoSearch] = useState('')
+  const [cursoSearch, setCursoSearch] = useState('')
+  const [turmaSearch, setTurmaSearch] = useState('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['matriculas', { search, status: statusFilter, page }],
     queryFn: () =>
       matriculasApi.list({ search, status: statusFilter || undefined, page }).then((r) => r.data),
     staleTime: 30_000,
   })
 
+  const { data: alunosData } = useQuery({
+    queryKey: ['usuarios', 'matriculas-alunos', alunoSearch],
+    queryFn: () => usuariosApi.list({ tipo: 'ALUNO', page_size: 10, search: alunoSearch || undefined }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: cursosData } = useQuery({
+    queryKey: ['cursos', 'matriculas-options', cursoSearch],
+    queryFn: () => cursosApi.list({ page_size: 10, search: cursoSearch || undefined }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: turmasData } = useQuery({
+    queryKey: ['turmas', 'matriculas-options', turmaSearch, formData.curso],
+    queryFn: () => turmasApi.list({ page_size: 10, search: turmaSearch || undefined, curso: formData.curso || undefined }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: selectedMatricula, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
+    queryKey: ['matricula', selectedMatriculaId],
+    queryFn: () => matriculasApi.get(selectedMatriculaId).then((response) => response.data),
+    enabled: Boolean(selectedMatriculaId),
+    staleTime: 30_000,
+  })
+
+  const { data: editingMatricula } = useQuery({
+    queryKey: ['matricula-edit', editingMatriculaId],
+    queryFn: () => matriculasApi.get(editingMatriculaId).then((response) => response.data),
+    enabled: Boolean(editingMatriculaId),
+    staleTime: 0,
+  })
+
+  useEffect(() => {
+    if (!editingMatricula) return
+    setFormData({
+      aluno: editingMatricula.aluno ? String(editingMatricula.aluno) : '',
+      curso: editingMatricula.curso ? String(editingMatricula.curso) : '',
+      turma: editingMatricula.turma ? String(editingMatricula.turma) : '',
+      status: editingMatricula.status || 'ATIVA',
+      tipo_matricula: editingMatricula.tipo_matricula || 'NOVA',
+      turno: editingMatricula.turno || '',
+    })
+  }, [editingMatricula])
+
+  const saveMutation = useMutation({
+    mutationFn: ({ id, payload }) => (id ? matriculasApi.update(id, payload) : matriculasApi.create(payload)),
+    onSuccess: (_response, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['matriculas'] })
+      if (variables.id) {
+        queryClient.invalidateQueries({ queryKey: ['matricula', variables.id] })
+      }
+      toast.success(variables.id ? 'Matricula atualizada com sucesso.' : 'Matricula criada com sucesso.')
+      setEditingMatriculaId(null)
+      setIsCreating(false)
+      setFormData(DEFAULT_FORM)
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a matricula.')),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => matriculasApi.remove(id),
+    onSuccess: (_response, id) => {
+      queryClient.invalidateQueries({ queryKey: ['matriculas'] })
+      queryClient.invalidateQueries({ queryKey: ['matricula', id] })
+      setSelectedMatriculaId((current) => (current === id ? null : current))
+      setEditingMatriculaId((current) => (current === id ? null : current))
+      setIsCreating(false)
+      setFormData(DEFAULT_FORM)
+      toast.success('Matricula excluida com sucesso.')
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir a matricula.')),
+  })
+
+  const alunos = alunosData?.results || []
+  const cursos = cursosData?.results || []
+  const turmas = turmasData?.results || []
+
+  const selectedAlunoOption = formData.aluno && editingMatricula ? {
+    id: editingMatricula.aluno,
+    nome_completo: editingMatricula.aluno_nome,
+    username: editingMatricula.aluno_username,
+  } : null
+  const selectedCursoOption = formData.curso && editingMatricula ? {
+    id: editingMatricula.curso,
+    nome: editingMatricula.curso_nome,
+  } : null
+  const selectedTurmaOption = formData.turma && editingMatricula ? {
+    id: editingMatricula.turma,
+    nome: editingMatricula.turma_nome,
+  } : null
+
+  const detailsFields = selectedMatricula ? [
+    { label: 'ID', value: selectedMatricula.id },
+    { label: 'Numero', value: selectedMatricula.numero_matricula },
+    { label: 'Aluno', value: selectedMatricula.aluno_nome },
+    { label: 'Usuario', value: selectedMatricula.aluno_username },
+    { label: 'Curso', value: selectedMatricula.curso_nome },
+    { label: 'Turma', value: selectedMatricula.turma_nome },
+    { label: 'Status', value: selectedMatricula.status_display },
+    { label: 'Tipo', value: selectedMatricula.tipo_matricula_display || '-' },
+    { label: 'Turno', value: selectedMatricula.turno_display || '-' },
+    { label: 'Data da matricula', value: formatDate(selectedMatricula.data_matricula) },
+  ] : []
+
+  const openCreateForm = () => {
+    setSelectedMatriculaId(null)
+    setEditingMatriculaId(null)
+    setIsCreating(true)
+    setFormData(DEFAULT_FORM)
+  }
+
+  const openEditForm = (id) => {
+    setSelectedMatriculaId(null)
+    setIsCreating(false)
+    setEditingMatriculaId(id)
+  }
+
+  const closeForm = () => {
+    setEditingMatriculaId(null)
+    setIsCreating(false)
+    setFormData(DEFAULT_FORM)
+  }
+
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">Matrículas</h1>
+        <h1 className="page-title">Matriculas</h1>
         <div className="page-header__actions">
           <select
             className="select"
@@ -65,16 +233,17 @@ export default function MatriculasPage() {
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
           >
             <option value="">Todos os status</option>
-            <option value="ATIVA">Ativa</option>
-            <option value="TRANCADA">Trancada</option>
-            <option value="CANCELADA">Cancelada</option>
-            <option value="CONCLUIDA">Concluída</option>
+            {STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
-          <button className="btn btn--primary">
+          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
             <Plus size={16} /> Nova Matrícula
           </button>
         </div>
       </div>
+
+      {isError ? <div className="alert alert--error">Nao foi possivel carregar as matriculas.</div> : null}
 
       <DataTable
         columns={COLUMNS}
@@ -83,9 +252,120 @@ export default function MatriculasPage() {
         onSearch={(v) => { setSearch(v); setPage(1) }}
         searchPlaceholder="Buscar por nome, CPF ou número..."
         emptyMessage="Nenhuma matrícula encontrada."
+        rowActions={(row) => (
+          <div className="table-actions">
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedMatriculaId(row.id)}>
+              <Eye size={14} /> Detalhes
+            </button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => openEditForm(row.id)}>
+              <Pencil size={14} /> Editar
+            </button>
+            <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir a matricula ${row.numero_matricula}?`) && deleteMutation.mutate(row.id)}>
+              <Trash2 size={14} /> Excluir
+            </button>
+          </div>
+        )}
       />
 
-      {/* Paginação */}
+      {selectedMatriculaId ? (
+        <EntityDetailsPanel
+          title="Detalhes da matricula"
+          subtitle={selectedMatricula?.numero_matricula || 'Consultando matricula selecionada'}
+          fields={detailsFields}
+          isLoading={isLoadingDetails}
+          errorMessage={isErrorDetails ? 'Nao foi possivel carregar os detalhes desta matricula.' : ''}
+          onClose={() => setSelectedMatriculaId(null)}
+        />
+      ) : null}
+
+      {(isCreating || editingMatriculaId) ? (
+        <EntityFormPanel
+          title={editingMatriculaId ? 'Editar matricula' : 'Nova matricula'}
+          subtitle="Informe aluno, curso, turma e situacao da matricula."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              id: editingMatriculaId,
+              payload: {
+                aluno: Number(formData.aluno),
+                curso: Number(formData.curso),
+                turma: Number(formData.turma),
+                status: formData.status,
+                tipo_matricula: formData.tipo_matricula,
+                turno: formData.turno || '',
+              },
+            })
+          }}
+          onCancel={closeForm}
+          submitLabel={editingMatriculaId ? 'Salvar alteracoes' : 'Criar matricula'}
+          isSubmitting={saveMutation.isPending}
+        >
+          <SearchableRemoteSelect
+            id="matricula-aluno"
+            label="Aluno"
+            searchLabel="Buscar aluno"
+            searchPlaceholder="Digite nome, CPF ou usuario"
+            searchValue={alunoSearch}
+            onSearchChange={setAlunoSearch}
+            value={formData.aluno}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, aluno: nextValue }))}
+            options={alunos}
+            selectedOption={selectedAlunoOption}
+            getOptionLabel={(item) => `${item.nome_completo} - ${item.username}`}
+          />
+          <SearchableRemoteSelect
+            id="matricula-curso"
+            label="Curso"
+            searchLabel="Buscar curso"
+            searchPlaceholder="Digite nome, sigla ou unidade"
+            searchValue={cursoSearch}
+            onSearchChange={setCursoSearch}
+            value={formData.curso}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, curso: nextValue, turma: '' }))}
+            options={cursos}
+            selectedOption={selectedCursoOption}
+            getOptionLabel={(item) => `${item.nome}${item.sigla ? ` - ${item.sigla}` : ''}`}
+          />
+          <SearchableRemoteSelect
+            id="matricula-turma"
+            label="Turma"
+            searchLabel="Buscar turma"
+            searchPlaceholder="Digite nome da turma"
+            searchValue={turmaSearch}
+            onSearchChange={setTurmaSearch}
+            value={formData.turma}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, turma: nextValue }))}
+            options={turmas}
+            selectedOption={selectedTurmaOption}
+            getOptionLabel={(item) => `${item.nome} - ${item.curso_nome}`}
+          />
+          <div className="form-field">
+            <label>Status</label>
+            <select className="select" value={formData.status} onChange={(event) => setFormData((current) => ({ ...current, status: event.target.value }))}>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Tipo da matricula</label>
+            <select className="select" value={formData.tipo_matricula} onChange={(event) => setFormData((current) => ({ ...current, tipo_matricula: event.target.value }))}>
+              {TIPO_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Turno</label>
+            <select className="select" value={formData.turno} onChange={(event) => setFormData((current) => ({ ...current, turno: event.target.value }))}>
+              {TURNO_OPTIONS.map((option) => (
+                <option key={option.value || 'blank'} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        </EntityFormPanel>
+      ) : null}
+
       {data && (
         <div className="pagination">
           <button
@@ -95,9 +375,7 @@ export default function MatriculasPage() {
           >
             Anterior
           </button>
-          <span className="pagination__info">
-            Página {page} — {data.count} registros
-          </span>
+          <span className="pagination__info">Pagina {page} — {data.count} registros</span>
           <button
             className="btn btn--secondary"
             disabled={!data.next}

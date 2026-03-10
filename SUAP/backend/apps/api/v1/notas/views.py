@@ -8,13 +8,20 @@ from apps.notas.models import Nota
 from .serializers import NotaSerializer
 
 
-class NotaListApiView(generics.ListAPIView):
+class NotaListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "notas"
     access_surface = "api"
     access_action = "view"
     serializer_class = NotaSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = Nota.objects.select_related(
@@ -40,14 +47,20 @@ class NotaListApiView(generics.ListAPIView):
         return queryset.distinct()
 
 
-class NotaDetailApiView(generics.RetrieveAPIView):
+class NotaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "notas"
     access_surface = "api"
-    access_action = "view"
     serializer_class = NotaSerializer
     queryset = Nota.objects.select_related(
         "matricula__aluno__pessoa",
         "matricula__curso",
         "matricula__turma",
     )
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()

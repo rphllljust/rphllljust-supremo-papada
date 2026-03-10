@@ -23,9 +23,13 @@ class TurmaListApiView(generics.ListAPIView):
 
         search = self.request.query_params.get("search", "").strip()
         status_value = self.request.query_params.get("status", "").strip()
+        curso_id = self.request.query_params.get("curso", "").strip()
 
         if status_value:
             queryset = queryset.filter(status=status_value)
+
+        if curso_id:
+            queryset = queryset.filter(curso_id=curso_id)
 
         if search:
             queryset = queryset.filter(

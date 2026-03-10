@@ -8,6 +8,8 @@ class MatriculaSerializer(serializers.ModelSerializer):
     turma_nome = serializers.CharField(source="turma.nome", read_only=True)
     aluno_nome = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    tipo_matricula_display = serializers.CharField(source="get_tipo_matricula_display", read_only=True)
+    turno_display = serializers.CharField(source="get_turno_display", read_only=True)
 
     class Meta:
         model = Matricula
@@ -24,6 +26,10 @@ class MatriculaSerializer(serializers.ModelSerializer):
             "data_matricula",
             "status",
             "status_display",
+            "tipo_matricula",
+            "tipo_matricula_display",
+            "turno",
+            "turno_display",
         ]
         read_only_fields = ["data_matricula"]
 
