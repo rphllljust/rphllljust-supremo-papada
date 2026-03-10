@@ -1064,6 +1064,208 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   flex-wrap: wrap;
 }
 
+.ata-banner-card {
+  background: linear-gradient(120deg, #0a3f8a 0%, #0b57d0 72%, #2f78e1 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.ata-banner-card__title {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.ata-banner-card__subtitle {
+  opacity: .92;
+}
+
+.ata-shell-react {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.ata-nav-react {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ata-step-btn-react {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--color-gray-200);
+  background: #fff;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ata-step-btn-react:hover {
+  background: #f8fbff;
+}
+
+.ata-main-react {
+  min-width: 0;
+}
+
+.ata-grid-react {
+  display: grid;
+  gap: 12px;
+}
+
+.ata-grid-react--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ata-grid-react--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ata-grid-react--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ata-dynamic-list-react {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ata-dynamic-item-react {
+  border: 1px dashed #9ab3da;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafcff;
+}
+
+.ata-dynamic-head-react {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ata-actions-react {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ata-help-react {
+  font-size: 12px;
+  color: var(--color-gray-400);
+  margin-top: 12px;
+}
+
+.ata-preview-react {
+  background: #fff;
+  border: 1px solid #d8dee9;
+  border-radius: 12px;
+  padding: 16px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  font-family: 'Times New Roman', serif;
+  overflow-x: auto;
+}
+
+.ata-validation-box-react {
+  border: 1px solid #f3b4b4;
+  background: #fff5f5;
+  color: #7f1d1d;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.ata-validation-box-react ul {
+  margin: 8px 0 0 18px;
+}
+
+.ata-missing-link-react {
+  background: transparent;
+  border: 0;
+  color: #9f1239;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+
+.ata-missing-link-react:hover {
+  color: #7a0f2b;
+}
+
+@media (max-width: 1024px) {
+  .ata-shell-react {
+    grid-template-columns: 1fr;
+  }
+
+  .ata-nav-react {
+    position: static;
+  }
+
+  .ata-grid-react--2,
+  .ata-grid-react--3,
+  .ata-grid-react--4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.document-card {
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.document-card:hover {
+  transform: translateY(-2px);
+  border-color: #b4d2c0;
+  background: #fbfffc;
+}
+
+.document-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-pale);
+  color: var(--green-dark);
+}
+
+.document-card__title {
+  font-size: 16px;
+  color: var(--green-dark);
+}
+
+.document-card__description {
+  color: var(--color-gray-700);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* ── Stat Cards ──────────────────────────────────────── */
 .stats-grid {
   display: grid;

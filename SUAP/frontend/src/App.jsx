@@ -27,6 +27,10 @@ const LoginPage      = lazy(() => import('@/pages/auth/LoginPage'))
 
 // ── Painel interno (requer JWT) ────────────────────────
 const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
+const DocumentosPage = lazy(() => import('@/pages/documentos/DocumentosPage'))
+const DeclaracoesPage = lazy(() => import('@/pages/documentos/DeclaracoesPage'))
+const HistoricosPage = lazy(() => import('@/pages/documentos/HistoricosPage'))
+const GuiasTransferenciaPage = lazy(() => import('@/pages/documentos/GuiasTransferenciaPage'))
 const MatriculasPage = lazy(() => import('@/pages/matriculas/MatriculasPage'))
 const NotasPage      = lazy(() => import('@/pages/notas/NotasPage'))
 const FrequenciaPage = lazy(() => import('@/pages/frequencia/FrequenciaPage'))
@@ -178,14 +182,18 @@ export default function App() {
               <Route element={<ProtectedRoute />}>
                 <Route element={<Layout />}>
                   <Route path="/dashboard"  element={<RouteShell><DashboardPage /></RouteShell>} />
+                  <Route path="/documentos" element={<RouteShell><DocumentosPage /></RouteShell>} />
+                  <Route path="/documentos/declaracoes" element={<RouteShell><DeclaracoesPage /></RouteShell>} />
+                  <Route path="/documentos/historicos" element={<RouteShell><HistoricosPage /></RouteShell>} />
+                  <Route path="/documentos/guias" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/matriculas" element={<RouteShell><MatriculasPage /></RouteShell>} />
                   <Route path="/notas"      element={<RouteShell><NotasPage /></RouteShell>} />
                   <Route path="/frequencia" element={<RouteShell><FrequenciaPage /></RouteShell>} />
                   <Route path="/turmas"     element={<RouteShell><TurmasPage /></RouteShell>} />
                   <Route path="/cursos"     element={<RouteShell><CursosPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
-                  <Route path="/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
-                  <Route path="/setores"    element={<RouteShell><SetoresPage /></RouteShell>} />
+                  <Route path="/servidores" element={<Navigate to="/rh/servidores" replace />} />
+                  <Route path="/setores"    element={<Navigate to="/rh/setores" replace />} />
                   <Route path="/usuarios"   element={<RouteShell><UsuariosPage /></RouteShell>} />
                   <Route path="/unidades"   element={<RouteShell><UnidadesPage /></RouteShell>} />
                   <Route path="/agenda"     element={<RouteShell><AgendaPage /></RouteShell>} />
@@ -197,9 +205,14 @@ export default function App() {
                   <Route path="/inscricoes" element={<RouteShell><InscricoesPage /></RouteShell>} />
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
-                  <Route path="/rh/servidor/*" element={<Navigate to="/servidores" replace />} />
-                  <Route path="/rh/setor/*" element={<Navigate to="/setores" replace />} />
-                  <Route path="/rh/instituicao/*" element={<Navigate to="/unidades" replace />} />
+                  <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
+                  <Route path="/rh/setores" element={<RouteShell><SetoresPage /></RouteShell>} />
+                  <Route path="/rh/docentes" element={<Navigate to="/usuarios?tipo=PROFESSOR" replace />} />
+                  <Route path="/rh/instituicoes" element={<RouteShell><UnidadesPage /></RouteShell>} />
+                  <Route path="/rh/servidor/*" element={<Navigate to="/rh/servidores" replace />} />
+                  <Route path="/rh/setor/*" element={<Navigate to="/rh/setores" replace />} />
+                  <Route path="/rh/instituicao/*" element={<Navigate to="/rh/instituicoes" replace />} />
+                  <Route path="/rh/:slug" element={<RouteShell><PlaceholderPage /></RouteShell>} />
                   <Route path="/documentos/atas" element={<Navigate to="/ata-professores" replace />} />
                   <Route path="/documentos/atas/novo" element={<Navigate to="/ata-professores/nova" replace />} />
                   <Route path="/documentos/atas/:ataId/editar" element={<LegacyAtaEditRedirect />} />
@@ -209,14 +222,15 @@ export default function App() {
                   <Route path="/indisponivel/ata-professores" element={<Navigate to="/ata-professores" replace />} />
                   <Route path="/indisponivel/:slug" element={<RouteShell><PlaceholderPage /></RouteShell>} />
                   <Route path="/app/dashboard"  element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/app/documentos" element={<Navigate to="/documentos" replace />} />
                   <Route path="/app/matriculas" element={<Navigate to="/matriculas" replace />} />
                   <Route path="/app/notas"     element={<Navigate to="/notas" replace />} />
                   <Route path="/app/frequencia" element={<Navigate to="/frequencia" replace />} />
                   <Route path="/app/turmas"     element={<Navigate to="/turmas" replace />} />
                   <Route path="/app/cursos"     element={<Navigate to="/cursos" replace />} />
                   <Route path="/app/alunos"     element={<Navigate to="/alunos" replace />} />
-                  <Route path="/app/servidores" element={<Navigate to="/servidores" replace />} />
-                  <Route path="/app/setores"    element={<Navigate to="/setores" replace />} />
+                  <Route path="/app/servidores" element={<Navigate to="/rh/servidores" replace />} />
+                  <Route path="/app/setores"    element={<Navigate to="/rh/setores" replace />} />
                   <Route path="/app/usuarios"   element={<Navigate to="/usuarios" replace />} />
                   <Route path="/app/unidades"   element={<Navigate to="/unidades" replace />} />
                   <Route path="/app/agenda"     element={<Navigate to="/agenda" replace />} />

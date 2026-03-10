@@ -143,6 +143,7 @@ ACCESS_MATRIX = {
         },
         "api": {
             "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
         },
     },
     "estagio": {

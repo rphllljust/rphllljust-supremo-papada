@@ -44,6 +44,12 @@ export const usuariosApi = {
 }
 export const servidoresApi = crud('servidores')
 export const setoresApi = crud('setores')
+export const declaracoesApi = crud('declaracoes')
+export const historicosApi = crud('historicos')
+export const guiasTransferenciaApi = crud('guias-transferencia')
+export const transferenciasApi = {
+  list: (params) => client.get('/transferencias/', { params }),
+}
 
 export const unidadesApi = crud('unidades')
 export const cursosApi = {

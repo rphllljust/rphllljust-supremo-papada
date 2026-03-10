@@ -1,0 +1,223 @@
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+import { guiasTransferenciaApi, matriculasApi, transferenciasApi } from '@/api/endpoints'
+import DataTable from '@/components/ui/DataTable'
+import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
+import EntityFormPanel from '@/components/ui/EntityFormPanel'
+
+const COLUMNS = [
+  { key: 'numero_protocolo', label: 'Protocolo' },
+  { key: 'assunto', label: 'Assunto' },
+  { key: 'matricula_numero', label: 'Matricula' },
+  { key: 'aluno_nome', label: 'Aluno' },
+  { key: 'escola_origem', label: 'Escola de origem' },
+  { key: 'escola_destino', label: 'Escola de destino' },
+]
+
+const DEFAULT_FORM = {
+  assunto: '',
+  matricula: '',
+  escola_origem: '',
+  escola_destino: '',
+  transferencia: '',
+  observacao: '',
+}
+
+function getErrorMessage(error, fallback) {
+  const data = error?.response?.data
+  if (!data) return fallback
+  if (typeof data.detail === 'string') return data.detail
+  const firstValue = Object.values(data)[0]
+  return Array.isArray(firstValue) ? firstValue[0] : (firstValue || fallback)
+}
+
+export default function GuiasTransferenciaPage() {
+  const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [selectedId, setSelectedId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [formData, setFormData] = useState(DEFAULT_FORM)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['guias-transferencia', { search, page }],
+    queryFn: () => guiasTransferenciaApi.list({ search, page }).then((response) => response.data),
+    staleTime: 30_000,
+  })
+
+  const { data: matriculasData } = useQuery({
+    queryKey: ['matriculas', 'guia-options'],
+    queryFn: () => matriculasApi.list({ page_size: 100 }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: transferenciasData } = useQuery({
+    queryKey: ['transferencias', 'guia-options'],
+    queryFn: () => transferenciasApi.list({ page_size: 100 }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: selectedItem, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
+    queryKey: ['guia-transferencia', selectedId],
+    queryFn: () => guiasTransferenciaApi.get(selectedId).then((response) => response.data),
+    enabled: Boolean(selectedId),
+    staleTime: 30_000,
+  })
+
+  const { data: editingItem } = useQuery({
+    queryKey: ['guia-transferencia-edit', editingId],
+    queryFn: () => guiasTransferenciaApi.get(editingId).then((response) => response.data),
+    enabled: Boolean(editingId),
+    staleTime: 0,
+  })
+
+  useEffect(() => {
+    if (!editingItem) return
+    setFormData({
+      assunto: editingItem.assunto || '',
+      matricula: editingItem.matricula ? String(editingItem.matricula) : '',
+      escola_origem: editingItem.escola_origem || '',
+      escola_destino: editingItem.escola_destino || '',
+      transferencia: editingItem.transferencia ? String(editingItem.transferencia) : '',
+      observacao: editingItem.observacao || '',
+    })
+  }, [editingItem])
+
+  const saveMutation = useMutation({
+    mutationFn: ({ id, payload }) => (id ? guiasTransferenciaApi.update(id, payload) : guiasTransferenciaApi.create(payload)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guias-transferencia'] })
+      toast.success(editingId ? 'Guia atualizada com sucesso.' : 'Guia emitida com sucesso.')
+      setEditingId(null)
+      setIsCreating(false)
+      setFormData(DEFAULT_FORM)
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a guia.')),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => guiasTransferenciaApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guias-transferencia'] })
+      setSelectedId(null)
+      toast.success('Guia excluida com sucesso.')
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir a guia.')),
+  })
+
+  const matriculas = matriculasData?.results || []
+  const transferencias = transferenciasData?.results || []
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Guias de Transferencia</h1>
+          <p className="page-subtitle">Documentos eletronicos</p>
+        </div>
+        <div className="page-header__actions">
+          <button type="button" className="btn btn--primary" onClick={() => { setEditingId(null); setIsCreating(true); setFormData(DEFAULT_FORM) }}>
+            <Plus size={16} /> Nova Guia
+          </button>
+        </div>
+      </div>
+
+      {isError ? <div className="alert alert--error">Nao foi possivel carregar as guias.</div> : null}
+
+      <DataTable
+        columns={COLUMNS}
+        data={data}
+        isLoading={isLoading}
+        onSearch={(value) => { setSearch(value); setPage(1) }}
+        searchPlaceholder="Buscar por protocolo, assunto, aluno, matricula ou escola..."
+        emptyMessage="Nenhuma guia encontrada."
+        rowActions={(row) => (
+          <div className="table-actions">
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}><Eye size={14} /> Visualizar</button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setIsCreating(false); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
+            <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir a guia ${row.numero_protocolo}?`) && deleteMutation.mutate(row.id)}><Trash2 size={14} /> Excluir</button>
+          </div>
+        )}
+      />
+
+      {selectedId ? (
+        <EntityDetailsPanel
+          title="Detalhes da guia"
+          subtitle={selectedItem?.assunto || 'Consultando guia selecionada'}
+          fields={selectedItem ? [
+            { label: 'Protocolo', value: selectedItem.numero_protocolo },
+            { label: 'Assunto', value: selectedItem.assunto },
+            { label: 'Matricula', value: selectedItem.matricula_numero },
+            { label: 'Aluno', value: selectedItem.aluno_nome },
+            { label: 'Escola de origem', value: selectedItem.escola_origem || '-' },
+            { label: 'Escola de destino', value: selectedItem.escola_destino || '-' },
+            { label: 'Transferencia vinculada', value: selectedItem.transferencia_label || '-' },
+            { label: 'Observacao', value: selectedItem.observacao || '-' },
+            { label: 'Emitido por', value: selectedItem.emitido_por_nome || '-' },
+          ] : []}
+          isLoading={isLoadingDetails}
+          errorMessage={isErrorDetails ? 'Nao foi possivel carregar os detalhes desta guia.' : ''}
+          onClose={() => setSelectedId(null)}
+        />
+      ) : null}
+
+      {(isCreating || editingId) ? (
+        <EntityFormPanel
+          title={editingId ? 'Editar guia' : 'Emitir guia de transferencia'}
+          subtitle="Preencha os dados da guia vinculada a matricula e transferencia."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              id: editingId,
+              payload: {
+                ...formData,
+                matricula: Number(formData.matricula),
+                transferencia: formData.transferencia ? Number(formData.transferencia) : null,
+              },
+            })
+          }}
+          onCancel={() => { setEditingId(null); setIsCreating(false); setFormData(DEFAULT_FORM) }}
+          submitLabel={editingId ? 'Salvar alteracoes' : 'Emitir guia'}
+          isSubmitting={saveMutation.isPending}
+        >
+          <div className="form-field form-field--full">
+            <label>Assunto</label>
+            <input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} />
+          </div>
+          <div className="form-field">
+            <label>Matricula</label>
+            <select className="select" value={formData.matricula} onChange={(event) => setFormData((current) => ({ ...current, matricula: event.target.value }))}>
+              <option value="">Selecione</option>
+              {matriculas.map((item) => <option key={item.id} value={item.id}>{item.numero_matricula} - {item.aluno_nome}</option>)}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Transferencia vinculada</label>
+            <select className="select" value={formData.transferencia} onChange={(event) => setFormData((current) => ({ ...current, transferencia: event.target.value }))}>
+              <option value="">Sem transferencia</option>
+              {transferencias.map((item) => <option key={item.id} value={item.id}>{item.matricula_numero} - {item.tipo_display} - {item.status_display}</option>)}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>Escola de origem</label>
+            <input type="text" value={formData.escola_origem} onChange={(event) => setFormData((current) => ({ ...current, escola_origem: event.target.value }))} />
+          </div>
+          <div className="form-field">
+            <label>Escola de destino</label>
+            <input type="text" value={formData.escola_destino} onChange={(event) => setFormData((current) => ({ ...current, escola_destino: event.target.value }))} />
+          </div>
+          <div className="form-field form-field--full">
+            <label>Observacao</label>
+            <textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} />
+          </div>
+        </EntityFormPanel>
+      ) : null}
+
+      {data ? <div className="pagination"><button className="btn btn--secondary" disabled={!data.previous} onClick={() => setPage((current) => current - 1)}>Anterior</button><span className="pagination__info">Pagina {page} — {data.count} registros</span><button className="btn btn--secondary" disabled={!data.next} onClick={() => setPage((current) => current + 1)}>Proxima</button></div> : null}
+    </div>
+  )
+}

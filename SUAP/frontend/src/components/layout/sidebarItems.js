@@ -4,8 +4,6 @@ import {
   FileText,
   Settings,
   GraduationCap,
-  FlaskConical,
-  Briefcase,
   Users,
   Power,
 } from 'lucide-react'
@@ -30,6 +28,21 @@ function activation(slug, label) {
     status: 'ativacao',
     description: 'Este modulo aparece no menu legado, mas ainda esta em fase de ativacao no frontend do SUAP.',
   })
+}
+
+function rhUnavailable(slug, label, extra = {}) {
+  return {
+    id: `rh-${slug}`,
+    type: 'link',
+    to: `/rh/${slug}`,
+    label,
+    activePrefixes: [`/rh/${slug}`],
+    state: {
+      title: label,
+      status: extra.status || 'indisponivel',
+      description: extra.description || 'Esta funcionalidade de Gestao de Pessoas ainda nao foi implementada no frontend.',
+    },
+  }
 }
 
 export const sidebarItems = [
@@ -69,9 +82,7 @@ export const sidebarItems = [
         label: 'Documentos Eletronicos',
         items: [
           unavailable('documentos-eletronicos-dashboard', 'Dashboard'),
-          unavailable('documentos', 'Documentos', {
-            description: 'O modulo de documentos ainda nao foi portado para o frontend. O acesso ao template Django foi bloqueado.',
-          }),
+          { id: 'documentos', type: 'link', label: 'Documentos', to: '/documentos' },
           unavailable('documentos-pessoais', 'Documentos Pessoais'),
           unavailable('documentos-pessoais-digitalizados', 'Documentos Pessoais Digitalizados'),
         ],
@@ -164,140 +175,6 @@ export const sidebarItems = [
     ],
   },
   {
-    id: 'pesquisa',
-    type: 'group',
-    label: 'Pesquisa',
-    icon: FlaskConical,
-    items: [
-      {
-        id: 'pesquisa-editais',
-        type: 'group',
-        label: 'Editais',
-        items: [
-          unavailable('pesquisa-editais', 'Editais'),
-          unavailable('pesquisa-editais-resultado-final', 'Resultado Final'),
-          unavailable('pesquisa-editais-resultado-parcial', 'Resultado Parcial'),
-        ],
-      },
-      {
-        id: 'pesquisa-projetos',
-        type: 'group',
-        label: 'Projetos',
-        items: [
-          unavailable('pesquisa-projetos-meus-projetos', 'Meus Projetos'),
-          unavailable('pesquisa-projetos-meus-recursos', 'Meus Recursos'),
-          unavailable('pesquisa-projetos-submeter-projetos', 'Submeter Projetos'),
-          unavailable('pesquisa-projetos-tornar-se-avaliador', 'Tornar-se Avaliador'),
-        ],
-      },
-      {
-        id: 'pesquisa-declaracoes',
-        type: 'group',
-        label: 'Declaracoes',
-        items: [
-          unavailable('pesquisa-declaracoes-avaliador-de-projetos', 'Avaliador de Projetos'),
-        ],
-      },
-      {
-        id: 'pesquisa-editora',
-        type: 'group',
-        label: 'Editora',
-        items: [
-          unavailable('pesquisa-editora-submissoes', 'Submissoes'),
-          unavailable('pesquisa-editora-doacoes-realizadas', 'Doacoes Realizadas'),
-        ],
-      },
-      {
-        id: 'pesquisa-laboratorios',
-        type: 'group',
-        label: 'Laboratorios Multiusuario',
-        items: [
-          unavailable('pesquisa-laboratorios-multiusuario-laboratorios', 'Laboratorios'),
-          unavailable('pesquisa-laboratorios-multiusuario-minhas-solicitacoes', 'Minhas Solicitacoes'),
-        ],
-      },
-      {
-        id: 'pesquisa-incubadoras',
-        type: 'group',
-        label: 'Incubadoras Tecnologicas',
-        items: [
-          unavailable('pesquisa-incubadoras-tecnologicas-incubadoras-tecnologicas', 'Incubadoras Tecnologicas'),
-          unavailable('pesquisa-incubadoras-tecnologicas-equipe-tecnica-eta', 'Equipe Tecnica (ETA)'),
-        ],
-      },
-      {
-        id: 'pesquisa-relatorios',
-        type: 'group',
-        label: 'Relatorios',
-        items: [
-          unavailable('pesquisa-relatorios-empreendimentos-incubados', 'Empreendimentos Incubados'),
-        ],
-      },
-      {
-        id: 'pesquisa-cnpq',
-        type: 'group',
-        label: 'CNPQ',
-        items: [
-          unavailable('pesquisa-cnpq-estatistica-importacoes-lattes', 'Estatistica de Importacoes do Lattes'),
-          unavailable('pesquisa-cnpq-indicadores', 'Indicadores'),
-          unavailable('pesquisa-cnpq-producao-por-campus', 'Producao por Campus'),
-          unavailable('pesquisa-cnpq-producao-por-servidor', 'Producao por Servidor'),
-          unavailable('pesquisa-cnpq-relatorio-importacoes-lattes', 'Relatorio de Importacoes do Lattes'),
-          unavailable('pesquisa-cnpq-titulacao-area-atuacao', 'Titulacao e Area de Atuacao'),
-        ],
-      },
-      unavailable('pesquisa-variaveis-de-gestao', 'Variaveis de Gestao'),
-    ],
-  },
-  {
-    id: 'extensao',
-    type: 'group',
-    label: 'Extensao',
-    icon: Briefcase,
-    items: [
-      {
-        id: 'extensao-convenios',
-        type: 'group',
-        label: 'Convenios',
-        items: [
-          unavailable('convenios', 'Convenios'),
-        ],
-      },
-      {
-        id: 'estagio-e-afins',
-        type: 'group',
-        label: 'Estagio e Afins',
-        items: [
-          unavailable('extensao-estagio-afins-aprendizagens', 'Aprendizagens'),
-          { id: 'estagios-extensao', type: 'link', label: 'Estagios', to: '/estagio' },
-        ],
-      },
-      {
-        id: 'extensao-projetos',
-        type: 'group',
-        label: 'Projetos',
-        items: [
-          unavailable('extensao-projetos-editais', 'Editais'),
-          unavailable('extensao-projetos-meus-projetos', 'Meus Projetos'),
-          unavailable('extensao-projetos-meus-recursos', 'Meus Recursos'),
-          unavailable('extensao-projetos-projetos', 'Projetos'),
-          unavailable('extensao-projetos-submeter-projetos', 'Submeter Projetos'),
-          unavailable('extensao-projetos-tornar-se-avaliador', 'Tornar-se Avaliador'),
-        ],
-      },
-      {
-        id: 'demandas-externas',
-        type: 'group',
-        label: 'Demandas Externas',
-        items: [
-          unavailable('extensao-demandas-externas-demandas', 'Demandas'),
-        ],
-      },
-      unavailable('extensao-nepp', 'Nucleos de Extensao e Pratica Profissional - NEPP'),
-      unavailable('extensao-variaveis-de-gestao', 'Variaveis de Gestao'),
-    ],
-  },
-  {
     id: 'gestao-pessoas',
     type: 'group',
     label: 'Gestao de Pessoas',
@@ -307,20 +184,20 @@ export const sidebarItems = [
         id: 'servidores',
         type: 'link',
         label: 'Servidores',
-        to: '/servidores',
-        activePrefixes: ['/servidores'],
+        to: '/rh/servidores',
+        activePrefixes: ['/rh/servidores'],
       },
-      { id: 'setores', type: 'link', label: 'Setores', to: '/setores' },
+      { id: 'setores', type: 'link', label: 'Setores', to: '/rh/setores', activePrefixes: ['/rh/setores'] },
       {
         id: 'administracao-pessoal',
         type: 'group',
         label: 'Administracao de Pessoal',
         items: [
-          unavailable('organograma', 'Organograma'),
-          unavailable('ponto', 'Ponto'),
-          unavailable('solicitacoes', 'Solicitacoes'),
-          unavailable('acumulo-de-cargo', 'Acumulo de Cargo'),
-          unavailable('acompanhamento-funcional', 'Acompanhamento Funcional'),
+          rhUnavailable('organograma', 'Organograma'),
+          rhUnavailable('ponto', 'Ponto'),
+          rhUnavailable('solicitacoes', 'Solicitacoes'),
+          rhUnavailable('acumulo-de-cargo', 'Acumulo de Cargo'),
+          rhUnavailable('acompanhamento-funcional', 'Acompanhamento Funcional'),
         ],
       },
       {
@@ -328,29 +205,29 @@ export const sidebarItems = [
         type: 'group',
         label: 'Desenvolvimento de Pessoal',
         items: [
-          unavailable('remocao-interna', 'Remocao Interna'),
-          unavailable('avaliacao-de-desempenho', 'Avaliacao de Desempenho'),
-          unavailable('licenca-capacitacao', 'Licenca Capacitacao'),
-          unavailable('pdp', 'PDP'),
+          rhUnavailable('remocao-interna', 'Remocao Interna'),
+          rhUnavailable('avaliacao-de-desempenho', 'Avaliacao de Desempenho'),
+          rhUnavailable('licenca-capacitacao', 'Licenca Capacitacao'),
+          rhUnavailable('pdp', 'PDP'),
           {
             id: 'docentes',
             type: 'link',
             label: 'Docentes',
-            to: { pathname: '/usuarios', search: '?tipo=PROFESSOR' },
-            activePrefixes: ['/usuarios'],
+            to: '/rh/docentes',
+            activePrefixes: ['/rh/docentes'],
           },
         ],
       },
-      unavailable('atencao-a-saude-do-servidor', 'Atencao a Saude do Servidor'),
+      rhUnavailable('atencao-a-saude-do-servidor', 'Atencao a Saude do Servidor'),
       {
         id: 'cadastros-pessoas',
         type: 'group',
         label: 'Cadastros',
         items: [
-          { id: 'instituicoes', type: 'link', label: 'Instituicoes', to: '/unidades' },
+          { id: 'instituicoes', type: 'link', label: 'Instituicoes', to: '/rh/instituicoes', activePrefixes: ['/rh/instituicoes'] },
         ],
       },
-      unavailable('variaveis-de-gestao-pessoas', 'Variaveis de Gestao'),
+      rhUnavailable('variaveis-de-gestao-pessoas', 'Variaveis de Gestao'),
     ],
   },
   {
@@ -366,6 +243,8 @@ export const sidebarItems = [
       activation('atividades-estudantis', 'Atividades Estudantis (ativar)'),
       activation('comunicacao-social', 'Comunicacao Social (ativar)'),
       activation('seguranca-institucional', 'Seguranca Institucional (ativar)'),
+      activation('pesquisa', 'Pesquisa (ativar)'),
+      activation('extensao', 'Extensao (ativar)'),
     ],
   },
 ]
