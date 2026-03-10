@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "SUAP"
+version = "0.1.0"
+description = ""
+authors = ["jackvadderr", "rphllljust"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.14"
+django = "^6.0.2"
+djangorestframework = "^3.16.1"
+django-cors-headers = "^4.9.0"
+djangorestframework-simplejwt = "^5.5.1"
+python-decouple = "^3.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.django]
+DJANGO_SETTINGS_MODULE = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"

@@ -1,0 +1,1 @@
+import{j as e}from"./react-query-Be4Ugv20.js";import{r as o}from"./react-vendor-D2usc2w8.js";function r(){return typeof window<"u"&&window.location.port==="5173"?"http://localhost:8000/":"/"}function i(){return o.useEffect(()=>{window.location.replace(r())},[]),e.jsx("div",{className:"loading-screen",children:e.jsx("div",{className:"spinner"})})}export{i as default};

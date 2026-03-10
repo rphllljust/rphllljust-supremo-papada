@@ -1,0 +1,1 @@
+import"../../react/assets/modulepreload-polyfill-B5Qt9EMX.js";import{o,c as t,r,a as s}from"../../react/assets/vue-vendor-D26AjZUA.js";const a={class:"vue-root"},p={__name:"App",setup(c){return(e,n)=>(o(),t("div",a,[r(e.$slots,"default")]))}};s(p).mount("#vue-app");
