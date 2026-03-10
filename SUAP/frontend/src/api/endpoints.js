@@ -42,7 +42,11 @@ const crud = (resource) => ({
 export const usuariosApi = {
   ...crud('usuarios'),
 }
-export const servidoresApi = crud('servidores')
+export const servidoresApi = {
+  ...crud('servidores'),
+  profile: (id) => client.get(`/servidores/${id}/perfil/`),
+  profileByMatricula: (matricula) => client.get(`/servidores/matricula/${matricula}/perfil/`),
+}
 export const setoresApi = crud('setores')
 export const declaracoesApi = crud('declaracoes')
 export const historicosApi = crud('historicos')

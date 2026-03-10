@@ -310,11 +310,7 @@ export default function Layout() {
 
             <div className="sidebar__user-dropdown">
               <NavLink
-                to="/indisponivel/meu-perfil"
-                state={{
-                  title: 'Meu perfil',
-                  description: 'A area de perfil do template Django ainda nao foi portada para uma pagina dedicada no frontend React.',
-                }}
+                to="/rh/servidor/1221471/"
                 className="sidebar__dropdown-link"
               >
                 <User size={16} />

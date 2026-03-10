@@ -62,6 +62,7 @@ class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
                 "username": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
+                "matricula_servidor": getattr(getattr(self.user, "perfil_servidor", None), "matricula_servidor", ""),
                 "access_context": access_context,
             },
         }

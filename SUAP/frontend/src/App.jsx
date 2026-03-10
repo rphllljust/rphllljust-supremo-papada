@@ -40,6 +40,7 @@ const CursosPage     = lazy(() => import('@/pages/cursos/CursosPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
+const ServidorProfilePage = lazy(() => import('@/pages/servidores/ServidorProfilePage'))
 const ServidoresPage = lazy(() => import('@/pages/servidores/ServidoresPage'))
 const SetoresPage    = lazy(() => import('@/pages/setores/SetoresPage'))
 const UsuariosPage   = lazy(() => import('@/pages/usuarios/UsuariosPage'))
@@ -206,6 +207,8 @@ export default function App() {
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
+                  <Route path="/rh/servidor/:matricula" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
+                  <Route path="/rh/servidor/:matricula/" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
                   <Route path="/rh/setores" element={<RouteShell><SetoresPage /></RouteShell>} />
                   <Route path="/rh/docentes" element={<Navigate to="/usuarios?tipo=PROFESSOR" replace />} />
                   <Route path="/rh/instituicoes" element={<RouteShell><UnidadesPage /></RouteShell>} />

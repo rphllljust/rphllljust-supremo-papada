@@ -22,6 +22,7 @@ class ServidorSerializer(serializers.ModelSerializer):
     nome_completo = serializers.CharField()
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     setor_nome = serializers.CharField(source="setor.nome", read_only=True)
+    matricula_servidor = serializers.CharField(source="perfil_servidor.matricula_servidor", read_only=True)
     password = serializers.CharField(write_only=True, required=False, allow_blank=True, style={"input_type": "password"})
 
     class Meta:
@@ -37,6 +38,7 @@ class ServidorSerializer(serializers.ModelSerializer):
             "is_active",
             "setor",
             "setor_nome",
+            "matricula_servidor",
             "password",
         ]
 

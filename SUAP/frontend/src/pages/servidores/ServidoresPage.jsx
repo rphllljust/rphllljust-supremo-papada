@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 
 import { servidoresApi, setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -61,11 +62,12 @@ function getErrorMessage(error, fallback) {
 
 export default function ServidoresPage() {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [tipoFiltro, setTipoFiltro] = useState('')
   const [setorFiltro, setSetorFiltro] = useState('')
-  const [selectedServidorId, setSelectedServidorId] = useState(null)
+  const [selectedServidorId, setSelectedServidorId] = useState(searchParams.get('servidorId'))
   const [editingServidorId, setEditingServidorId] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
 
@@ -110,6 +112,10 @@ export default function ServidoresPage() {
     enabled: Boolean(editingServidorId),
     staleTime: 0,
   })
+
+  useEffect(() => {
+    setSelectedServidorId(searchParams.get('servidorId'))
+  }, [searchParams])
 
   useEffect(() => {
     if (!editingServidor) {
@@ -271,7 +277,7 @@ export default function ServidoresPage() {
         emptyMessage="Nenhum servidor encontrado."
         rowActions={(row) => (
           <div className="table-actions">
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedServidorId(row.id)}>
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSearchParams({ servidorId: String(row.id) })}>
               <Eye size={14} /> Visualizar
             </button>
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => openEditForm(row.id)}>
@@ -291,7 +297,7 @@ export default function ServidoresPage() {
           fields={detailsFields}
           isLoading={isLoadingDetails}
           errorMessage={isErrorDetails ? 'Nao foi possivel carregar os detalhes deste servidor.' : ''}
-          onClose={() => setSelectedServidorId(null)}
+          onClose={() => setSearchParams({})}
         />
       ) : null}
 

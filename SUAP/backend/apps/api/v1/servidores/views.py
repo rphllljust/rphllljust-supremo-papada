@@ -42,6 +42,7 @@ class ServidorViewSet(viewsets.ModelViewSet):
                 | Q(last_name__icontains=search)
                 | Q(email__icontains=search)
                 | Q(cpf__icontains=search)
+                | Q(perfil_servidor__matricula_servidor__icontains=search)
                 | Q(pessoa__nome_completo__icontains=search)
                 | Q(setor__nome__icontains=search)
                 | Q(setor__codigo__icontains=search)

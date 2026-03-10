@@ -43,6 +43,7 @@ class AuthMeApiView(APIView):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
+                "matricula_servidor": getattr(getattr(user, "perfil_servidor", None), "matricula_servidor", ""),
                 "access_context": access_context,
             }
         )
