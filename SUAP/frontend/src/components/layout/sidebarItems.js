@@ -12,6 +12,7 @@ function unavailable(slug, label, extra = {}) {
   return {
     id: slug,
     type: 'link',
+    enabled: false,
     to: `/indisponivel/${slug}`,
     label,
     activePrefixes: [`/indisponivel/${slug}`],
@@ -34,6 +35,7 @@ function rhUnavailable(slug, label, extra = {}) {
   return {
     id: `rh-${slug}`,
     type: 'link',
+    enabled: false,
     to: `/rh/${slug}`,
     label,
     activePrefixes: [`/rh/${slug}`],

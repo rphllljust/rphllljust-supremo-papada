@@ -28,6 +28,34 @@ function collectGroupIds(item, forcedOpenIds) {
   item.items.forEach((child) => collectGroupIds(child, forcedOpenIds))
 }
 
+function pruneDisabledSidebarItems(items) {
+  return items.reduce((result, item) => {
+    if (!item) {
+      return result
+    }
+
+    if (!item.items?.length) {
+      if (item.enabled === false) {
+        return result
+      }
+
+      result.push(item)
+      return result
+    }
+
+    const nextChildren = pruneDisabledSidebarItems(item.items)
+    if (item.enabled === false || nextChildren.length === 0) {
+      return result
+    }
+
+    result.push({
+      ...item,
+      items: nextChildren,
+    })
+    return result
+  }, [])
+}
+
 function filterSidebarItems(items, query, forcedOpenIds) {
   if (!query) {
     return items
@@ -219,7 +247,8 @@ export default function Layout() {
 
   const normalizedQuery = normalizeText(menuQuery)
   const forcedOpenIds = new Set()
-  const visibleSidebarItems = filterSidebarItems(sidebarItems, normalizedQuery, forcedOpenIds)
+  const enabledSidebarItems = pruneDisabledSidebarItems(sidebarItems)
+  const visibleSidebarItems = filterSidebarItems(enabledSidebarItems, normalizedQuery, forcedOpenIds)
   const noResults = sidebarOpen && normalizedQuery && visibleSidebarItems.length === 0
 
   useEffect(() => {
