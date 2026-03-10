@@ -1,3 +1,4 @@
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
@@ -7,6 +8,7 @@ from apps.access.policies import build_access_context
 from apps.accounts.services import authenticate_user_by_cpf_profile
 from apps.accounts.utils import normalize_cpf
 from apps.usuarios.models import PerfilUsuario
+from apps.usuarios.profile_compat import get_matricula_servidor_safe
 
 
 class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -62,7 +64,7 @@ class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
                 "username": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
-                "matricula_servidor": getattr(getattr(self.user, "perfil_servidor", None), "matricula_servidor", ""),
+                "matricula_servidor": get_matricula_servidor_safe(self.user),
                 "access_context": access_context,
             },
         }
@@ -81,3 +83,39 @@ class LogoutSerializer(serializers.Serializer):
             token.blacklist()
         except TokenError as exc:
             self.fail("invalid_token")
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    default_error_messages = {
+        "invalid_current_password": "A senha atual informada esta incorreta.",
+        "password_mismatch": "A nova senha e a confirmacao devem ser iguais.",
+        "same_password": "A nova senha deve ser diferente da senha atual.",
+    }
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        current_password = attrs["current_password"]
+        new_password = attrs["new_password"]
+        new_password_confirm = attrs["new_password_confirm"]
+
+        if not user.check_password(current_password):
+            self.fail("invalid_current_password")
+
+        if new_password != new_password_confirm:
+            self.fail("password_mismatch")
+
+        if current_password == new_password:
+            self.fail("same_password")
+
+        validate_password(new_password, user=user)
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user

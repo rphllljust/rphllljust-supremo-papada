@@ -9,6 +9,7 @@ import { servidoresApi, setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const PERFIL_OPTIONS = [
   { value: 'PROFESSOR', label: 'Professor' },
@@ -70,11 +71,14 @@ export default function ServidoresPage() {
   const [selectedServidorId, setSelectedServidorId] = useState(searchParams.get('servidorId'))
   const [editingServidorId, setEditingServidorId] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [setorSearch, setSetorSearch] = useState('')
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
@@ -92,12 +96,10 @@ export default function ServidoresPage() {
   })
 
   const { data: setoresData } = useQuery({
-    queryKey: ['setores', 'options'],
-    queryFn: () => setoresApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['setores', 'options', setorSearch],
+    queryFn: () => setoresApi.list({ page_size: 10, search: setorSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
-
-  const setorOptions = setoresData?.results || []
 
   const { data: selectedServidor, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
     queryKey: ['servidor', selectedServidorId],
@@ -112,6 +114,13 @@ export default function ServidoresPage() {
     enabled: Boolean(editingServidorId),
     staleTime: 0,
   })
+
+  const setorOptions = setoresData?.results || []
+  const setorValue = watch('setor')
+  const selectedSetorOption = setorValue && editingServidor ? {
+    id: editingServidor.setor,
+    nome: editingServidor.setor_nome,
+  } : null
 
   useEffect(() => {
     setSelectedServidorId(searchParams.get('servidorId'))
@@ -343,15 +352,20 @@ export default function ServidoresPage() {
             {errors.tipo ? <span className="field-error">{errors.tipo.message}</span> : null}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="servidor-setor">Setor</label>
-            <select id="servidor-setor" className="select" {...register('setor')}>
-              <option value="">Sem setor</option>
-              {setorOptions.map((setor) => (
-                <option key={setor.id} value={setor.id}>{setor.nome}</option>
-              ))}
-            </select>
-          </div>
+          <SearchableRemoteSelect
+            id="servidor-setor"
+            label="Setor"
+            searchLabel="Buscar setor"
+            searchPlaceholder="Digite nome, sigla ou codigo"
+            searchValue={setorSearch}
+            onSearchChange={setSetorSearch}
+            value={setorValue || ''}
+            onChange={(nextValue) => setValue('setor', nextValue)}
+            options={setorOptions}
+            selectedOption={selectedSetorOption}
+            emptyOptionLabel="Sem setor"
+            getOptionLabel={(setor) => setor.nome}
+          />
 
           <div className="form-field">
             <label htmlFor="servidor-password">{editingServidorId ? 'Nova senha' : 'Senha'}</label>

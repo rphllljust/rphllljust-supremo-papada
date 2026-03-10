@@ -6,8 +6,9 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.access.policies import build_access_context
+from apps.usuarios.profile_compat import get_matricula_servidor_safe
 
-from .serializers import LogoutSerializer, PerfilTokenObtainPairSerializer
+from .serializers import ChangePasswordSerializer, LogoutSerializer, PerfilTokenObtainPairSerializer
 
 
 class PerfilTokenObtainPairView(TokenObtainPairView):
@@ -29,6 +30,16 @@ class AuthLogoutApiView(APIView):
         return Response({"detail": "Refresh token invalidado com sucesso."})
 
 
+class AuthChangePasswordApiView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Senha alterada com sucesso."})
+
+
 class AuthMeApiView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -43,7 +54,7 @@ class AuthMeApiView(APIView):
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "matricula_servidor": getattr(getattr(user, "perfil_servidor", None), "matricula_servidor", ""),
+                "matricula_servidor": get_matricula_servidor_safe(user),
                 "access_context": access_context,
             }
         )

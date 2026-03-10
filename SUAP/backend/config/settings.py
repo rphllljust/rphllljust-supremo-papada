@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "apps.auditoria",
     "apps.inscricoes",
     "apps.estagio",
+    "apps.notificacoes",
 ]
 
 MIDDLEWARE = [

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { ChevronDown, LogOut, Menu, Search, Settings, User, X } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Menu, Search, Settings, User, X } from 'lucide-react'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import { debugLog } from '@/utils/debug'
 
@@ -317,6 +317,13 @@ export default function Layout() {
                 <span>Meu perfil</span>
               </NavLink>
               <NavLink
+                to="/comum/notificacoes"
+                className="sidebar__dropdown-link"
+              >
+                <Bell size={16} />
+                <span>Notificacoes</span>
+              </NavLink>
+              <NavLink
                 to="/indisponivel/configuracoes"
                 state={{
                   title: 'Configuracoes',
@@ -328,11 +335,7 @@ export default function Layout() {
                 <span>Configuracoes</span>
               </NavLink>
               <NavLink
-                to="/indisponivel/alterar-senha"
-                state={{
-                  title: 'Alterar senha',
-                  description: 'O fluxo de alteracao de senha do template Django ainda nao foi migrado para uma tela React dedicada.',
-                }}
+                to="/comum/alterar-senha"
                 className="sidebar__dropdown-link"
               >
                 <Settings size={16} />

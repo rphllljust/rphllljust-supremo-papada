@@ -7,6 +7,7 @@ import { guiasTransferenciaApi, matriculasApi, transferenciasApi } from '@/api/e
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const COLUMNS = [
   { key: 'numero_protocolo', label: 'Protocolo' },
@@ -42,6 +43,8 @@ export default function GuiasTransferenciaPage() {
   const [editingId, setEditingId] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [matriculaSearch, setMatriculaSearch] = useState('')
+  const [transferenciaSearch, setTransferenciaSearch] = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['guias-transferencia', { search, page }],
@@ -50,14 +53,14 @@ export default function GuiasTransferenciaPage() {
   })
 
   const { data: matriculasData } = useQuery({
-    queryKey: ['matriculas', 'guia-options'],
-    queryFn: () => matriculasApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['matriculas', 'guia-options', matriculaSearch],
+    queryFn: () => matriculasApi.list({ page_size: 10, search: matriculaSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
 
   const { data: transferenciasData } = useQuery({
-    queryKey: ['transferencias', 'guia-options'],
-    queryFn: () => transferenciasApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['transferencias', 'guia-options', transferenciaSearch],
+    queryFn: () => transferenciasApi.list({ page_size: 10, search: transferenciaSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
 
@@ -111,6 +114,17 @@ export default function GuiasTransferenciaPage() {
 
   const matriculas = matriculasData?.results || []
   const transferencias = transferenciasData?.results || []
+  const selectedMatriculaOption = formData.matricula && editingItem ? {
+    id: editingItem.matricula,
+    numero_matricula: editingItem.matricula_numero,
+    aluno_nome: editingItem.aluno_nome,
+  } : null
+  const selectedTransferenciaOption = formData.transferencia && editingItem ? {
+    id: editingItem.transferencia,
+    matricula_numero: editingItem.matricula_numero,
+    tipo_display: editingItem.transferencia_label || 'Transferencia vinculada',
+    status_display: '',
+  } : null
 
   return (
     <div className="page">
@@ -188,20 +202,33 @@ export default function GuiasTransferenciaPage() {
             <label>Assunto</label>
             <input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} />
           </div>
-          <div className="form-field">
-            <label>Matricula</label>
-            <select className="select" value={formData.matricula} onChange={(event) => setFormData((current) => ({ ...current, matricula: event.target.value }))}>
-              <option value="">Selecione</option>
-              {matriculas.map((item) => <option key={item.id} value={item.id}>{item.numero_matricula} - {item.aluno_nome}</option>)}
-            </select>
-          </div>
-          <div className="form-field">
-            <label>Transferencia vinculada</label>
-            <select className="select" value={formData.transferencia} onChange={(event) => setFormData((current) => ({ ...current, transferencia: event.target.value }))}>
-              <option value="">Sem transferencia</option>
-              {transferencias.map((item) => <option key={item.id} value={item.id}>{item.matricula_numero} - {item.tipo_display} - {item.status_display}</option>)}
-            </select>
-          </div>
+          <SearchableRemoteSelect
+            id="guia-matricula"
+            label="Matricula"
+            searchLabel="Buscar matricula"
+            searchPlaceholder="Digite matricula ou aluno"
+            searchValue={matriculaSearch}
+            onSearchChange={setMatriculaSearch}
+            value={formData.matricula}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))}
+            options={matriculas}
+            selectedOption={selectedMatriculaOption}
+            getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`}
+          />
+          <SearchableRemoteSelect
+            id="guia-transferencia"
+            label="Transferencia vinculada"
+            searchLabel="Buscar transferencia"
+            searchPlaceholder="Digite matricula, tipo ou status"
+            searchValue={transferenciaSearch}
+            onSearchChange={setTransferenciaSearch}
+            value={formData.transferencia}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, transferencia: nextValue }))}
+            options={transferencias}
+            selectedOption={selectedTransferenciaOption}
+            emptyOptionLabel="Sem transferencia"
+            getOptionLabel={(item) => `${item.matricula_numero} - ${item.tipo_display}${item.status_display ? ` - ${item.status_display}` : ''}`}
+          />
           <div className="form-field">
             <label>Escola de origem</label>
             <input type="text" value={formData.escola_origem} onChange={(event) => setFormData((current) => ({ ...current, escola_origem: event.target.value }))} />

@@ -8,6 +8,7 @@ import { setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const COLUMNS = [
   { key: 'codigo', label: 'Codigo' },
@@ -55,11 +56,14 @@ export default function SetoresPage() {
   const [selectedSetorId, setSelectedSetorId] = useState(null)
   const [editingSetorId, setEditingSetorId] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [setorSuperiorSearch, setSetorSuperiorSearch] = useState('')
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
@@ -76,12 +80,10 @@ export default function SetoresPage() {
   })
 
   const { data: setoresOptionsData } = useQuery({
-    queryKey: ['setores', 'hierarquia-options'],
-    queryFn: () => setoresApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['setores', 'hierarquia-options', setorSuperiorSearch],
+    queryFn: () => setoresApi.list({ page_size: 10, search: setorSuperiorSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
-
-  const setorOptions = setoresOptionsData?.results || []
 
   const { data: selectedSetor, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
     queryKey: ['setor', selectedSetorId],
@@ -96,6 +98,13 @@ export default function SetoresPage() {
     enabled: Boolean(editingSetorId),
     staleTime: 0,
   })
+
+  const setorOptions = setoresOptionsData?.results || []
+  const setorSuperiorValue = watch('setor_superior')
+  const selectedSetorSuperiorOption = setorSuperiorValue && editingSetor ? {
+    id: editingSetor.setor_superior,
+    nome: editingSetor.setor_superior_nome,
+  } : null
 
   useEffect(() => {
     if (!editingSetor) {
@@ -289,17 +298,20 @@ export default function SetoresPage() {
             {errors.codigo ? <span className="field-error">{errors.codigo.message}</span> : null}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="setor-superior">Setor superior</label>
-            <select id="setor-superior" className="select" {...register('setor_superior')}>
-              <option value="">Sem setor superior</option>
-              {setorOptions
-                .filter((setor) => String(setor.id) !== String(editingSetorId || ''))
-                .map((setor) => (
-                  <option key={setor.id} value={setor.id}>{setor.nome}</option>
-                ))}
-            </select>
-          </div>
+          <SearchableRemoteSelect
+            id="setor-superior"
+            label="Setor superior"
+            searchLabel="Buscar setor superior"
+            searchPlaceholder="Digite nome, sigla ou codigo"
+            searchValue={setorSuperiorSearch}
+            onSearchChange={setSetorSuperiorSearch}
+            value={setorSuperiorValue || ''}
+            onChange={(nextValue) => setValue('setor_superior', nextValue)}
+            options={setorOptions.filter((setor) => String(setor.id) !== String(editingSetorId || ''))}
+            selectedOption={selectedSetorSuperiorOption}
+            emptyOptionLabel="Sem setor superior"
+            getOptionLabel={(setor) => setor.nome}
+          />
 
           <div className="form-field form-field--checkbox">
             <label className="checkbox-field">

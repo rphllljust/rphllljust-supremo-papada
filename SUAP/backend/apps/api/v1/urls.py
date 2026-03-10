@@ -11,6 +11,7 @@ urlpatterns = [
     path("frequencias/", include("apps.api.v1.frequencias.urls")),
     path("guias-transferencia/", include("apps.api.v1.guias_transferencia.urls")),
     path("historicos/", include("apps.api.v1.historicos.urls")),
+    path("notificacoes/", include("apps.api.v1.notificacoes.urls")),
     path("processos/", include("apps.api.v1.processos.urls")),
     path("servidores/", include("apps.api.v1.servidores.urls")),
     path("setores/", include("apps.api.v1.setores.urls")),

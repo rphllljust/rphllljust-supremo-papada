@@ -40,6 +40,9 @@ const CursosPage     = lazy(() => import('@/pages/cursos/CursosPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
+const NotificationsPage = lazy(() => import('@/pages/notificacoes/NotificationsPage'))
+const NotificationPreferencesPage = lazy(() => import('@/pages/notificacoes/NotificationPreferencesPage'))
+const ChangePasswordPage = lazy(() => import('@/pages/auth/ChangePasswordPage'))
 const ServidorProfilePage = lazy(() => import('@/pages/servidores/ServidorProfilePage'))
 const ServidoresPage = lazy(() => import('@/pages/servidores/ServidoresPage'))
 const SetoresPage    = lazy(() => import('@/pages/setores/SetoresPage'))
@@ -207,6 +210,12 @@ export default function App() {
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
+                  <Route path="/comum/notificacoes" element={<RouteShell><NotificationsPage /></RouteShell>} />
+                  <Route path="/comum/notificacoes/preferencias" element={<RouteShell><NotificationPreferencesPage /></RouteShell>} />
+                  <Route path="/comum/alterar-senha" element={<RouteShell><ChangePasswordPage /></RouteShell>} />
+                  <Route path="/rh/notificacoes" element={<Navigate to="/comum/notificacoes" replace />} />
+                  <Route path="/rh/notificacoes/preferencias" element={<Navigate to="/comum/notificacoes/preferencias" replace />} />
+                  <Route path="/indisponivel/alterar-senha" element={<Navigate to="/comum/alterar-senha" replace />} />
                   <Route path="/rh/servidor/:matricula" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
                   <Route path="/rh/servidor/:matricula/" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
                   <Route path="/rh/setores" element={<RouteShell><SetoresPage /></RouteShell>} />

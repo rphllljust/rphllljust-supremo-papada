@@ -6,6 +6,7 @@ from rest_framework import viewsets
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
 from apps.usuarios.models import PerfilUsuario
+from apps.usuarios.profile_compat import has_servidor_profile_table
 
 from .serializers import ServidorSerializer
 
@@ -36,17 +37,19 @@ class ServidorViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(setor_id=setor_id)
 
         if search:
-            queryset = queryset.filter(
+            filters = (
                 Q(username__icontains=search)
                 | Q(first_name__icontains=search)
                 | Q(last_name__icontains=search)
                 | Q(email__icontains=search)
                 | Q(cpf__icontains=search)
-                | Q(perfil_servidor__matricula_servidor__icontains=search)
                 | Q(pessoa__nome_completo__icontains=search)
                 | Q(setor__nome__icontains=search)
                 | Q(setor__codigo__icontains=search)
             )
+            if has_servidor_profile_table():
+                filters |= Q(perfil_servidor__matricula_servidor__icontains=search)
+            queryset = queryset.filter(filters)
 
         return queryset.distinct()
 

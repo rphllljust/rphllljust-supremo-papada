@@ -7,6 +7,7 @@ import { historicosApi, matriculasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const COLUMNS = [
   { key: 'numero_protocolo', label: 'Protocolo' },
@@ -40,6 +41,7 @@ export default function HistoricosPage() {
   const [editingId, setEditingId] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [matriculaSearch, setMatriculaSearch] = useState('')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['historicos', { search, page }],
@@ -48,8 +50,8 @@ export default function HistoricosPage() {
   })
 
   const { data: matriculasData } = useQuery({
-    queryKey: ['matriculas', 'historico-options'],
-    queryFn: () => matriculasApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['matriculas', 'historico-options', matriculaSearch],
+    queryFn: () => matriculasApi.list({ page_size: 10, search: matriculaSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
 
@@ -101,6 +103,11 @@ export default function HistoricosPage() {
   })
 
   const matriculas = matriculasData?.results || []
+  const selectedMatriculaOption = formData.matricula && editingItem ? {
+    id: editingItem.matricula,
+    numero_matricula: editingItem.matricula_numero,
+    aluno_nome: editingItem.aluno_nome,
+  } : null
 
   return (
     <div className="page">
@@ -176,13 +183,19 @@ export default function HistoricosPage() {
             <label>Assunto</label>
             <input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} />
           </div>
-          <div className="form-field">
-            <label>Matricula</label>
-            <select className="select" value={formData.matricula} onChange={(event) => setFormData((current) => ({ ...current, matricula: event.target.value }))}>
-              <option value="">Selecione</option>
-              {matriculas.map((item) => <option key={item.id} value={item.id}>{item.numero_matricula} - {item.aluno_nome}</option>)}
-            </select>
-          </div>
+          <SearchableRemoteSelect
+            id="historico-matricula"
+            label="Matricula"
+            searchLabel="Buscar matricula"
+            searchPlaceholder="Digite matricula ou aluno"
+            searchValue={matriculaSearch}
+            onSearchChange={setMatriculaSearch}
+            value={formData.matricula}
+            onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))}
+            options={matriculas}
+            selectedOption={selectedMatriculaOption}
+            getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`}
+          />
           <div className="form-field">
             <label>Periodo de referencia</label>
             <input type="text" value={formData.periodo_ref} onChange={(event) => setFormData((current) => ({ ...current, periodo_ref: event.target.value }))} />

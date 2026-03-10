@@ -168,6 +168,14 @@ ACCESS_MATRIX = {
             "manage": STAFF_MANAGE,
         },
     },
+    "notificacoes": {
+        "web": {
+            "view": TEACHING_VIEW,
+        },
+        "api": {
+            "view": TEACHING_VIEW,
+        },
+    },
     "integracao_moodle": {
         "api_ava": {
             "export": STAFF_VIEW,

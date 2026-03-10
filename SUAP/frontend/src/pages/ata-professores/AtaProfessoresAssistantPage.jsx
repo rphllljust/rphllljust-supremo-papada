@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { Minus, Paperclip, Plus } from 'lucide-react'
 
 import { atasProfessoresApi, processosApi, unidadesApi } from '@/api/endpoints'
+import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const TIPO_REUNIAO_OPTIONS = [
   { value: 'CONSELHO_ESCOLAR', label: 'Conselho Escolar' },
@@ -201,6 +202,7 @@ export default function AtaProfessoresAssistantPage() {
   const navigate = useNavigate()
   const { ataId } = useParams()
   const isEditing = Boolean(ataId)
+  const [processSearch, setProcessSearch] = useState('')
   const [formData, setFormData] = useState({
     numero_ata: '',
     ano: String(new Date().getFullYear()),
@@ -234,8 +236,8 @@ export default function AtaProfessoresAssistantPage() {
   const [validationItems, setValidationItems] = useState([])
 
   const { data: processosData } = useQuery({
-    queryKey: ['processos', 'assistant-options'],
-    queryFn: () => processosApi.list({ page_size: 100 }).then((response) => response.data),
+    queryKey: ['processos', 'assistant-options', processSearch],
+    queryFn: () => processosApi.list({ page_size: 10, search: processSearch || undefined }).then((response) => response.data),
     staleTime: 60_000,
   })
 
@@ -302,6 +304,11 @@ export default function AtaProfessoresAssistantPage() {
   }, [ataData])
 
   const processOptions = processosData?.results || []
+  const selectedProcessOption = formData.processo && ataData ? {
+    id: ataData.processo,
+    numero: ataData.processo_numero,
+    assunto: ataData.processo_assunto || ataData.assunto,
+  } : null
   const school = unidadesData?.results?.[0] || null
   const isReadOnly = Boolean(isEditing && ataData?.situacao === 'EMITIDO')
 
@@ -656,15 +663,21 @@ ${assinaturasText}`
                 <label htmlFor="id_folha_pagina">Folha/Pagina</label>
                 <input id="id_folha_pagina" type="text" value={formData.folha_pagina} onChange={(event) => updateField('folha_pagina', event.target.value)} disabled={isReadOnly} />
               </div>
-              <div className="form-field">
-                <label htmlFor="id_processo">Processo Vinculado</label>
-                <select id="id_processo" className="select" value={formData.processo} onChange={(event) => updateField('processo', event.target.value)} disabled={isReadOnly}>
-                  <option value="">Sem processo</option>
-                  {processOptions.map((processo) => (
-                    <option key={processo.id} value={processo.id}>{processo.numero} - {processo.assunto}</option>
-                  ))}
-                </select>
-              </div>
+              <SearchableRemoteSelect
+                id="id_processo"
+                label="Processo Vinculado"
+                searchLabel="Buscar processo"
+                searchPlaceholder="Digite numero, assunto ou requerente"
+                searchValue={processSearch}
+                onSearchChange={setProcessSearch}
+                value={formData.processo}
+                onChange={(nextValue) => updateField('processo', nextValue)}
+                options={processOptions}
+                selectedOption={selectedProcessOption}
+                emptyOptionLabel="Sem processo"
+                getOptionLabel={(processo) => `${processo.numero} - ${processo.assunto}`}
+                disabled={isReadOnly}
+              />
             </div>
           </section>
 

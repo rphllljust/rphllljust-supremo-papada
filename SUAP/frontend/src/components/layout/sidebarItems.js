@@ -1,4 +1,5 @@
 import {
+  Bell,
   LayoutDashboard,
   Rocket,
   FileText,
@@ -188,6 +189,13 @@ export const sidebarItems = [
         label: 'Servidores',
         to: '/rh/servidores',
         activePrefixes: ['/rh/servidores'],
+      },
+      {
+        id: 'notificacoes-servidores',
+        type: 'link',
+        label: 'Notificacoes',
+        to: '/comum/notificacoes',
+        activePrefixes: ['/comum/notificacoes'],
       },
       { id: 'setores', type: 'link', label: 'Setores', to: '/rh/setores', activePrefixes: ['/rh/setores'] },
       {

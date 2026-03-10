@@ -22,6 +22,7 @@ export const authApi = {
   login: (credentials) => client.post('/auth/token/', credentials),
   refresh: (refresh) => client.post('/auth/token/refresh/', { refresh }),
   logout: (refresh) => client.post('/auth/logout/', { refresh }, { withCredentials: true }),
+  changePassword: (payload) => client.post('/auth/change-password/', payload),
   me: () => client.get('/auth/me/'),
 }
 
@@ -74,6 +75,16 @@ export const matriculasApi = {
 export const notasApi = crud('notas')
 export const frequenciasApi = crud('frequencias')
 export const atasProfessoresApi = crud('atas-professores')
+export const notificacoesApi = {
+  list: (params) => client.get('/notificacoes/', { params }),
+  get: (id) => client.get(`/notificacoes/${id}/`),
+  markRead: (id, lida = true) => client.post(`/notificacoes/${id}/marcar-lida/`, { lida }),
+  markAllRead: (params) => client.post('/notificacoes/marcar-todas-lidas/', null, { params }),
+  hide: (id) => client.post(`/notificacoes/${id}/ocultar/`),
+  preferences: (params) => client.get('/notificacoes/preferencias/', { params }),
+  updatePreference: (id, data) => client.patch(`/notificacoes/preferencias/${id}/`, data),
+  bulkUpdatePreferences: (data) => client.post('/notificacoes/preferencias/atualizar-em-lote/', data),
+}
 export const eventosApi = crud('eventos')
 export const processosApi = {
   ...crud('processos'),

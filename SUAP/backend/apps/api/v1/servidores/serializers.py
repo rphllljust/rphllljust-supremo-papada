@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.setores.models import Setor
 from apps.usuarios.models import PerfilUsuario, Pessoa
+from apps.usuarios.profile_compat import get_matricula_servidor_safe
 
 
 Usuario = get_user_model()
@@ -22,7 +23,7 @@ class ServidorSerializer(serializers.ModelSerializer):
     nome_completo = serializers.CharField()
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     setor_nome = serializers.CharField(source="setor.nome", read_only=True)
-    matricula_servidor = serializers.CharField(source="perfil_servidor.matricula_servidor", read_only=True)
+    matricula_servidor = serializers.SerializerMethodField(read_only=True)
     password = serializers.CharField(write_only=True, required=False, allow_blank=True, style={"input_type": "password"})
 
     class Meta:
@@ -135,3 +136,6 @@ class ServidorSerializer(serializers.ModelSerializer):
             else:
                 data["nome_completo"] = instance.get_full_name().strip() or instance.username
         return data
+
+    def get_matricula_servidor(self, obj):
+        return get_matricula_servidor_safe(obj)
