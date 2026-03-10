@@ -61,6 +61,39 @@ py manage.py createsuperuser
 py manage.py runserver
 ```
 
+## Alternar entre UI Django e UI Vue
+
+O backend agora aceita a configuração `SUAP_WEB_UI_MODE` com três modos:
+
+* `django`: mantém as rotas web tradicionais com templates Django
+* `vue`: desativa as rotas web com templates e serve apenas a shell do frontend Vue pelo Django
+* `vue-dev`: desativa as rotas web com templates e redireciona a interface para o frontend em desenvolvimento no Vite
+
+Exemplos no PowerShell:
+
+```powershell
+$env:SUAP_WEB_UI_MODE = "vue"
+py manage.py runserver
+```
+
+Para usar o shell Vue servido pelo Django, gere antes os assets:
+
+```powershell
+cd ..\frontend
+npm run build:django
+cd ..\SUAP
+```
+
+Para usar o Vue em modo de desenvolvimento com Vite:
+
+```powershell
+$env:SUAP_WEB_UI_MODE = "vue-dev"
+$env:SUAP_VUE_DEV_SERVER_URL = "http://127.0.0.1:5173"
+py manage.py runserver
+```
+
+Nesse modo, o Django continua expondo `admin/` e `api/v1/`, mas a camada web baseada em templates deixa de ser publicada.
+
 A aplicação ficará disponível em:
 
 ```text

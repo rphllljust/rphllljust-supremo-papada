@@ -1,14 +1,49 @@
 from pathlib import Path
 from datetime import timedelta
 
+from decouple import Csv, RepositoryEnv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BASE_DIR / ".env"
+ENV_SAMPLE_PATH = BASE_DIR / ".env.sample"
+ENV_SOURCE_PATH = ENV_PATH if ENV_PATH.exists() else ENV_SAMPLE_PATH
+ENV_REPOSITORY = RepositoryEnv(str(ENV_SOURCE_PATH))
+ENV_DATA = ENV_REPOSITORY.data
 
 
-SECRET_KEY = 'django-insecure-troque-isso-depois'
+def env(key, default=None, cast=None):
+    value = ENV_DATA.get(key, default)
 
-DEBUG = True
+    if value is None or cast is None:
+        return value
 
-ALLOWED_HOSTS = []
+    if cast is bool:
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+    if cast is int:
+        if isinstance(value, int):
+            return value
+        return int(value)
+
+    if isinstance(cast, Csv):
+        return cast(value)
+
+    return cast(value)
+
+
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-troque-isso-depois")
+
+DEBUG = env("DEBUG", default=True, cast=bool)
+
+ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="", cast=Csv())
+
+WEB_UI_MODE = env("SUAP_WEB_UI_MODE", default="django").strip().lower()
+if WEB_UI_MODE not in {"django", "vue", "vue-dev"}:
+    raise ValueError("SUAP_WEB_UI_MODE deve ser 'django', 'vue' ou 'vue-dev'.")
+
+VUE_DEV_SERVER_URL = env("SUAP_VUE_DEV_SERVER_URL", default="http://127.0.0.1:5173/vue.html")
 
 
 INSTALLED_APPS = [
@@ -75,39 +110,39 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": env("DATABASE_ENGINE", default="django.db.backends.sqlite3"),
+        "NAME": env("DATABASE_NAME", default=str(BASE_DIR / "db.sqlite3")),
     }
 }
 
 AUTH_PASSWORD_VALIDATORS = []
 
-LANGUAGE_CODE = 'pt-br'
+LANGUAGE_CODE = env("LANGUAGE_CODE", default="pt-br")
 
-TIME_ZONE = 'America/Cuiaba'
+TIME_ZONE = env("TIME_ZONE", default="America/Cuiaba")
 
-USE_I18N = True
+USE_I18N = env("USE_I18N", default=True, cast=bool)
 
-USE_TZ = True
+USE_TZ = env("USE_TZ", default=True, cast=bool)
 
 
 TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 
 
-STATIC_URL = "/static/"
+STATIC_URL = env("STATIC_URL", default="/static/")
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = Path(env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles")))
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = env("MEDIA_URL", default="/media/")
+MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "usuarios.Usuario"
 
-LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "dashboard:index"
-LOGOUT_REDIRECT_URL = "accounts:login"
+LOGIN_URL = env("LOGIN_URL", default="accounts:login")
+LOGIN_REDIRECT_URL = env("LOGIN_REDIRECT_URL", default="dashboard:index")
+LOGOUT_REDIRECT_URL = env("LOGOUT_REDIRECT_URL", default="accounts:login")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -116,11 +151,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
-    "ALGORITHM": "HS256",
-    "AUTH_HEADER_TYPES": ("Bearer",),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=30, cast=int)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=1, cast=int)),
+    "ROTATE_REFRESH_TOKENS": env("JWT_ROTATE_REFRESH_TOKENS", default=True, cast=bool),
+    "BLACKLIST_AFTER_ROTATION": env("JWT_BLACKLIST_AFTER_ROTATION", default=True, cast=bool),
+    "UPDATE_LAST_LOGIN": env("JWT_UPDATE_LAST_LOGIN", default=True, cast=bool),
+    "ALGORITHM": env("JWT_ALGORITHM", default="HS256"),
+    "AUTH_HEADER_TYPES": tuple(env("JWT_AUTH_HEADER_TYPES", default="Bearer", cast=Csv())),
 }

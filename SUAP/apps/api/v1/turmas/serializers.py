@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from apps.turmas.models import Turma
 
+
 class TurmaSerializer(serializers.ModelSerializer):
     curso_nome = serializers.CharField(source="curso.nome", read_only=True)
     professor_nome = serializers.SerializerMethodField(read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = Turma
@@ -11,6 +13,8 @@ class TurmaSerializer(serializers.ModelSerializer):
             "id",
             "nome",
             "ano_letivo",
+            "status",
+            "status_display",
             "curso",
             "curso_nome",
             "professor_responsavel",

@@ -19,6 +19,9 @@ ACCESS_MATRIX = {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
         },
+        "api": {
+            "view": STAFF_VIEW,
+        },
     },
     "turmas": {
         "web": {
