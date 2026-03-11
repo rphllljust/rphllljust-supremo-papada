@@ -222,12 +222,12 @@ export default function App() {
                   <Route path="/cursoformacaosuperior/" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
                   <Route path="/ensino/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/ensino/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
-                  <Route path="/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
-                  <Route path="/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />

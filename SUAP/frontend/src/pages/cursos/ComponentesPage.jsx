@@ -1,286 +1,305 @@
-import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { CircleHelp, Eye, FileSpreadsheet, Pencil, Plus } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { componentesApi } from '@/api/endpoints'
+import './suap-componentes.css'
 
-const TAB_ITEMS = [
-  { key: 'TODOS', label: 'Todos' },
-  { key: 'UTILIZADOS', label: 'Utilizados' },
-  { key: 'NAO_UTILIZADOS', label: 'Não Utilizados' },
-]
+function useDebounce(value, ms = 350) {
+  const [dv, setDv] = useState(value)
 
-function exportRowsToExcel(rows) {
-  const headers = ['ID', 'Sigla', 'Descrição', 'Nível de ensino', 'Grupo de Atuação', 'Hora/relógio', 'Hora/aula', 'Qtd. de créditos', 'Está ativo', 'Sigla do Q-Acadêmico', 'Observação']
-  const body = rows.map((row) => [
-    row.id,
-    row.sigla,
-    row.descricao,
-    row.nivel_ensino,
-    row.grupo_atuacao,
-    row.carga_horaria,
-    row.hora_aula,
-    row.qtd_creditos,
-    row.esta_ativo ? 'Sim' : 'Não',
-    row.sigla_qacademico,
-    row.observacao,
-  ])
-  const content = [headers, ...body]
-    .map((columns) => columns.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join('\t'))
-    .join('\n')
+  useEffect(() => {
+    const t = setTimeout(() => setDv(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
 
-  const blob = new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'componentes.xls'
-  link.click()
-  URL.revokeObjectURL(url)
+  return dv
 }
 
-function SummaryBadge({ count }) {
-  return <span className="estagios-tab__count">{count || 0}</span>
+function mapOptions(summary) {
+  const filterOptions = summary?.filter_options || {}
+  return {
+    niveis: (filterOptions.niveis_ensino || []).map((item) => ({ id: item.value, nome: item.label })),
+    tipos: (filterOptions.tipos_componente || []).map((item) => ({ id: item.value, nome: item.label })),
+    grupos: (filterOptions.grupos_atuacao || []).map((item) => ({ id: item.value, nome: item.label })),
+  }
 }
+
+function mapRow(row) {
+  return {
+    id: row.id,
+    sigla: row.sigla,
+    descricao: row.descricao || row.nome,
+    nivel: row.nivel_ensino,
+    grupo: row.grupo_atuacao,
+    hora_relogio: row.carga_horaria,
+    hora_aula: row.hora_aula,
+    qtd_creditos: row.qtd_creditos,
+    ativo: row.esta_ativo,
+    sigla_q_academico: row.sigla_qacademico,
+    observacao: row.observacao,
+  }
+}
+
+function useOpcoes() {
+  const [opcoes, setOpcoes] = useState({ niveis: [], tipos: [], grupos: [] })
+
+  useEffect(() => {
+    let isMounted = true
+    componentesApi.list({}).then((response) => {
+      if (!isMounted) return
+      setOpcoes(mapOptions(response.data?.summary))
+    }).catch(() => {
+      if (!isMounted) return
+      setOpcoes({ niveis: [], tipos: [], grupos: [] })
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  return opcoes
+}
+
+function useComponentes(params) {
+  const [rows, setRows] = useState([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const abortRef = useRef(null)
+  const key = useMemo(() => JSON.stringify(params), [params])
+
+  useEffect(() => {
+    abortRef.current = { cancelled: false }
+    const current = abortRef.current
+
+    setLoading(true)
+    setError(null)
+
+    componentesApi.list(params)
+      .then((response) => {
+        if (current.cancelled) return
+        setRows((response.data?.results || []).map(mapRow))
+        setTotal(response.data?.count || 0)
+      })
+      .catch((err) => {
+        if (current.cancelled) return
+        setError(err?.response?.data?.detail || String(err?.message || err))
+      })
+      .finally(() => {
+        if (current.cancelled) return
+        setLoading(false)
+      })
+
+    return () => {
+      current.cancelled = true
+    }
+  }, [key, params])
+
+  return { rows, total, loading, error }
+}
+
+const ActionButtons = memo(({ onView, onEdit }) => (
+  <div className="action-btns">
+    <button className="btn-action btn-action--orange" title="Visualizar" onClick={onView}>👁</button>
+    <button className="btn-action btn-action--blue" title="Editar" onClick={onEdit}>✏</button>
+  </div>
+))
+
+const StatusDot = memo(({ active }) => (
+  <span className={`status-dot ${active ? 'status-dot--active' : 'status-dot--inactive'}`} />
+))
+
+const TableRow = memo(({ row, onView, onEdit }) => (
+  <tr>
+    <td><ActionButtons onView={onView} onEdit={onEdit} /></td>
+    <td>{row.id}</td>
+    <td className="td--link" onClick={onView}>{row.sigla}</td>
+    <td>{row.descricao}</td>
+    <td>{row.nivel}</td>
+    <td className="td--dash">{row.grupo || '-'}</td>
+    <td className="td--center">{row.hora_relogio}</td>
+    <td className="td--center">{row.hora_aula}</td>
+    <td className="td--center">{row.qtd_creditos}</td>
+    <td className="td--center"><StatusDot active={row.ativo} /></td>
+    <td className="td--dash">{row.sigla_q_academico || '-'}</td>
+    <td className="td--dash">{row.observacao || '-'}</td>
+  </tr>
+))
+
+const FilterSelect = memo(({ label, value, options, onChange }) => (
+  <div className="filter-group">
+    <label>{label}</label>
+    <select value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Todos</option>
+      {options.map((o) => <option key={o.id} value={o.id}>{o.nome}</option>)}
+    </select>
+  </div>
+))
+
+const Pagination = memo(({ page, totalPages, onPrev, onNext }) => (
+  <div className="pagination">
+    <button className="pagination__btn" disabled={page <= 1} onClick={onPrev}>‹ Anterior</button>
+    <span className="pagination__info">Página {page} de {totalPages}</span>
+    <button className="pagination__btn" disabled={page >= totalPages} onClick={onNext}>Próxima ›</button>
+  </div>
+))
 
 export default function ComponentesPage() {
   const navigate = useNavigate()
-  const [draftFilters, setDraftFilters] = useState({
-    search: '',
-    ativo: 'SIM',
-    tipo_componente: '',
-    nivel_ensino: '',
-    matriz_curricular: '',
-    grupo_atuacao: '',
-  })
-  const [filters, setFilters] = useState({
-    search: '',
-    ativo: 'SIM',
-    tipo_componente: '',
-    nivel_ensino: '',
-    matriz_curricular: '',
-    grupo_atuacao: '',
-  })
+  const [tab, setTab] = useState('todos')
+  const [siglaRaw, setSiglaRaw] = useState('')
+  const [fullText, setFullText] = useState('')
+  const [nivel, setNivel] = useState('')
+  const [tipo, setTipo] = useState('')
+  const [grupo, setGrupo] = useState('')
   const [page, setPage] = useState(1)
-  const [activeTab, setActiveTab] = useState('TODOS')
+  const [sort, setSort] = useState('id')
+  const [dir, setDir] = useState('ASC')
+  const [ativoChip, setAtivoChip] = useState(true)
 
-  const queryParams = useMemo(() => {
-    const next = {
-      ...filters,
-      aba: activeTab,
-      page,
-    }
+  const sigla = useDebounce(siglaRaw, 400)
+  const qDebounced = useDebounce(fullText, 500)
+  const opcoes = useOpcoes()
 
-    Object.keys(next).forEach((key) => {
-      if (next[key] === '') {
-        delete next[key]
-      }
+  const queryParams = useMemo(() => ({
+    ...(tab === 'utilizados' ? { ativo: 'SIM' } : {}),
+    ...(tab === 'nao-utilizados' ? { ativo: 'NAO' } : {}),
+    ...(tab === 'todos' && ativoChip ? { ativo: 'SIM' } : {}),
+    ...(sigla ? { sigla } : {}),
+    ...(qDebounced ? { q: qDebounced } : {}),
+    ...(nivel ? { nivel_id: nivel } : {}),
+    ...(tipo ? { tipo_id: tipo } : {}),
+    ...(grupo ? { grupo_id: grupo } : {}),
+    page,
+    sort,
+    dir,
+  }), [tab, ativoChip, sigla, qDebounced, nivel, tipo, grupo, page, sort, dir])
+
+  const { rows, total, loading, error } = useComponentes(queryParams)
+
+  const onTab = useCallback((value) => { setTab(value); setPage(1) }, [])
+  const onNivel = useCallback((value) => { setNivel(value); setPage(1) }, [])
+  const onTipo = useCallback((value) => { setTipo(value); setPage(1) }, [])
+  const onGrupo = useCallback((value) => { setGrupo(value); setPage(1) }, [])
+
+  const toggleSort = useCallback((col) => {
+    setSort((prev) => {
+      setDir(prev === col && dir === 'ASC' ? 'DESC' : 'ASC')
+      return col
     })
+    setPage(1)
+  }, [dir])
 
-    return next
-  }, [activeTab, filters, page])
+  const totalPages = Math.max(1, Math.ceil(total / 10))
 
-  const openPlaceholder = (slug, title, description) => {
-    navigate(`/indisponivel/${slug}`, {
-      state: { title, description },
-    })
-  }
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['componentes', queryParams],
-    queryFn: () => componentesApi.list(queryParams).then((response) => response.data),
-    staleTime: 30_000,
-  })
-
-  const rows = data?.results || []
-  const summary = data?.summary || {}
-  const filterOptions = summary.filter_options || {}
-  const tabCounts = summary.tab_counts || {}
+  const COLS = [
+    { key: 'actions', label: '#' },
+    { key: 'id', label: 'ID', sortable: true },
+    { key: 'sigla', label: 'Sigla', sortable: true },
+    { key: 'descricao', label: 'Descrição', sortable: true },
+    { key: 'nivel', label: 'Nível de ensino' },
+    { key: 'grupo', label: 'Grupo de Atuação' },
+    { key: 'hora_relogio', label: 'Hora/relógio', sortable: true },
+    { key: 'hora_aula', label: 'Hora/aula', sortable: true },
+    { key: 'qtd_creditos', label: 'Qtd. créditos', sortable: true },
+    { key: 'ativo', label: 'Está ativo', sortable: true },
+    { key: 'siglaQ', label: 'Sigla Q-Acadêmico' },
+    { key: 'obs', label: 'Observação' },
+  ]
 
   return (
-    <div className="page page--wide area-cursos-page">
-      <nav className="profile-breadcrumb">
-        <Link to="/dashboard">Início</Link>
-        <span className="profile-breadcrumb__sep">&gt;</span>
-        <span>Componentes</span>
-      </nav>
-
-      <div className="page-header area-cursos-page__header">
-        <div>
-          <h1 className="page-title">Componentes</h1>
-        </div>
-        <div className="page-header__actions">
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => openPlaceholder('novo-componente', 'Adicionar Componente', 'O formulário de cadastro de componente ainda não foi portado para o frontend React.')}
-          >
-            <Plus size={16} /> Adicionar Componente
-          </button>
-          <button type="button" className="btn btn--dark" onClick={() => exportRowsToExcel(rows)}>
-            <FileSpreadsheet size={16} /> Exportar para XLS
-          </button>
-          <Link
-            to="/indisponivel/ajuda-componentes"
-            state={{
-              title: 'Ajuda de Componentes',
-              description: 'A ajuda detalhada desta funcionalidade ainda será portada para o frontend React.',
-            }}
-            className="btn btn--outline"
-          >
-            <CircleHelp size={16} /> Ajuda
-          </Link>
-        </div>
+    <div className="componentes-page page page--wide">
+      <div className="componentes-page__toolbar">
+        <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--green">+ Adicionar Componente</button>
+        <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--dgreen">Exportar para XLS</button>
+        <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--blue">? Ajuda</button>
       </div>
 
-      <section className="dashboard-card area-cursos-filters-card">
-        <div className="area-cursos-filters-card__title">Filtros:</div>
-        <div className="componentes-filters-grid">
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Texto:</span>
-            <input value={draftFilters.search} onChange={(event) => setDraftFilters((current) => ({ ...current, search: event.target.value }))} />
-          </label>
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Está ativo:</span>
-            <select className="select" value={draftFilters.ativo} onChange={(event) => setDraftFilters((current) => ({ ...current, ativo: event.target.value }))}>
-              <option value="">Todos</option>
-              <option value="SIM">Sim</option>
-              <option value="NAO">Não</option>
-            </select>
-          </label>
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Tipo do Componente:</span>
-            <select className="select" value={draftFilters.tipo_componente} onChange={(event) => setDraftFilters((current) => ({ ...current, tipo_componente: event.target.value }))}>
-              <option value="">Todos</option>
-              {(filterOptions.tipos_componente || []).map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Nível de ensino:</span>
-            <select className="select" value={draftFilters.nivel_ensino} onChange={(event) => setDraftFilters((current) => ({ ...current, nivel_ensino: event.target.value }))}>
-              <option value="">Todos</option>
-              {(filterOptions.niveis_ensino || []).map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Matriz Curricular:</span>
-            <select className="select" value={draftFilters.matriz_curricular} onChange={(event) => setDraftFilters((current) => ({ ...current, matriz_curricular: event.target.value }))}>
-              <option value="">Todos</option>
-              {(filterOptions.matrizes_curriculares || []).map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="area-cursos-filter-field">
-            <span className="area-cursos-filter-field__label">Grupo de Atuação:</span>
-            <select className="select" value={draftFilters.grupo_atuacao} onChange={(event) => setDraftFilters((current) => ({ ...current, grupo_atuacao: event.target.value }))}>
-              <option value="">Todos</option>
-              {(filterOptions.grupos_atuacao || []).map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          <div className="estagios-filters-card__actions">
-            <button
-              type="button"
-              className="btn btn--secondary"
-              onClick={() => {
-                setFilters(draftFilters)
-                setPage(1)
-              }}
-            >
-              Filtrar
-            </button>
+      <div className="componentes-page__breadcrumb">
+        Início &rsaquo; Ensino &rsaquo; Componentes
+      </div>
+
+      <div className="componentes-page__content">
+        <h2 className="componentes-page__title">Componentes</h2>
+
+        <div className="filters">
+          <div className="filters__title">Filtros</div>
+          <div className="filters__row">
+            <div className="filter-group">
+              <label>Sigla</label>
+              <input value={siglaRaw} onChange={(e) => { setSiglaRaw(e.target.value); setPage(1) }} placeholder="ex: LIC" />
+            </div>
+
+            <div className="filter-group">
+              <label>Busca full-text (PostgreSQL)</label>
+              <input className="filter-group__fulltext" value={fullText} onChange={(e) => { setFullText(e.target.value); setPage(1) }} placeholder="ex: matemática" />
+            </div>
+
+            <div className="filter-group">
+              <label>Está ativo</label>
+              <div className="filter-tag">
+                <span>{ativoChip ? 'Sim' : 'Todos'}</span>
+                <span className="filter-tag__remove" onClick={() => { setAtivoChip(false); setPage(1) }}>✕</span>
+              </div>
+            </div>
+
+            <FilterSelect label="Tipo" value={tipo} options={opcoes.tipos} onChange={onTipo} />
+            <FilterSelect label="Nível de ensino" value={nivel} options={opcoes.niveis} onChange={onNivel} />
+            <FilterSelect label="Grupo" value={grupo} options={opcoes.grupos} onChange={onGrupo} />
           </div>
         </div>
-      </section>
 
-      <div className="estagios-tabs">
-        {TAB_ITEMS.map((tab) => (
-          <button key={tab.key} type="button" className={`estagios-tab ${activeTab === tab.key ? 'estagios-tab--active' : ''}`} onClick={() => { setActiveTab(tab.key); setPage(1) }}>
-            <span>{tab.label}</span>
-            <SummaryBadge count={tabCounts[tab.key]} />
-          </button>
-        ))}
+        <div className="tabs">
+          {[['todos', 'Todos'], ['utilizados', 'Utilizados'], ['nao-utilizados', 'Não Utilizados']].map(([k, l]) => (
+            <button key={k} onClick={() => onTab(k)} className={`tab ${tab === k ? 'tab--active' : ''}`}>{l}</button>
+          ))}
+        </div>
+
+        <div className="table-wrapper">
+          <div className={`table-info ${error ? 'table-info--error' : ''}`}>
+            {loading
+              ? '⏳ Consultando PostgreSQL…'
+              : error
+                ? `❌ ${error}`
+                : `Mostrando ${rows.length} de ${total} Componentes`}
+          </div>
+
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  {COLS.map((col) => (
+                    <th key={col.key} className={col.sortable ? 'sortable' : ''} onClick={() => col.sortable && toggleSort(col.key)}>
+                      {col.label}
+                      {col.sortable && sort === col.key && <span className="sort-arrow">{dir === 'ASC' ? '▲' : '▼'}</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => <TableRow key={row.id} row={row} onView={() => navigate(`/componentes/${row.id}`)} onEdit={() => navigate(`/componentes/${row.id}/editar`)} />)}
+                {!loading && !rows.length && (
+                  <tr><td colSpan={12} className="td-empty">Nenhum componente encontrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination page={page} totalPages={totalPages} onPrev={() => setPage((p) => p - 1)} onNext={() => setPage((p) => p + 1)} />
+          )}
+
+          <div className="table-info">
+            Mostrando {rows.length} de {total} Componentes
+          </div>
+        </div>
+
+        <div className="footer-actions">
+          <button className="btn btn--red">⚠ Reportar erro</button>
+          <button className="btn btn--blue" onClick={() => window.print()}>🖨 Imprimir</button>
+          <button className="btn btn--gray" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>↑ Topo</button>
+        </div>
       </div>
-
-      {isError ? (
-        <div className="alert alert--error">Não foi possível carregar os componentes com as permissões atuais.</div>
-      ) : null}
-
-      <div className="area-cursos-page__summary">Mostrando {rows.length} Componente{rows.length !== 1 ? 's' : ''}</div>
-
-      <section className="dashboard-card area-cursos-table-card">
-        <div className="area-cursos-table-wrapper">
-          <table className="area-cursos-table componentes-table">
-            <thead>
-              <tr>
-                <th className="area-cursos-table__index">#</th>
-                <th>ID</th>
-                <th>Sigla</th>
-                <th>Descrição</th>
-                <th>Nível de ensino</th>
-                <th>Grupo de Atuação</th>
-                <th>Hora/relógio</th>
-                <th>Hora/aula</th>
-                <th>Qtd. de créditos</th>
-                <th>Está ativo</th>
-                <th>Sigla do Q-Acadêmico</th>
-                <th>Observação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={12} className="area-cursos-table__empty">Carregando componentes...</td>
-                </tr>
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="area-cursos-table__empty">Nenhum componente encontrado.</td>
-                </tr>
-              ) : rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <div className="area-cursos-table__actions">
-                      <button type="button" className="btn btn--outline btn--icon" onClick={() => navigate(`/componentes/${row.id}`)} aria-label={`Ver componente ${row.descricao}`}>
-                        <Eye size={14} />
-                      </button>
-                      <button type="button" className="btn btn--outline btn--icon" onClick={() => navigate(`/componentes/${row.id}/editar`)} aria-label={`Editar componente ${row.descricao}`}>
-                        <Pencil size={14} />
-                      </button>
-                    </div>
-                  </td>
-                  <td>{row.id}</td>
-                  <td>{row.sigla || '-'}</td>
-                  <td>{row.descricao}</td>
-                  <td>{row.nivel_ensino || '-'}</td>
-                  <td>{row.grupo_atuacao || '-'}</td>
-                  <td>{row.carga_horaria || '-'}</td>
-                  <td>{row.hora_aula || '-'}</td>
-                  <td>{row.qtd_creditos || '-'}</td>
-                  <td>{row.esta_ativo ? 'Sim' : 'Não'}</td>
-                  <td>{row.sigla_qacademico || '-'}</td>
-                  <td>{row.observacao || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="area-cursos-page__summary">Mostrando {rows.length} Componente{rows.length !== 1 ? 's' : ''}</div>
-
-      {data ? (
-        <div className="estagios-pagination">
-          <button type="button" className="btn btn--secondary" disabled={!data.previous} onClick={() => setPage((current) => current - 1)}>Anterior</button>
-          <span className="pagination__info">Página {page} • {data.count || 0} registros</span>
-          <button type="button" className="btn btn--secondary" disabled={!data.next} onClick={() => setPage((current) => current + 1)}>Próxima</button>
-        </div>
-      ) : null}
     </div>
   )
 }

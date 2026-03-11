@@ -39,12 +39,13 @@ class ComponenteCurricularListApiView(generics.ListAPIView):
 
     def apply_filters(self, queryset, include_tab=True):
         params = self.request.query_params
-        search = params.get("search", "").strip()
+        search = (params.get("search") or params.get("q") or "").strip()
+        sigla = params.get("sigla", "").strip()
         ativo = params.get("ativo", "").strip()
-        tipo_componente = params.get("tipo_componente", "").strip()
-        nivel_ensino = params.get("nivel_ensino", "").strip()
-        matriz_curricular = params.get("matriz_curricular", "").strip()
-        grupo_atuacao = params.get("grupo_atuacao", "").strip()
+        tipo_componente = (params.get("tipo_componente") or params.get("tipo_id") or "").strip()
+        nivel_ensino = (params.get("nivel_ensino") or params.get("nivel_id") or "").strip()
+        matriz_curricular = (params.get("matriz_curricular") or params.get("matriz_id") or "").strip()
+        grupo_atuacao = (params.get("grupo_atuacao") or params.get("grupo_id") or "").strip()
 
         if search:
             queryset = queryset.filter(
@@ -53,6 +54,9 @@ class ComponenteCurricularListApiView(generics.ListAPIView):
                 | Q(sigla_qacademico__icontains=search)
                 | Q(observacao__icontains=search)
             )
+
+        if sigla:
+            queryset = queryset.filter(sigla__icontains=sigla)
 
         if ativo == "SIM":
             queryset = queryset.filter(ativo=True)

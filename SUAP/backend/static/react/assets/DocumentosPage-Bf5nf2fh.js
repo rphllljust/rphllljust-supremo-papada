@@ -1,0 +1,11 @@
+import{j as e}from"./react-query-BYKRCv6g.js";import{L as a}from"./react-vendor-B94YyvxZ.js";import{c,F as o,G as i}from"./index.js";import"./modulepreload-polyfill-B5Qt9EMX.js";/**
+ * @license lucide-react v0.368.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const t=c("ScrollText",[["path",{d:"M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4",key:"13a6an"}],["path",{d:"M19 17V5a2 2 0 0 0-2-2H4",key:"zz82l3"}],["path",{d:"M15 8h-5",key:"1khuty"}],["path",{d:"M15 12h-5",key:"r7krc0"}]]);/**
+ * @license lucide-react v0.368.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const r=c("Waypoints",[["circle",{cx:"12",cy:"4.5",r:"2.5",key:"r5ysbb"}],["path",{d:"m10.2 6.3-3.9 3.9",key:"1nzqf6"}],["circle",{cx:"4.5",cy:"12",r:"2.5",key:"jydg6v"}],["path",{d:"M7 12h10",key:"b7w52i"}],["circle",{cx:"19.5",cy:"12",r:"2.5",key:"1piiel"}],["path",{d:"m13.8 17.7 3.9-3.9",key:"1wyg1y"}],["circle",{cx:"12",cy:"19.5",r:"2.5",key:"13o1pw"}]]),n=[{to:"/documentos/declaracoes",title:"Declaracoes",description:"Emissao e consulta de declaracoes de matricula, frequencia e conclusao.",icon:o},{to:"/documentos/historicos",title:"Historicos Escolares",description:"Gerencie historicos escolares completos e parciais.",icon:i},{to:"/documentos/guias",title:"Guias de Transferencia",description:"Emita e acompanhe guias vinculadas a transferencias.",icon:r},{to:"/ata-professores",title:"Atas dos Professores",description:"Acesse o assistente de atas escolares digitais e seus rascunhos.",icon:t}];function h(){return e.jsxs("div",{className:"page",children:[e.jsx("div",{className:"page-header",children:e.jsxs("div",{children:[e.jsx("h1",{className:"page-title",children:"Documentos"}),e.jsx("p",{className:"page-subtitle",children:"Modulo portado para o frontend React"})]})}),e.jsx("div",{className:"document-grid",children:n.map(s=>e.jsxs(a,{to:s.to,className:"document-card",children:[e.jsx("div",{className:"document-card__icon",children:e.jsx(s.icon,{size:22})}),e.jsx("h2",{className:"document-card__title",children:s.title}),e.jsx("p",{className:"document-card__description",children:s.description})]},s.to))})]})}export{h as default};
