@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
@@ -6,6 +6,202 @@ import { Bell, ChevronDown, LogOut, Search, User } from 'lucide-react'
 import { notificacoesApi } from '@/api/endpoints'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import { debugLog } from '@/utils/debug'
+
+const BREADCRUMB_LABELS = {
+  dashboard: 'Dashboard',
+  documentos: 'Documentos',
+  declaracoes: 'Declaracoes',
+  historicos: 'Historicos',
+  guias: 'Guias de Transferencia',
+  matriculas: 'Matriculas',
+  notas: 'Notas',
+  frequencia: 'Frequencia',
+  turmas: 'Turmas',
+  alunos: 'Alunos',
+  usuarios: 'Usuarios',
+  unidades: 'Instituicoes',
+  agenda: 'Agenda',
+  processos: 'Processos',
+  arquivo: 'Arquivo',
+  inscricoes: 'Inscricoes',
+  estagio: 'Estagios',
+  servidores: 'Servidores',
+  servidor: 'Servidor',
+  setores: 'Setores',
+  notificacoes: 'Notificacoes',
+  preferencias: 'Preferencias',
+  minha_conta: 'Minha Conta',
+  'alterar-senha': 'Alterar Senha',
+  ensino: 'Ensino',
+  componentes: 'Componentes',
+  areacurso: 'Areas de Cursos',
+  eixotecnologico: 'Eixos Tecnologicos',
+  cursoformacaosuperior: 'Cursos de formacao superior',
+  cursotecnico: 'Catalogo de cursos tecnicos',
+  editar: 'Editar',
+  nova: 'Nova',
+  access: 'Access',
+  ava: 'AVA',
+  export: 'Exportacao',
+  preview: 'Previa',
+  comum: 'Comum',
+  rh: 'Gestao de Pessoas',
+  indisponivel: 'Indisponivel',
+}
+
+const STATIC_BREADCRUMB_PREFIXES = [
+  {
+    prefix: '/rh/servidor',
+    items: [
+      { label: 'Gestao de Pessoas' },
+      { label: 'Servidores', to: '/rh/servidores' },
+    ],
+  },
+  {
+    prefix: '/rh/setor',
+    items: [
+      { label: 'Gestao de Pessoas' },
+      { label: 'Setores', to: '/rh/setores' },
+    ],
+  },
+  {
+    prefix: '/rh/instituicao',
+    items: [
+      { label: 'Gestao de Pessoas' },
+      { label: 'Instituicoes', to: '/rh/instituicoes' },
+    ],
+  },
+]
+
+function normalizePath(path) {
+  if (!path) return '/'
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function getMatchedBase(item, pathname) {
+  const normalizedPathname = normalizePath(pathname)
+  const activePrefixes = (item.activePrefixes || []).map(normalizePath).sort((left, right) => right.length - left.length)
+
+  for (const prefix of activePrefixes) {
+    if (normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`)) {
+      return prefix
+    }
+  }
+
+  const path = normalizePath(getItemPath(item))
+  if (!path || path === '/') {
+    return null
+  }
+
+  if (item.exact) {
+    return normalizedPathname === path ? path : null
+  }
+
+  return normalizedPathname === path || normalizedPathname.startsWith(`${path}/`) ? path : null
+}
+
+function findBreadcrumbTrail(items, pathname, parents = []) {
+  for (const item of items) {
+    const nextParents = item.label ? [...parents, { label: item.label, to: item.items?.length ? null : getItemPath(item) }] : parents
+
+    if (item.items?.length) {
+      const nestedMatch = findBreadcrumbTrail(item.items, pathname, nextParents)
+      if (nestedMatch) {
+        return nestedMatch
+      }
+    }
+
+    const matchedBase = getMatchedBase(item, pathname)
+    if (matchedBase) {
+      return {
+        items: nextParents,
+        matchedBase,
+      }
+    }
+  }
+
+  return null
+}
+
+function prettifySegment(segment) {
+  const decoded = decodeURIComponent(String(segment || ''))
+
+  if (/^\d+$/.test(decoded)) {
+    return `#${decoded}`
+  }
+
+  if (BREADCRUMB_LABELS[decoded]) {
+    return BREADCRUMB_LABELS[decoded]
+  }
+
+  return decoded
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function buildFallbackTrail(pathname) {
+  const normalizedPathname = normalizePath(pathname)
+  const staticPrefix = STATIC_BREADCRUMB_PREFIXES.find((entry) => normalizedPathname === entry.prefix || normalizedPathname.startsWith(`${entry.prefix}/`))
+
+  if (!staticPrefix) {
+    return null
+  }
+
+  return {
+    items: staticPrefix.items,
+    matchedBase: staticPrefix.prefix,
+  }
+}
+
+function buildBreadcrumbItems(pathname, locationState, enabledItems) {
+  const normalizedPathname = normalizePath(pathname)
+  const baseItems = [{ label: 'Inicio', to: '/dashboard' }]
+  const trailMatch = findBreadcrumbTrail(enabledItems, normalizedPathname) || buildFallbackTrail(normalizedPathname)
+
+  const breadcrumbItems = [...baseItems]
+  let matchedBase = ''
+
+  if (trailMatch) {
+    matchedBase = trailMatch.matchedBase
+    for (const item of trailMatch.items) {
+      if (item.label === 'Inicio') {
+        continue
+      }
+
+      const previous = breadcrumbItems[breadcrumbItems.length - 1]
+      if (!previous || previous.label !== item.label) {
+        breadcrumbItems.push(item)
+      }
+    }
+  }
+
+  const matchedSegments = normalizePath(matchedBase).split('/').filter(Boolean)
+  const pathnameSegments = normalizedPathname.split('/').filter(Boolean)
+  const extraSegments = pathnameSegments.slice(matchedSegments.length)
+  let accumulatedPath = matchedBase || ''
+
+  extraSegments.forEach((segment, index) => {
+    accumulatedPath = `${normalizePath(accumulatedPath || '')}/${segment}`.replace('//', '/')
+    const isLast = index === extraSegments.length - 1
+    const isUnavailableLeaf = isLast && pathnameSegments[0] === 'indisponivel' && locationState?.title
+
+    breadcrumbItems.push({
+      label: isUnavailableLeaf ? locationState.title : prettifySegment(segment),
+      to: isLast ? null : accumulatedPath,
+    })
+  })
+
+  if (breadcrumbItems.length === 1 && normalizedPathname === '/dashboard') {
+    breadcrumbItems.push({ label: 'Dashboard', to: null })
+  } else if (breadcrumbItems.length > 1) {
+    breadcrumbItems[breadcrumbItems.length - 1] = {
+      ...breadcrumbItems[breadcrumbItems.length - 1],
+      to: null,
+    }
+  }
+
+  return breadcrumbItems
+}
 
 function normalizeText(value) {
   return String(value || '')
@@ -289,6 +485,10 @@ export default function Layout() {
   }
 
   const registryLink = buildRegistryLink(user)
+  const breadcrumbItems = useMemo(
+    () => buildBreadcrumbItems(location.pathname, location.state, enabledSidebarItems),
+    [enabledSidebarItems, location.pathname, location.state],
+  )
 
   return (
     <div className="layout layout--legacy">
@@ -369,6 +569,20 @@ export default function Layout() {
 
       <div className="workspace">
         <main className="main-content">
+          <nav className="app-breadcrumb" aria-label="Breadcrumb">
+            {breadcrumbItems.map((item, index) => (
+              <span key={`${item.label}-${index}`} className="app-breadcrumb__item">
+                {index > 0 ? <span className="app-breadcrumb__sep">&gt;</span> : null}
+                {item.to ? (
+                  <NavLink to={item.to} className="app-breadcrumb__link">
+                    {item.label}
+                  </NavLink>
+                ) : (
+                  <span className="app-breadcrumb__current">{item.label}</span>
+                )}
+              </span>
+            ))}
+          </nav>
           <Outlet />
         </main>
       </div>
