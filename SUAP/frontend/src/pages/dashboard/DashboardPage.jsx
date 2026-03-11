@@ -37,10 +37,6 @@ export default function DashboardPage() {
             Visão rápida da operação acadêmica para <strong>{user?.nome_completo || user?.username}</strong>.
           </p>
         </div>
-        <div className="dashboard-hero__actions">
-          <Link to="/comum/notificacoes" className="btn btn--primary">Abrir notificações</Link>
-          <Link to="/ensino/componentes/" className="btn btn--outline">Ir para Componentes</Link>
-        </div>
       </section>
 
       <section className="dashboard-strip">
