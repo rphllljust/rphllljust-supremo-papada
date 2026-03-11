@@ -23,7 +23,6 @@
   --color-text:    #1C2B4A;
   --color-bg:      #F4F6F4;
   --sidebar-width: 240px;
-  --sidebar-collapsed: 60px;
   --radius:        8px;
   --shadow:        0 2px 8px rgba(0,0,0,.08);
   --shadow-md:     0 4px 16px rgba(0,0,0,.12);
@@ -350,19 +349,16 @@ a { color: inherit; text-decoration: none; }
   color: #fff;
   display: flex;
   flex-direction: column;
-  transition: width var(--transition);
   flex-shrink: 0;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow: hidden;
 }
-.sidebar--collapsed { width: var(--sidebar-collapsed); }
 
 .sidebar__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 16px;
   border-bottom: 1px solid rgba(255,255,255,.12);
   gap: 8px;
@@ -395,24 +391,11 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.3;
   color: rgba(255,255,255,.72);
 }
-.sidebar__toggle {
-  background: none;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius);
-  flex-shrink: 0;
-}
 .sidebar__account-shortcuts {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 0 12px 12px;
-}
-.sidebar__account-shortcuts--collapsed {
-  flex-direction: column;
-  gap: 8px;
 }
 .sidebar__account-primary,
 .sidebar__account-secondary {
@@ -437,11 +420,6 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   padding: 10px 12px;
   border-radius: 18px;
-}
-.sidebar__account-shortcuts--collapsed .sidebar__account-primary {
-  width: 100%;
-  justify-content: center;
-  padding: 10px;
 }
 .sidebar__account-secondary {
   width: 44px;
@@ -2913,8 +2891,6 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   .search-card__filters { grid-template-columns: 1fr; }
   .search-card__filters-row2 { grid-template-columns: 1fr; }
   .portal-navbar__menu { display: none; }
-  .sidebar { width: var(--sidebar-collapsed); }
-  .sidebar__label, .sidebar__user, .sidebar__logo { display: none; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .page { padding: 16px; }
 }

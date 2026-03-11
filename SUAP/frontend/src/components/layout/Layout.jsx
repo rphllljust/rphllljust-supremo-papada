@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { ChevronDown, LogOut, Menu, Search, User, X } from 'lucide-react'
+import { ChevronDown, LogOut, Search, User } from 'lucide-react'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import { debugLog } from '@/utils/debug'
 
@@ -138,8 +138,8 @@ function buildRegistryLink(user) {
   }
 }
 
-function SidebarLeaf({ item, sidebarOpen }) {
-  const label = sidebarOpen ? <span className="sidebar__label">{item.label}</span> : null
+function SidebarLeaf({ item }) {
+  const label = <span className="sidebar__label">{item.label}</span>
 
   if (item.type === 'external') {
     return (
@@ -165,12 +165,12 @@ function SidebarLeaf({ item, sidebarOpen }) {
   )
 }
 
-function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGroups, forcedOpenIds }) {
+function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedOpenIds }) {
   const active = isItemActive(item, pathname)
 
   if (!item.items?.length) {
     if (depth === 0) {
-      return <SidebarLeaf item={item} sidebarOpen={sidebarOpen} />
+      return <SidebarLeaf item={item} />
     }
 
     if (item.type === 'external') {
@@ -199,7 +199,7 @@ function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGr
     )
   }
 
-  const isOpen = sidebarOpen && (forcedOpenIds.has(item.id) || openGroups[item.id] === true)
+  const isOpen = forcedOpenIds.has(item.id) || openGroups[item.id] === true
   const detailsClassName = depth === 0 ? 'sidebar__section' : 'sidebar__branch'
   const summaryClassName = depth === 0 ? 'sidebar__summary' : 'sidebar__tree-summary'
 
@@ -208,7 +208,6 @@ function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGr
       className={detailsClassName}
       open={isOpen}
       onToggle={(event) => {
-        if (!sidebarOpen) return
         const nextOpen = event.currentTarget?.open ?? false
         setOpenGroups((current) => ({
           ...current,
@@ -218,26 +217,23 @@ function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGr
     >
       <summary className={`${summaryClassName} ${active ? 'sidebar__summary--active' : ''}`}>
         {depth === 0 && item.icon ? <item.icon size={18} className="sidebar__icon" /> : null}
-        {sidebarOpen ? <span className="sidebar__label">{item.label}</span> : null}
-        {sidebarOpen ? <ChevronDown size={16} className="sidebar__caret" /> : null}
+        <span className="sidebar__label">{item.label}</span>
+        <ChevronDown size={16} className="sidebar__caret" />
       </summary>
 
-      {sidebarOpen ? (
-        <ul className={depth === 0 ? 'sidebar__tree' : 'sidebar__subtree'}>
-          {item.items.map((child) => (
-            <SidebarNode
-              key={child.id}
-              item={child}
-              depth={depth + 1}
-              pathname={pathname}
-              sidebarOpen={sidebarOpen}
-              openGroups={openGroups}
-              setOpenGroups={setOpenGroups}
-              forcedOpenIds={forcedOpenIds}
-            />
-          ))}
-        </ul>
-      ) : null}
+      <ul className={depth === 0 ? 'sidebar__tree' : 'sidebar__subtree'}>
+        {item.items.map((child) => (
+          <SidebarNode
+            key={child.id}
+            item={child}
+            depth={depth + 1}
+            pathname={pathname}
+            openGroups={openGroups}
+            setOpenGroups={setOpenGroups}
+            forcedOpenIds={forcedOpenIds}
+          />
+        ))}
+      </ul>
     </details>
   )
 
@@ -252,7 +248,6 @@ export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [openGroups, setOpenGroups] = useState({})
   const [menuQuery, setMenuQuery] = useState('')
 
@@ -260,7 +255,7 @@ export default function Layout() {
   const forcedOpenIds = new Set()
   const enabledSidebarItems = pruneDisabledSidebarItems(sidebarItems)
   const visibleSidebarItems = filterSidebarItems(enabledSidebarItems, normalizedQuery, forcedOpenIds)
-  const noResults = sidebarOpen && normalizedQuery && visibleSidebarItems.length === 0
+  const noResults = normalizedQuery && visibleSidebarItems.length === 0
 
   useEffect(() => {
     debugLog('info', 'layout.mounted', {
@@ -279,11 +274,10 @@ export default function Layout() {
   useEffect(() => {
     debugLog('info', 'layout.updated', {
       pathname: location.pathname,
-      sidebarOpen,
       menuQuery,
       visibleSidebarItems: visibleSidebarItems.length,
     })
-  }, [location.pathname, sidebarOpen, menuQuery, visibleSidebarItems.length])
+  }, [location.pathname, menuQuery, visibleSidebarItems.length])
 
   const handleLogout = () => {
     logout().finally(() => navigate('/login'))
@@ -294,31 +288,24 @@ export default function Layout() {
   return (
     <div className="layout">
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : 'sidebar--collapsed'}`}>
+      <aside className="sidebar">
         <div className="sidebar__header">
           <div className="sidebar__brand">
             <img className="sidebar__brand-logo" src="/static/img/idep-ro-logo.png" alt="IDEP/RO" />
-            {sidebarOpen ? (
-              <div className="sidebar__brand-copy">
-                <strong className="sidebar__brand-title">SUAP Escola</strong>
-                <span className="sidebar__brand-subtitle">Portal institucional de gestao escolar</span>
-              </div>
-            ) : null}
+            <div className="sidebar__brand-copy">
+              <strong className="sidebar__brand-title">SUAP Escola</strong>
+              <span className="sidebar__brand-subtitle">Portal institucional de gestao escolar</span>
+            </div>
           </div>
-          <button className="sidebar__toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
         </div>
 
-        <div className={`sidebar__account-shortcuts ${sidebarOpen ? '' : 'sidebar__account-shortcuts--collapsed'}`}>
+        <div className="sidebar__account-shortcuts">
           <NavLink to={registryLink} className={({ isActive }) => `sidebar__account-primary ${isActive ? 'sidebar__account-primary--active' : ''}`}>
             <span className="sidebar__account-avatar">{getUserInitials(user)}</span>
-            {sidebarOpen ? (
-              <span className="sidebar__account-copy">
-                <strong>{user?.nome_completo || user?.username}</strong>
-                <span>{user?.tipo_display || 'Usuario autenticado'}</span>
-              </span>
-            ) : null}
+            <span className="sidebar__account-copy">
+              <strong>{user?.nome_completo || user?.username}</strong>
+              <span>{user?.tipo_display || 'Usuario autenticado'}</span>
+            </span>
           </NavLink>
 
           <NavLink
@@ -332,19 +319,17 @@ export default function Layout() {
           </NavLink>
         </div>
 
-        {sidebarOpen ? (
-          <div className="sidebar__search">
-            <Search size={16} className="sidebar__search-icon" />
-            <input
-              className="sidebar__search-input"
-              type="search"
-              placeholder="Pesquisar modulo, pagina ou funcao"
-              aria-label="Pesquisar modulo, pagina ou funcao"
-              value={menuQuery}
-              onChange={(event) => setMenuQuery(event.target.value)}
-            />
-          </div>
-        ) : null}
+        <div className="sidebar__search">
+          <Search size={16} className="sidebar__search-icon" />
+          <input
+            className="sidebar__search-input"
+            type="search"
+            placeholder="Pesquisar modulo, pagina ou funcao"
+            aria-label="Pesquisar modulo, pagina ou funcao"
+            value={menuQuery}
+            onChange={(event) => setMenuQuery(event.target.value)}
+          />
+        </div>
 
         <nav className="sidebar__nav">
           {visibleSidebarItems.map((item) => (
@@ -353,7 +338,6 @@ export default function Layout() {
               item={item}
               depth={0}
               pathname={location.pathname}
-              sidebarOpen={sidebarOpen}
               openGroups={openGroups}
               setOpenGroups={setOpenGroups}
               forcedOpenIds={forcedOpenIds}
@@ -365,7 +349,7 @@ export default function Layout() {
         <div className="sidebar__footer">
           <button className="sidebar__logout" onClick={handleLogout} title="Sair">
             <LogOut size={18} />
-            {sidebarOpen && <span>Sair</span>}
+            <span>Sair</span>
           </button>
         </div>
       </aside>
