@@ -7,6 +7,7 @@ urlpatterns = [
     path("auth/", include(("apps.api.v1.auth.urls", "api_v1_auth"), namespace="api_v1_auth")),
     path("atas-professores/", include("apps.api.v1.atas_professores.urls")),
     path("cursos/", include("apps.api.v1.cursos.urls")),
+    path("dashboard/", include("apps.api.v1.dashboard.urls")),
     path("declaracoes/", include("apps.api.v1.declaracoes.urls")),
     path("estagios/", include("apps.api.v1.estagios.urls")),
     path("eventos/", include("apps.api.v1.eventos.urls")),

@@ -30,6 +30,10 @@ export const accessApi = {
   avaExportPreview: () => client.get('/access/ava-export/preview/'),
 }
 
+export const dashboardApi = {
+  overview: () => client.get('/dashboard/overview/'),
+}
+
 // ── Fábrica genérica de endpoints CRUD ────────────────────────────────────────
 const crud = (resource) => ({
   list: (params) => client.get(`/${resource}/`, { params }),
