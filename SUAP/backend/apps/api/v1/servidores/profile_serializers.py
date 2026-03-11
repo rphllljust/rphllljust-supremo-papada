@@ -52,6 +52,8 @@ class ServidorProfileSerializer(serializers.ModelSerializer):
     perfil = serializers.CharField(source="usuario.tipo", read_only=True)
     perfil_display = serializers.CharField(source="usuario.get_tipo_display", read_only=True)
     setor_atual_nome = serializers.CharField(source="usuario.setor.nome", read_only=True)
+    ultimo_login = serializers.DateTimeField(source="usuario.last_login", read_only=True)
+    data_registro = serializers.DateTimeField(source="usuario.date_joined", read_only=True)
     nascimento = serializers.DateField(source="usuario.pessoa.data_nascimento", read_only=True)
     endereco = serializers.SerializerMethodField(read_only=True)
     ocorrencias_afastamentos = ServidorOcorrenciaAfastamentoSerializer(many=True, read_only=True)
@@ -74,6 +76,8 @@ class ServidorProfileSerializer(serializers.ModelSerializer):
             "username",
             "perfil",
             "perfil_display",
+            "ultimo_login",
+            "data_registro",
             "email_institucional",
             "email_siape",
             "email_secundario_recuperacao",

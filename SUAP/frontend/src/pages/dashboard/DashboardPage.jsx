@@ -106,7 +106,7 @@ export default function DashboardPage() {
 function RecentSection() {
   const quickLinks = [
     { href: '/matriculas', label: 'Nova Matrícula' },
-    { href: '/cursos', label: 'Consultar Cursos' },
+    { href: '/ensino/areacurso/', label: 'Consultar Cursos' },
     { href: '/turmas', label: 'Gerenciar Turmas' },
     { href: '/alunos', label: 'Consultar Alunos' },
   ]

@@ -5,16 +5,26 @@ import { cursosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const COLUMNS = [
   { key: 'nome',        label: 'Curso' },
   { key: 'sigla',       label: 'Sigla' },
   { key: 'unidade_nome',label: 'Unidade' },
+  { key: 'area_curso_nome', label: 'Área do Curso' },
   { key: 'eixo_tecnologico', label: 'Eixo Tecnológico' },
   { key: 'carga_horaria', label: 'Carga Horária (h)' },
 ]
 
-export default function CursosPage() {
+export default function CursosPage({
+  title = 'Cursos',
+  subtitle = '',
+  breadcrumbs = null,
+  queryScope = 'geral',
+  listParams = {},
+  searchPlaceholder = 'Buscar curso...',
+  emptyMessage = 'Nenhum curso encontrado.',
+}) {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -27,8 +37,8 @@ export default function CursosPage() {
   }
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['cursos', { search, page }],
-    queryFn: () => cursosApi.list({ search, page }).then((r) => r.data),
+    queryKey: ['cursos', queryScope, { ...listParams, search, page }],
+    queryFn: () => cursosApi.list({ ...listParams, search, page }).then((r) => r.data),
     staleTime: 30_000,
   })
 
@@ -45,6 +55,7 @@ export default function CursosPage() {
         { label: 'Curso', value: selectedCourse.nome },
         { label: 'Sigla', value: selectedCourse.sigla },
         { label: 'Unidade', value: selectedCourse.unidade_nome },
+        { label: 'Área do Curso', value: selectedCourse.area_curso_nome },
         { label: 'Eixo Tecnologico', value: selectedCourse.eixo_tecnologico },
         { label: 'Carga Horaria', value: selectedCourse.carga_horaria ? `${selectedCourse.carga_horaria}h` : null },
       ]
@@ -52,8 +63,22 @@ export default function CursosPage() {
 
   return (
     <div className="page">
+      {breadcrumbs ? (
+        <nav className="profile-breadcrumb">
+          {breadcrumbs.map((item, index) => (
+            <span key={`${item.label}-${index}`}>
+              {index > 0 ? <span className="profile-breadcrumb__sep">&gt;</span> : null}
+              {item.to ? <Link to={item.to}>{item.label}</Link> : <span>{item.label}</span>}
+            </span>
+          ))}
+        </nav>
+      ) : null}
+
       <div className="page-header">
-        <h1 className="page-title">Cursos</h1>
+        <div>
+          <h1 className="page-title">{title}</h1>
+          {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
+        </div>
         <div className="page-header__actions">
           <button
             className="btn btn--primary"
@@ -75,8 +100,8 @@ export default function CursosPage() {
         data={data}
         isLoading={isLoading}
         onSearch={(v) => { setSearch(v); setPage(1) }}
-        searchPlaceholder="Buscar curso..."
-        emptyMessage="Nenhum curso encontrado."
+        searchPlaceholder={searchPlaceholder}
+        emptyMessage={emptyMessage}
         rowActions={(row) => (
           <div className="table-actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedCourseId(row.id)}>

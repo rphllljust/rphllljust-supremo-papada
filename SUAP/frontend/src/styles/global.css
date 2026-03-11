@@ -404,25 +404,55 @@ a { color: inherit; text-decoration: none; }
   border-radius: var(--radius);
   flex-shrink: 0;
 }
-.sidebar__user-menu {
-  margin: 0 12px 8px;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 18px;
-  background: rgba(255,255,255,.04);
-  overflow: hidden;
-}
-.sidebar__user-trigger {
+.sidebar__account-shortcuts {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  cursor: pointer;
-  list-style: none;
+  margin: 0 12px 12px;
 }
-.sidebar__user-trigger::-webkit-details-marker {
-  display: none;
+.sidebar__account-shortcuts--collapsed {
+  flex-direction: column;
+  gap: 8px;
 }
-.sidebar__user-avatar {
+.sidebar__account-primary,
+.sidebar__account-secondary {
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: #fff;
+  text-decoration: none;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+.sidebar__account-primary:hover,
+.sidebar__account-secondary:hover,
+.sidebar__account-primary--active,
+.sidebar__account-secondary--active {
+  background: rgba(255,255,255,.11);
+  border-color: rgba(255,255,255,.24);
+}
+.sidebar__account-primary {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+}
+.sidebar__account-shortcuts--collapsed .sidebar__account-primary {
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+}
+.sidebar__account-secondary {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar__account-avatar {
   width: 38px;
   height: 38px;
   border-radius: 999px;
@@ -434,59 +464,24 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
   flex-shrink: 0;
 }
-.sidebar__user-meta {
+.sidebar__account-copy {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
-.sidebar__user-meta strong,
-.sidebar__user-role {
+.sidebar__account-copy strong,
+.sidebar__account-copy span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sidebar__user-meta strong {
+.sidebar__account-copy strong {
   font-size: 13px;
   color: #fff;
 }
-.sidebar__user-role {
+.sidebar__account-copy span {
   font-size: 12px;
   color: rgba(255,255,255,.66);
-}
-.sidebar__user-caret {
-  margin-left: auto;
-  color: rgba(255,255,255,.75);
-  transition: transform var(--transition);
-}
-.sidebar__user-menu[open] .sidebar__user-caret {
-  transform: rotate(180deg);
-}
-.sidebar__user-dropdown {
-  padding: 0 8px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.sidebar__dropdown-link,
-.sidebar__dropdown-button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: rgba(255,255,255,.78);
-  text-decoration: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.sidebar__dropdown-link:hover,
-.sidebar__dropdown-button:hover {
-  background: rgba(255,255,255,.1);
-  color: #fff;
 }
 .sidebar__search {
   margin: 0 12px 8px;
@@ -647,9 +642,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 .sidebar__footer { padding: 16px; border-top: 1px solid rgba(255,255,255,.12); }
-.sidebar__user { margin-bottom: 8px; }
-.sidebar__user-name { display: block; font-weight: 600; font-size: 13px; }
-.sidebar__user-role { font-size: 11px; color: rgba(255,255,255,.6); }
 
 .sidebar__logout {
   display: flex;
@@ -1819,6 +1811,846 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   margin-bottom: 8px;
 }
 
+.account-page {
+  display: grid;
+  gap: 20px;
+}
+
+.account-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, .9fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.account-card,
+.account-history,
+.account-shortcuts {
+  padding: 20px;
+}
+
+.account-card__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.account-card__body {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.account-card__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.account-card__avatar-placeholder {
+  width: 132px;
+  height: 168px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #d7dadd 0%, #c2c6cb 100%);
+  color: #8d9299;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.account-card__content {
+  display: grid;
+  gap: 18px;
+}
+
+.account-card__title {
+  font-size: 15px;
+  color: var(--color-gray-700);
+}
+
+.account-card__title strong {
+  color: var(--color-text);
+}
+
+.account-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.account-summary-field {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.account-summary-field__label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-gray-400);
+  margin-bottom: 4px;
+}
+
+.account-summary-field__value {
+  display: block;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.account-history {
+  display: grid;
+  gap: 16px;
+}
+
+.account-history__title {
+  font-size: 16px;
+  color: var(--green-dark);
+}
+
+.account-timeline {
+  display: grid;
+  gap: 16px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.account-timeline__item {
+  position: relative;
+  padding-left: 22px;
+}
+
+.account-timeline__item::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #27b64f;
+}
+
+.account-timeline__item::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  bottom: -18px;
+  width: 2px;
+  background: var(--color-gray-200);
+}
+
+.account-timeline__item:last-child::after {
+  display: none;
+}
+
+.account-timeline__date {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--green-main);
+  text-align: right;
+}
+
+.account-timeline__card {
+  background: #d8f4de;
+  color: #25753e;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.account-timeline__card strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.account-timeline__card p {
+  font-size: 13px;
+  color: rgba(37,117,62,.78);
+}
+
+.account-history__link {
+  justify-self: center;
+}
+
+.account-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-shortcut-card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 14px;
+  background: #f3f8f7;
+  text-decoration: none;
+  color: inherit;
+  padding: 26px 22px;
+  min-height: 184px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.account-shortcut-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: rgba(0,0,0,.08);
+}
+
+.account-shortcut-card__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: rgba(7, 185, 163, .12);
+  color: #09b6a0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.account-shortcut-card__title {
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.account-shortcut-card__description {
+  font-size: 13px;
+  color: var(--color-gray-700);
+  line-height: 1.5;
+}
+
+.btn--dark {
+  background: #4f5257;
+  color: #fff;
+  border-color: #4f5257;
+}
+
+.btn--dark:hover {
+  background: #42454a;
+  border-color: #42454a;
+}
+
+.estagios-page {
+  display: grid;
+  gap: 18px;
+}
+
+.estagios-page__header {
+  align-items: flex-start;
+}
+
+.estagios-filters-card {
+  position: relative;
+  padding-top: 18px;
+}
+
+.estagios-filters-card__title {
+  position: absolute;
+  top: -10px;
+  left: 18px;
+  background: #f4f5f6;
+  padding: 0 10px;
+  color: var(--color-gray-700);
+  font-weight: 700;
+}
+
+.estagios-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.estagios-filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.estagios-filter-field__label {
+  font-size: 12px;
+  color: var(--color-gray-700);
+}
+
+.estagios-filter-field input,
+.estagios-filter-field .select,
+.estagios-filter-field select {
+  width: 100%;
+}
+
+.estagios-date-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.estagios-filters-card__actions {
+  display: flex;
+  align-items: end;
+}
+
+.estagios-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.estagios-tab {
+  border: 1px solid var(--color-gray-200);
+  background: #f1f2f3;
+  color: #177b7a;
+  min-height: 40px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.estagios-tab--active {
+  background: #fff;
+  color: var(--green-dark);
+  border-bottom-color: #fff;
+}
+
+.estagios-tab__count {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e3e5e8;
+  color: var(--color-gray-700);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.estagios-table-card__summary {
+  margin-bottom: 14px;
+  color: #178883;
+  font-weight: 500;
+}
+
+.estagios-table-wrapper table {
+  min-width: 1400px;
+}
+
+.estagios-table-wrapper th {
+  color: #087f79;
+  font-weight: 700;
+}
+
+.estagios-table__view {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #0aa49a;
+  color: #0aa49a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.estagios-table__subtext {
+  margin-top: 4px;
+  color: var(--color-gray-700);
+  font-size: 12px;
+}
+
+.estagios-aditivos-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.estagios-aditivos-list li + li {
+  margin-top: 8px;
+}
+
+.estagios-pagination {
+  margin-top: 16px;
+  justify-content: space-between;
+}
+
+.estagio-detail-page {
+  display: grid;
+  gap: 18px;
+}
+
+.estagio-detail-page__header {
+  align-items: flex-start;
+}
+
+.estagio-detail-hero {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.estagio-detail-hero__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: rgba(7, 185, 163, .12);
+  color: #09b6a0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.estagio-detail-hero__content h2 {
+  margin-bottom: 4px;
+  font-size: 22px;
+  color: var(--color-text);
+}
+
+.estagio-detail-hero__content p {
+  color: var(--color-gray-700);
+}
+
+.estagio-detail-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.estagio-detail-hero__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-gray-700);
+  font-size: 13px;
+}
+
+.estagio-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+  gap: 18px;
+}
+
+.estagio-detail-section {
+  display: grid;
+  gap: 16px;
+}
+
+.estagio-detail-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+
+.estagio-detail-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.estagio-detail-field {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.estagio-detail-field__label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-gray-400);
+  margin-bottom: 4px;
+}
+
+.estagio-detail-field__value {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.estagio-detail-note {
+  border-radius: 12px;
+  background: #f6f9fb;
+  padding: 14px;
+  color: var(--color-gray-700);
+  line-height: 1.6;
+}
+
+.estagio-detail-list {
+  display: grid;
+  gap: 12px;
+}
+
+.estagio-detail-list__card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px;
+}
+
+.estagio-detail-list__card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text);
+}
+
+.estagio-detail-list__card p + p {
+  margin-top: 6px;
+}
+
+.estagio-detail-empty {
+  color: var(--color-gray-700);
+}
+
+.area-cursos-page {
+  display: grid;
+  gap: 18px;
+}
+
+.area-cursos-page__header,
+.area-cursos-filters-card__body,
+.area-cursos-table__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.area-cursos-page__header,
+.area-cursos-filters-card__body {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.area-cursos-filters-card {
+  padding: 16px 18px 18px;
+}
+
+.area-cursos-filters-card__title {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: #f1f2f3;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f5b67;
+}
+
+.area-cursos-filter-field {
+  display: grid;
+  gap: 6px;
+  min-width: 280px;
+}
+
+.area-cursos-filter-field__label,
+.area-cursos-page__summary {
+  font-size: 13px;
+  color: var(--green-main);
+}
+
+.area-cursos-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.area-cursos-table-wrapper {
+  overflow-x: auto;
+}
+
+.area-cursos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.area-cursos-table th,
+.area-cursos-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e4e7ea;
+  text-align: left;
+}
+
+.area-cursos-table thead th {
+  background: #d8f5f0;
+  color: #166d65;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.area-cursos-table thead th.area-cursos-table__index {
+  width: 160px;
+  background: #ececec;
+  color: #26313c;
+}
+
+.area-cursos-table tbody tr:hover {
+  background: #fafdfc;
+}
+
+.area-cursos-table__actions {
+  align-items: center;
+}
+
+.area-cursos-table__empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--color-gray-400);
+}
+
+.area-cursos-empty-notice {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f1efba;
+  color: #7b6c00;
+  border: 1px solid #e4db85;
+}
+
+.cursos-superiores-filters-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(220px, 280px) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.cursos-superiores-table th,
+.cursos-superiores-table td {
+  white-space: nowrap;
+}
+
+.componentes-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.componentes-table th,
+.componentes-table td {
+  white-space: nowrap;
+}
+
+.area-curso-detail-page,
+.area-curso-edit-page {
+  display: grid;
+  gap: 18px;
+}
+
+.area-curso-detail-card {
+  display: grid;
+  gap: 20px;
+}
+
+.area-curso-detail-fields {
+  display: grid;
+  gap: 0;
+}
+
+.area-curso-detail-field {
+  padding: 14px 0;
+  border-bottom: 1px solid #d9dee3;
+}
+
+.area-curso-detail-field:first-child {
+  padding-top: 0;
+}
+
+.area-curso-detail-field__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #4f5b67;
+}
+
+.area-curso-detail-field__value {
+  font-size: 18px;
+  color: var(--color-text);
+}
+
+.area-curso-edit-form {
+  display: grid;
+  gap: 24px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.area-curso-edit-form__rows {
+  display: grid;
+  gap: 0;
+}
+
+.area-curso-edit-row {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  border-bottom: 1px solid #d9dee3;
+}
+
+.area-curso-edit-row__label {
+  padding: 20px 18px;
+  background: #f7f7f7;
+  font-weight: 700;
+  color: #1e2937;
+  text-align: right;
+}
+
+.area-curso-edit-row__field {
+  padding: 10px 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.area-curso-edit-row__field input {
+  width: 100%;
+}
+
+.area-curso-edit-form .componente-edit-form__actions {
+  padding: 0 18px 18px;
+}
+
+.componente-detail-page,
+.componente-edit-page {
+  display: grid;
+  gap: 18px;
+}
+
+.componente-hero-card {
+  display: grid;
+  gap: 20px;
+}
+
+.componente-hero-card__title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--green-dark);
+}
+
+.componente-hero-card__title strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 20px;
+  color: var(--color-text);
+}
+
+.componente-hero-card__title span {
+  color: var(--color-gray-700);
+}
+
+.componente-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.componente-summary-card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 14px;
+  background: #f8fbfb;
+  padding: 16px;
+}
+
+.componente-summary-card__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--color-gray-400);
+}
+
+.componente-summary-card__value {
+  font-size: 22px;
+  color: var(--green-dark);
+}
+
+.componente-detail-grid {
+  align-items: start;
+}
+
+.componente-detail-placeholder {
+  color: var(--color-gray-700);
+  line-height: 1.6;
+}
+
+.componente-edit-page__header {
+  align-items: flex-start;
+}
+
+.componente-edit-form {
+  display: grid;
+  gap: 24px;
+}
+
+.componente-edit-form__body {
+  display: grid;
+  gap: 20px;
+}
+
+.componente-edit-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.componente-edit-form__grid--wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-field {
+  display: grid;
+  gap: 6px;
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+.form-field__label {
+  font-size: 13px;
+  color: var(--color-gray-700);
+}
+
+.form-field__error {
+  font-size: 12px;
+  color: #b42318;
+}
+
+.form-field--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 28px;
+}
+
+.form-field--checkbox input {
+  width: 18px;
+  height: 18px;
+}
+
+.componente-edit-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn--icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 999px;
+}
+
 @media (max-width: 1100px) {
   .profile-summary-card {
     grid-template-columns: 1fr;
@@ -1834,6 +2666,50 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   .profile-fields-grid--four,
   .profile-fields-grid--two-thirds {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-page__layout,
+  .account-card__body,
+  .account-shortcuts {
+    grid-template-columns: 1fr;
+  }
+
+  .account-card__avatar {
+    justify-content: flex-start;
+  }
+
+  .estagios-filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .estagio-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .area-cursos-page__header .page-header__actions,
+  .area-cursos-filters-card__body,
+  .area-cursos-filter-field,
+  .cursos-superiores-filters-grid {
+    width: 100%;
+  }
+
+  .cursos-superiores-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .componentes-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .componente-summary-grid,
+  .componente-edit-form__grid,
+  .componente-edit-form__grid--wide,
+  .area-curso-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .area-curso-edit-row__label {
+    text-align: left;
   }
 }
 
@@ -1857,6 +2733,64 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
 
   .profile-content-card {
     border-top-left-radius: var(--radius);
+  }
+
+  .account-page__header,
+  .account-card__toolbar {
+    align-items: stretch;
+  }
+
+  .account-page__header,
+  .account-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-page__header {
+    display: grid;
+  }
+
+  .account-card__toolbar .btn,
+  .account-history__link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .account-shortcut-card {
+    min-height: 160px;
+  }
+
+  .estagios-filters-grid,
+  .estagios-date-range {
+    grid-template-columns: 1fr;
+  }
+
+  .estagios-page__header .page-header__actions,
+  .estagios-filters-card__actions,
+  .estagios-pagination {
+    width: 100%;
+  }
+
+  .estagios-page__header .btn,
+  .estagios-filters-card__actions .btn,
+  .estagios-pagination .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .estagio-detail-hero,
+  .estagio-detail-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .area-cursos-page__header .btn,
+  .area-cursos-filters-card__body .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .componente-edit-form__actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

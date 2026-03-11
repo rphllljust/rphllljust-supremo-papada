@@ -8,6 +8,8 @@ urlpatterns = [
     path("atas-professores/", include("apps.api.v1.atas_professores.urls")),
     path("cursos/", include("apps.api.v1.cursos.urls")),
     path("declaracoes/", include("apps.api.v1.declaracoes.urls")),
+    path("estagios/", include("apps.api.v1.estagios.urls")),
+    path("eventos/", include("apps.api.v1.eventos.urls")),
     path("frequencias/", include("apps.api.v1.frequencias.urls")),
     path("guias-transferencia/", include("apps.api.v1.guias_transferencia.urls")),
     path("historicos/", include("apps.api.v1.historicos.urls")),

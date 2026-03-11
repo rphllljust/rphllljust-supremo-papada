@@ -36,13 +36,22 @@ const NotasPage      = lazy(() => import('@/pages/notas/NotasPage'))
 const FrequenciaPage = lazy(() => import('@/pages/frequencia/FrequenciaPage'))
 const TurmasPage     = lazy(() => import('@/pages/turmas/TurmasPage'))
 const ProcessosPage  = lazy(() => import('@/pages/processos/ProcessosPage'))
-const CursosPage     = lazy(() => import('@/pages/cursos/CursosPage'))
+const CatalogoCursosTecnicosPage = lazy(() => import('@/pages/cursos/CatalogoCursosTecnicosPage'))
+const AreasCursosPage = lazy(() => import('@/pages/cursos/AreasCursosPage'))
+const AreaCursoDetailPage = lazy(() => import('@/pages/cursos/AreaCursoDetailPage'))
+const AreaCursoEditPage = lazy(() => import('@/pages/cursos/AreaCursoEditPage'))
+const EixosTecnologicosPage = lazy(() => import('@/pages/cursos/EixosTecnologicosPage'))
+const CursosFormacaoSuperiorPage = lazy(() => import('@/pages/cursos/CursosFormacaoSuperiorPage'))
+const ComponentesPage = lazy(() => import('@/pages/cursos/ComponentesPage'))
+const ComponenteDetailPage = lazy(() => import('@/pages/cursos/ComponenteDetailPage'))
+const ComponenteEditPage = lazy(() => import('@/pages/cursos/ComponenteEditPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
 const NotificationsPage = lazy(() => import('@/pages/notificacoes/NotificationsPage'))
 const NotificationPreferencesPage = lazy(() => import('@/pages/notificacoes/NotificationPreferencesPage'))
 const ChangePasswordPage = lazy(() => import('@/pages/auth/ChangePasswordPage'))
+const MinhaContaPage = lazy(() => import('@/pages/conta/MinhaContaPage'))
 const ServidorProfilePage = lazy(() => import('@/pages/servidores/ServidorProfilePage'))
 const ServidoresPage = lazy(() => import('@/pages/servidores/ServidoresPage'))
 const SetoresPage    = lazy(() => import('@/pages/setores/SetoresPage'))
@@ -52,6 +61,7 @@ const AgendaPage     = lazy(() => import('@/pages/agenda/AgendaPage'))
 const ArquivoPage    = lazy(() => import('@/pages/arquivo/ArquivoPage'))
 const InscricoesPage = lazy(() => import('@/pages/inscricoes/InscricoesPage'))
 const EstagiosPage   = lazy(() => import('@/pages/estagios/EstagiosPage'))
+const EstagioDetailPage = lazy(() => import('@/pages/estagios/EstagioDetailPage'))
 const AvaExportPreviewPage = lazy(() => import('@/pages/access/AvaExportPreviewPage'))
 const PlaceholderPage = lazy(() => import('@/pages/placeholder/PlaceholderPage'))
 
@@ -194,7 +204,34 @@ export default function App() {
                   <Route path="/notas"      element={<RouteShell><NotasPage /></RouteShell>} />
                   <Route path="/frequencia" element={<RouteShell><FrequenciaPage /></RouteShell>} />
                   <Route path="/turmas"     element={<RouteShell><TurmasPage /></RouteShell>} />
-                  <Route path="/cursos"     element={<RouteShell><CursosPage /></RouteShell>} />
+                  <Route path="/cursos"     element={<Navigate to="/ensino/areacurso/" replace />} />
+                  <Route path="/cursos/"     element={<Navigate to="/ensino/areacurso/" replace />} />
+                  <Route path="/ensino/cursotecnico" element={<RouteShell><CatalogoCursosTecnicosPage /></RouteShell>} />
+                  <Route path="/ensino/cursotecnico/" element={<RouteShell><CatalogoCursosTecnicosPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso" element={<RouteShell><AreasCursosPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/" element={<RouteShell><AreasCursosPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/:areaCursoId" element={<RouteShell><AreaCursoDetailPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/:areaCursoId/" element={<RouteShell><AreaCursoDetailPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/:areaCursoId/editar" element={<RouteShell><AreaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/:areaCursoId/editar/" element={<RouteShell><AreaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/eixotecnologico" element={<RouteShell><EixosTecnologicosPage /></RouteShell>} />
+                  <Route path="/ensino/eixotecnologico/" element={<RouteShell><EixosTecnologicosPage /></RouteShell>} />
+                  <Route path="/ensino/cursoformacaosuperior" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
+                  <Route path="/ensino/cursoformacaosuperior/" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
+                  <Route path="/cursoformacaosuperior" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
+                  <Route path="/cursoformacaosuperior/" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
+                  <Route path="/ensino/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/servidores" element={<Navigate to="/rh/servidores" replace />} />
                   <Route path="/setores"    element={<Navigate to="/rh/setores" replace />} />
@@ -208,11 +245,16 @@ export default function App() {
                   <Route path="/arquivo"    element={<RouteShell><ArquivoPage /></RouteShell>} />
                   <Route path="/inscricoes" element={<RouteShell><InscricoesPage /></RouteShell>} />
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
+                  <Route path="/estagio/:estagioId" element={<RouteShell><EstagioDetailPage /></RouteShell>} />
+                  <Route path="/estagio/:estagioId/" element={<RouteShell><EstagioDetailPage /></RouteShell>} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
                   <Route path="/comum/notificacoes" element={<RouteShell><NotificationsPage /></RouteShell>} />
                   <Route path="/comum/notificacoes/preferencias" element={<RouteShell><NotificationPreferencesPage /></RouteShell>} />
+                  <Route path="/comum/minha_conta" element={<RouteShell><MinhaContaPage /></RouteShell>} />
+                  <Route path="/comum/minha_conta/" element={<RouteShell><MinhaContaPage /></RouteShell>} />
                   <Route path="/comum/alterar-senha" element={<RouteShell><ChangePasswordPage /></RouteShell>} />
+                  <Route path="/comum/minha-conta" element={<Navigate to="/comum/minha_conta/" replace />} />
                   <Route path="/rh/notificacoes" element={<Navigate to="/comum/notificacoes" replace />} />
                   <Route path="/rh/notificacoes/preferencias" element={<Navigate to="/comum/notificacoes/preferencias" replace />} />
                   <Route path="/indisponivel/alterar-senha" element={<Navigate to="/comum/alterar-senha" replace />} />
@@ -239,7 +281,7 @@ export default function App() {
                   <Route path="/app/notas"     element={<Navigate to="/notas" replace />} />
                   <Route path="/app/frequencia" element={<Navigate to="/frequencia" replace />} />
                   <Route path="/app/turmas"     element={<Navigate to="/turmas" replace />} />
-                  <Route path="/app/cursos"     element={<Navigate to="/cursos" replace />} />
+                  <Route path="/app/cursos"     element={<Navigate to="/ensino/areacurso/" replace />} />
                   <Route path="/app/alunos"     element={<Navigate to="/alunos" replace />} />
                   <Route path="/app/servidores" element={<Navigate to="/rh/servidores" replace />} />
                   <Route path="/app/setores"    element={<Navigate to="/rh/setores" replace />} />

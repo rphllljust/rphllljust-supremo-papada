@@ -123,6 +123,10 @@ ACCESS_MATRIX = {
             "view": TEACHING_VIEW,
             "manage": STAFF_MANAGE,
         },
+        "api": {
+            "view": TEACHING_VIEW,
+            "manage": STAFF_MANAGE,
+        },
     },
     "arquivo": {
         "web": {
@@ -148,6 +152,10 @@ ACCESS_MATRIX = {
     },
     "estagio": {
         "web": {
+            "view": TEACHING_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
             "view": TEACHING_VIEW,
             "manage": STAFF_MANAGE,
         },

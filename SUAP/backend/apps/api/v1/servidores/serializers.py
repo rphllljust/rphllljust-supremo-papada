@@ -20,7 +20,7 @@ def split_name(nome_completo):
 
 
 class ServidorSerializer(serializers.ModelSerializer):
-    nome_completo = serializers.CharField()
+    nome_completo = serializers.SerializerMethodField()
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     setor_nome = serializers.CharField(source="setor.nome", read_only=True)
     matricula_servidor = serializers.SerializerMethodField(read_only=True)
@@ -128,14 +128,10 @@ class ServidorSerializer(serializers.ModelSerializer):
 
         return instance
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if not data.get("nome_completo"):
-            if getattr(instance, "pessoa", None) and instance.pessoa.nome_completo:
-                data["nome_completo"] = instance.pessoa.nome_completo
-            else:
-                data["nome_completo"] = instance.get_full_name().strip() or instance.username
-        return data
+    def get_nome_completo(self, obj):
+        if getattr(obj, "pessoa", None) and obj.pessoa.nome_completo:
+            return obj.pessoa.nome_completo
+        return obj.get_full_name().strip() or obj.username
 
     def get_matricula_servidor(self, obj):
         return get_matricula_servidor_safe(obj)

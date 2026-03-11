@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { Bell, ChevronDown, LogOut, Menu, Search, Settings, User, X } from 'lucide-react'
+import { ChevronDown, LogOut, Menu, Search, User, X } from 'lucide-react'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import { debugLog } from '@/utils/debug'
 
@@ -127,6 +127,17 @@ function isItemActive(item, pathname) {
   return pathname === path || pathname.startsWith(`${path}/`)
 }
 
+function buildRegistryLink(user) {
+  if (!user?.id) {
+    return '/rh/servidores'
+  }
+
+  return {
+    pathname: '/rh/servidores',
+    search: `?servidorId=${user.id}`,
+  }
+}
+
 function SidebarLeaf({ item, sidebarOpen }) {
   const label = sidebarOpen ? <span className="sidebar__label">{item.label}</span> : null
 
@@ -188,7 +199,7 @@ function SidebarNode({ item, depth, pathname, sidebarOpen, openGroups, setOpenGr
     )
   }
 
-  const isOpen = sidebarOpen && (forcedOpenIds.has(item.id) || (openGroups[item.id] ?? active))
+  const isOpen = sidebarOpen && (forcedOpenIds.has(item.id) || openGroups[item.id] === true)
   const detailsClassName = depth === 0 ? 'sidebar__section' : 'sidebar__branch'
   const summaryClassName = depth === 0 ? 'sidebar__summary' : 'sidebar__tree-summary'
 
@@ -278,6 +289,8 @@ export default function Layout() {
     logout().finally(() => navigate('/login'))
   }
 
+  const registryLink = buildRegistryLink(user)
+
   return (
     <div className="layout">
       {/* Sidebar */}
@@ -297,57 +310,27 @@ export default function Layout() {
           </button>
         </div>
 
-        {sidebarOpen ? (
-          <details className="sidebar__user-menu">
-            <summary className="sidebar__user-trigger">
-              <span className="sidebar__user-avatar">{getUserInitials(user)}</span>
-              <span className="sidebar__user-meta">
+        <div className={`sidebar__account-shortcuts ${sidebarOpen ? '' : 'sidebar__account-shortcuts--collapsed'}`}>
+          <NavLink to={registryLink} className={({ isActive }) => `sidebar__account-primary ${isActive ? 'sidebar__account-primary--active' : ''}`}>
+            <span className="sidebar__account-avatar">{getUserInitials(user)}</span>
+            {sidebarOpen ? (
+              <span className="sidebar__account-copy">
                 <strong>{user?.nome_completo || user?.username}</strong>
-                <span className="sidebar__user-role">{user?.tipo_display || 'Usuario autenticado'}</span>
+                <span>{user?.tipo_display || 'Usuario autenticado'}</span>
               </span>
-              <ChevronDown size={16} className="sidebar__user-caret" />
-            </summary>
+            ) : null}
+          </NavLink>
 
-            <div className="sidebar__user-dropdown">
-              <NavLink
-                to="/rh/servidor/1221471/"
-                className="sidebar__dropdown-link"
-              >
-                <User size={16} />
-                <span>Meu perfil</span>
-              </NavLink>
-              <NavLink
-                to="/comum/notificacoes"
-                className="sidebar__dropdown-link"
-              >
-                <Bell size={16} />
-                <span>Notificacoes</span>
-              </NavLink>
-              <NavLink
-                to="/indisponivel/configuracoes"
-                state={{
-                  title: 'Configuracoes',
-                  description: 'As configuracoes do usuario ainda nao possuem uma tela dedicada neste frontend do SUAP.',
-                }}
-                className="sidebar__dropdown-link"
-              >
-                <Settings size={16} />
-                <span>Configuracoes</span>
-              </NavLink>
-              <NavLink
-                to="/comum/alterar-senha"
-                className="sidebar__dropdown-link"
-              >
-                <Settings size={16} />
-                <span>Alterar senha</span>
-              </NavLink>
-              <button type="button" className="sidebar__dropdown-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Sair</span>
-              </button>
-            </div>
-          </details>
-        ) : null}
+          <NavLink
+            to="/comum/minha_conta/"
+            end
+            className={({ isActive }) => `sidebar__account-secondary ${isActive ? 'sidebar__account-secondary--active' : ''}`}
+            title="Minha conta"
+            aria-label="Minha conta"
+          >
+            <User size={18} />
+          </NavLink>
+        </div>
 
         {sidebarOpen ? (
           <div className="sidebar__search">
@@ -380,12 +363,6 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar__footer">
-          {sidebarOpen && (
-            <div className="sidebar__user">
-              <span className="sidebar__user-name">{user?.nome_completo || user?.username}</span>
-              <span className="sidebar__user-role">{user?.tipo_display}</span>
-            </div>
-          )}
           <button className="sidebar__logout" onClick={handleLogout} title="Sair">
             <LogOut size={18} />
             {sidebarOpen && <span>Sair</span>}

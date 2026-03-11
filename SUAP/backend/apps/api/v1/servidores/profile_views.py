@@ -95,3 +95,17 @@ class ServidorProfileByIdApiView(generics.RetrieveAPIView):
         if str(self.request.user.id) != str(usuario_id):
             raise NotFound("Perfil de servidor nao encontrado.")
         return ensure_servidor_profile(self.request.user)
+
+
+class ServidorMyProfileApiView(generics.RetrieveAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "servidores"
+    access_surface = "api"
+    access_action = "view"
+    serializer_class = ServidorProfileSerializer
+
+    def get_object(self):
+        usuario = self.request.user
+        if usuario.tipo == PerfilUsuario.ALUNO:
+            raise NotFound("Perfil de servidor nao encontrado.")
+        return ensure_servidor_profile(usuario)

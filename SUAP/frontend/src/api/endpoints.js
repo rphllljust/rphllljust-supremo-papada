@@ -45,6 +45,7 @@ export const usuariosApi = {
 }
 export const servidoresApi = {
   ...crud('servidores'),
+  myProfile: () => client.get('/servidores/me/perfil/'),
   profile: (id) => client.get(`/servidores/${id}/perfil/`),
   profileByMatricula: (matricula) => client.get(`/servidores/matricula/${matricula}/perfil/`),
 }
@@ -61,6 +62,23 @@ export const cursosApi = {
   ...crud('cursos'),
   componentes: (id) => client.get(`/cursos/${id}/componentes/`),
   calendarios: (id) => client.get(`/cursos/${id}/calendarios/`),
+}
+export const areasCursoApi = {
+  list: (params) => client.get('/cursos/areas/', { params }),
+  get: (id) => client.get(`/cursos/areas/${id}/`),
+  update: (id, data) => client.put(`/cursos/areas/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/areas/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/areas/${id}/`),
+}
+export const eixosTecnologicosApi = {
+  list: (params) => client.get('/cursos/eixos-tecnologicos/', { params }),
+}
+export const componentesApi = {
+  list: (params) => client.get('/cursos/componentes/', { params }),
+  get: (id) => client.get(`/cursos/componentes/${id}/`),
+  update: (id, data) => client.put(`/cursos/componentes/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/componentes/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/componentes/${id}/`),
 }
 export const turmasApi = {
   ...crud('turmas'),
