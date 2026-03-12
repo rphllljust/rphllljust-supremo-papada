@@ -5,6 +5,8 @@ import { ArrowRight, Bell, CalendarClock, ClipboardList, FileClock, School2, Spa
 import { dashboardApi } from '@/api/endpoints'
 import StatCard from '@/components/ui/StatCard'
 import { useAuth } from '@/context/AuthContext'
+import { sidebarItems } from '@/components/layout/sidebarItems'
+import { getQuickAccessItems } from '@/utils/quickAccess'
 
 const STATS_CONFIG = [
   { key: 'recent_enrollments', label: 'Matrículas nos últimos 7 dias', icon: ClipboardList, color: '#1351B4' },
@@ -163,14 +165,8 @@ export default function DashboardPage() {
 }
 
 function QuickLinksSection() {
-  const quickLinks = [
-    { href: '/matriculas', label: 'Nova Matrícula' },
-    { href: '/documentos', label: 'Pendências de Documentos' },
-    { href: '/turmas', label: 'Gerenciar Turmas' },
-    { href: '/comum/notificacoes', label: 'Avisos do Sistema' },
-    { href: '/ensino/areacurso/', label: 'Áreas de Cursos' },
-    { href: '/estagio', label: 'Próximos Prazos de Estágio' },
-  ]
+  const { user } = useAuth()
+  const quickLinks = getQuickAccessItems(user, sidebarItems, 7)
 
   return (
     <div className="dashboard-card dashboard-section-card">
@@ -181,14 +177,18 @@ function QuickLinksSection() {
           <ArrowRight size={14} />
         </Link>
       </div>
-      <div className="quick-links">
-        {quickLinks.map(({ href, label }) => (
-          <Link key={href} to={href} className="quick-link">
-            {label}
-            <ArrowRight size={14} />
-          </Link>
-        ))}
-      </div>
+      {quickLinks.length > 0 ? (
+        <div className="quick-links">
+          {quickLinks.map(({ id, to, label }) => (
+            <Link key={id} to={to} className="quick-link">
+              {label}
+              <ArrowRight size={14} />
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="dashboard-empty">Os atalhos serão preenchidos conforme você acessar os módulos.</p>
+      )}
     </div>
   )
 }

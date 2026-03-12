@@ -47,6 +47,7 @@ const crud = (resource) => ({
 export const usuariosApi = {
   ...crud('usuarios'),
 }
+export const alunosApi = crud('alunos')
 export const servidoresApi = {
   ...crud('servidores'),
   myProfile: () => client.get('/servidores/me/perfil/'),

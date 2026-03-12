@@ -6,6 +6,7 @@ import { Bell, ChevronDown, LogOut, Search, User } from 'lucide-react'
 import { notificacoesApi } from '@/api/endpoints'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import { debugLog } from '@/utils/debug'
+import { getQuickAccessItems, trackQuickAccessVisit } from '@/utils/quickAccess'
 
 const BREADCRUMB_LABELS = {
   dashboard: 'Dashboard',
@@ -364,6 +365,38 @@ function SidebarLeaf({ item }) {
 function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedOpenIds }) {
   const active = isItemActive(item, pathname)
 
+  if (item.type === 'group' && (!item.items || item.items.length === 0)) {
+    const isOpen = forcedOpenIds.has(item.id) || openGroups[item.id] === true
+    const detailsClassName = depth === 0 ? 'sidebar__section' : 'sidebar__branch'
+    const summaryClassName = depth === 0 ? 'sidebar__summary' : 'sidebar__tree-summary'
+
+    const content = (
+      <details
+        className={detailsClassName}
+        open={isOpen}
+        onToggle={(event) => {
+          const nextOpen = event.currentTarget?.open ?? false
+          setOpenGroups((current) => ({
+            ...current,
+            [item.id]: nextOpen,
+          }))
+        }}
+      >
+        <summary className={`${summaryClassName} ${active ? 'sidebar__summary--active' : ''}`}>
+          <span className="sidebar__label">{item.label}</span>
+          <ChevronDown size={16} className="sidebar__caret" />
+        </summary>
+        <p className="sidebar__search-empty">Nenhum item acessado ainda.</p>
+      </details>
+    )
+
+    if (depth === 0) {
+      return content
+    }
+
+    return <li className="sidebar__tree-item">{content}</li>
+  }
+
   if (!item.items?.length) {
     if (depth === 0) {
       return <SidebarLeaf item={item} />
@@ -445,10 +478,28 @@ export default function Layout() {
   const location = useLocation()
   const [openGroups, setOpenGroups] = useState({})
   const [menuQuery, setMenuQuery] = useState('')
+  const [quickAccessItems, setQuickAccessItems] = useState([])
 
   const normalizedQuery = normalizeText(menuQuery)
   const forcedOpenIds = new Set()
-  const enabledSidebarItems = pruneDisabledSidebarItems(sidebarItems)
+  const baseSidebarItems = useMemo(() => pruneDisabledSidebarItems(sidebarItems), [])
+  const enabledSidebarItems = useMemo(() => baseSidebarItems.map((item) => {
+    if (item.id !== 'acesso-rapido') {
+      return item
+    }
+
+    return {
+      ...item,
+      items: quickAccessItems.map((quickItem) => ({
+        id: `quick-${quickItem.id}`,
+        type: 'link',
+        label: quickItem.label,
+        to: quickItem.to,
+        state: quickItem.state,
+        activePrefixes: quickItem.activePrefixes,
+      })),
+    }
+  }), [baseSidebarItems, quickAccessItems])
   const visibleSidebarItems = filterSidebarItems(enabledSidebarItems, normalizedQuery, forcedOpenIds)
   const noResults = normalizedQuery && visibleSidebarItems.length === 0
   const { data: unreadNotifications = 0 } = useQuery({
@@ -479,6 +530,16 @@ export default function Layout() {
       visibleSidebarItems: visibleSidebarItems.length,
     })
   }, [location.pathname, menuQuery, visibleSidebarItems.length])
+
+  useEffect(() => {
+    if (!user) {
+      setQuickAccessItems([])
+      return
+    }
+
+    trackQuickAccessVisit(user, baseSidebarItems, location.pathname)
+    setQuickAccessItems(getQuickAccessItems(user, baseSidebarItems, 7))
+  }, [baseSidebarItems, location.pathname, user])
 
   const handleLogout = () => {
     logout().finally(() => navigate('/login'))

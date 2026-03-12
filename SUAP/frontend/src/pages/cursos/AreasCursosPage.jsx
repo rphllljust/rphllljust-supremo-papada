@@ -52,9 +52,9 @@ export default function AreasCursosPage() {
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => navigate('/ensino/areacurso/nova')}
+            onClick={() => navigate('/ensino/cursoformacaosuperior/')}
           >
-            <Plus size={16} /> Adicionar Área de Curso
+            <Plus size={16} /> Adicionar Curso
           </button>
           <button type="button" className="btn btn--dark" onClick={() => exportRowsToExcel(rows)}>
             <FileSpreadsheet size={16} /> Exportar para XLS

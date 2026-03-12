@@ -252,6 +252,7 @@ export default function App() {
                   <Route path="/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
+                  <Route path="/alunos/novo" element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/servidores" element={<Navigate to="/rh/servidores" replace />} />
                   <Route path="/setores"    element={<Navigate to="/rh/setores" replace />} />
                   <Route path="/usuarios"   element={<RouteShell><UsuariosPage /></RouteShell>} />
