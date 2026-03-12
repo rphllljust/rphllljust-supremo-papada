@@ -8,6 +8,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
 
+function formatCpf(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 11)
+
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+}
+
 const PERFIL_OPTIONS = [
   { value: 'SECRETARIA', label: 'Secretaria' },
   { value: 'COORDENACAO', label: 'Coordenacao/Consulta' },
@@ -24,8 +34,23 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm()
+
+  const cpfField = register('cpf', { required: 'Informe o CPF' })
+
+  const handleCpfChange = (event) => {
+    const formattedValue = formatCpf(event.target.value)
+    setValue('cpf', formattedValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+  }
+
+  const handleCpfPaste = (event) => {
+    event.preventDefault()
+    const pastedText = event.clipboardData?.getData('text') || ''
+    const formattedValue = formatCpf(pastedText)
+    setValue('cpf', formattedValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+  }
 
   useEffect(() => {
     if (isAuthenticated) navigate(nextPath, { replace: true })
@@ -60,7 +85,11 @@ export default function LoginPage() {
               type="text"
               autoComplete="username"
               placeholder="000.000.000-00"
-              {...register('cpf', { required: 'Informe o CPF' })}
+              inputMode="numeric"
+              maxLength={14}
+              {...cpfField}
+              onChange={handleCpfChange}
+              onPaste={handleCpfPaste}
               aria-invalid={!!errors.cpf}
             />
             {errors.cpf && (
