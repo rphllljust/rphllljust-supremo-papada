@@ -23,7 +23,11 @@ function Select-Environment {
 
     $choice = Read-Host "Digite 1, 2 ou 3 (Enter = development)"
 
-    switch (($choice ?? "").Trim()) {
+    if ($null -eq $choice) {
+        $choice = ""
+    }
+
+    switch ($choice.Trim()) {
         "2" { return "homolog" }
         "3" { return "production" }
         default { return "development" }
