@@ -41,6 +41,7 @@ export default function AreaCursoEditPage() {
   const queryClient = useQueryClient()
   const submitModeRef = useRef('view')
   const { areaCursoId } = useParams()
+  const isCreateMode = !areaCursoId
 
   const {
     register,
@@ -52,7 +53,7 @@ export default function AreaCursoEditPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['areas-curso', 'detail', areaCursoId],
     queryFn: () => areasCursoApi.get(areaCursoId).then((response) => response.data),
-    enabled: Boolean(areaCursoId),
+    enabled: !isCreateMode,
     staleTime: 0,
   })
 
@@ -74,33 +75,36 @@ export default function AreaCursoEditPage() {
   }, [data, reset])
 
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }) => areasCursoApi.patch(id, payload),
-    onSuccess: async (_response, variables) => {
+    mutationFn: ({ id, payload }) => (id ? areasCursoApi.patch(id, payload) : areasCursoApi.create(payload)),
+    onSuccess: async (response, variables) => {
+      const savedId = response.data?.id || variables.id
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['areas-curso'] }),
-        queryClient.invalidateQueries({ queryKey: ['areas-curso', 'detail', variables.id] }),
+        savedId ? queryClient.invalidateQueries({ queryKey: ['areas-curso', 'detail', savedId] }) : Promise.resolve(),
       ])
 
-      toast.success('Área de curso atualizada com sucesso.')
-
-      if (submitModeRef.current === 'stay') {
-        return
-      }
+      toast.success(isCreateMode ? 'Área de curso criada com sucesso.' : 'Área de curso atualizada com sucesso.')
 
       if (submitModeRef.current === 'add') {
-        navigate('/indisponivel/nova-area-curso', {
-          state: {
-            title: 'Adicionar Área de Curso',
-            description: 'O formulário de cadastro de área de curso ainda não foi portado para o frontend React.',
-          },
-        })
+        reset(DEFAULT_VALUES)
+        navigate('/ensino/areacurso/nova')
         return
       }
 
-      navigate(`/ensino/areacurso/${variables.id}`)
+      if (submitModeRef.current === 'stay') {
+        if (isCreateMode && savedId) {
+          navigate(`/ensino/areacurso/${savedId}/editar`, { replace: true })
+        }
+        return
+      }
+
+      if (savedId) {
+        navigate(`/ensino/areacurso/${savedId}`)
+      }
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível salvar a área de curso.'))
+      toast.error(getErrorMessage(error, isCreateMode ? 'Não foi possível criar a área de curso.' : 'Não foi possível salvar a área de curso.'))
     },
   })
 
@@ -116,7 +120,7 @@ export default function AreaCursoEditPage() {
     },
   })
 
-  if (isLoading) {
+  if (!isCreateMode && isLoading) {
     return (
       <div className="page page--wide">
         <div className="page-loader" role="status" aria-live="polite">
@@ -127,7 +131,7 @@ export default function AreaCursoEditPage() {
     )
   }
 
-  if (isError || !data) {
+  if (!isCreateMode && (isError || !data)) {
     return (
       <div className="page page--wide">
         <div className="page-error">
@@ -138,7 +142,7 @@ export default function AreaCursoEditPage() {
     )
   }
 
-  const titulo = [data.codigo_cine, data.cine || data.descricao].filter(Boolean).join(' - ')
+  const titulo = isCreateMode ? 'Nova área de curso' : [data.codigo_cine, data.cine || data.descricao].filter(Boolean).join(' - ')
 
   const onSubmit = handleSubmit(async (formData) => {
     const payload = {
@@ -152,7 +156,7 @@ export default function AreaCursoEditPage() {
       area_geral: formData.area_geral.trim(),
     }
 
-    await saveMutation.mutateAsync({ id: data.id, payload })
+    await saveMutation.mutateAsync({ id: data?.id, payload })
   })
 
   const handleDelete = () => {
@@ -169,19 +173,28 @@ export default function AreaCursoEditPage() {
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <Link to="/ensino/areacurso/">Áreas de cursos de formação superior</Link>
-        <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to={`/ensino/areacurso/${data.id}`}>{titulo}</Link>
-        <span className="profile-breadcrumb__sep">&gt;</span>
-        <span>Editar {titulo}</span>
+        {isCreateMode ? (
+          <>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <span>{titulo}</span>
+          </>
+        ) : (
+          <>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <Link to={`/ensino/areacurso/${data.id}`}>{titulo}</Link>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <span>Editar {titulo}</span>
+          </>
+        )}
       </nav>
 
       <div className="page-header area-cursos-page__header">
         <div>
-          <h1 className="page-title">Editar {titulo}</h1>
+          <h1 className="page-title">{isCreateMode ? titulo : `Editar ${titulo}`}</h1>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate(`/ensino/areacurso/${data.id}`)}>
-            <ArrowLeft size={16} /> Voltar para detalhes
+          <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/areacurso/' : `/ensino/areacurso/${data.id}`)}>
+            <ArrowLeft size={16} /> {isCreateMode ? 'Voltar para listagem' : 'Voltar para detalhes'}
           </button>
         </div>
       </div>
@@ -256,9 +269,11 @@ export default function AreaCursoEditPage() {
           <button type="submit" className="btn btn--outline" disabled={saveMutation.isPending} onClick={() => { submitModeRef.current = 'stay' }}>
             <Save size={16} /> Salvar e continuar editando
           </button>
-          <button type="button" className="btn btn--danger" disabled={deleteMutation.isPending} onClick={handleDelete}>
-            <Trash2 size={16} /> Remover
-          </button>
+          {!isCreateMode ? (
+            <button type="button" className="btn btn--danger" disabled={deleteMutation.isPending} onClick={handleDelete}>
+              <Trash2 size={16} /> Remover
+            </button>
+          ) : null}
         </div>
       </form>
     </div>

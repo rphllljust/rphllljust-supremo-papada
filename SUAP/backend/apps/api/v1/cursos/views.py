@@ -26,13 +26,20 @@ class EixoTecnologicoListApiView(generics.ListAPIView):
         return queryset.values("eixo_tecnologico").distinct().order_by("eixo_tecnologico")
 
 
-class ComponenteCurricularListApiView(generics.ListAPIView):
+class ComponenteCurricularListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
     access_surface = "api"
     access_action = "view"
     serializer_class = ComponenteCurricularSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_base_queryset(self):
         return ComponenteCurricular.objects.select_related("curso").order_by("nome", "id")
@@ -128,13 +135,20 @@ class ComponenteCurricularDetailApiView(generics.RetrieveUpdateDestroyAPIView):
         return super().get_permissions()
 
 
-class AreaCursoListApiView(generics.ListAPIView):
+class AreaCursoListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
     access_surface = "api"
     access_action = "view"
     serializer_class = AreaCursoSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = AreaCurso.objects.order_by("descricao")

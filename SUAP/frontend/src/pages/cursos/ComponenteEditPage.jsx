@@ -8,6 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { componentesApi } from '@/api/endpoints'
 
 const DEFAULT_VALUES = {
+  curso: '',
   descricao: '',
   descricao_diploma_historico: '',
   abreviatura: '',
@@ -44,6 +45,7 @@ function getErrorMessage(error, fallback) {
 
 function buildFormValues(component) {
   return {
+    curso: component?.curso_id ? String(component.curso_id) : '',
     descricao: component?.descricao || '',
     descricao_diploma_historico: component?.descricao_diploma_historico || '',
     abreviatura: component?.abreviatura || '',
@@ -66,6 +68,7 @@ export default function ComponenteEditPage() {
   const queryClient = useQueryClient()
   const { componenteId } = useParams()
   const submitModeRef = useRef('view')
+  const isCreateMode = !componenteId
 
   const {
     register,
@@ -77,8 +80,14 @@ export default function ComponenteEditPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['componentes', 'detail', componenteId],
     queryFn: () => componentesApi.get(componenteId).then((response) => response.data),
-    enabled: Boolean(componenteId),
+    enabled: !isCreateMode,
     staleTime: 0,
+  })
+
+  const { data: opcoes } = useQuery({
+    queryKey: ['componentes', 'form-options'],
+    queryFn: () => componentesApi.list({}).then((response) => response.data?.summary?.filter_options || {}),
+    staleTime: 60_000,
   })
 
   useEffect(() => {
@@ -90,33 +99,36 @@ export default function ComponenteEditPage() {
   }, [data, reset])
 
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }) => componentesApi.patch(id, payload),
-    onSuccess: async (_response, variables) => {
+    mutationFn: ({ id, payload }) => (id ? componentesApi.patch(id, payload) : componentesApi.create(payload)),
+    onSuccess: async (response, variables) => {
+      const savedId = response.data?.id || variables.id
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['componentes'] }),
-        queryClient.invalidateQueries({ queryKey: ['componentes', 'detail', variables.id] }),
+        savedId ? queryClient.invalidateQueries({ queryKey: ['componentes', 'detail', savedId] }) : Promise.resolve(),
       ])
 
-      toast.success('Componente atualizado com sucesso.')
-
-      if (submitModeRef.current === 'stay') {
-        return
-      }
+      toast.success(isCreateMode ? 'Componente criado com sucesso.' : 'Componente atualizado com sucesso.')
 
       if (submitModeRef.current === 'add') {
-        navigate('/indisponivel/novo-componente', {
-          state: {
-            title: 'Adicionar Componente',
-            description: 'O formulário de cadastro de componente ainda não foi portado para o frontend React.',
-          },
-        })
+        reset(DEFAULT_VALUES)
+        navigate('/ensino/componentes/novo')
         return
       }
 
-      navigate(`/componentes/${variables.id}`)
+      if (submitModeRef.current === 'stay') {
+        if (isCreateMode && savedId) {
+          navigate(`/componentes/${savedId}/editar`, { replace: true })
+        }
+        return
+      }
+
+      if (savedId) {
+        navigate(`/componentes/${savedId}`)
+      }
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível salvar o componente.'))
+      toast.error(getErrorMessage(error, isCreateMode ? 'Não foi possível criar o componente.' : 'Não foi possível salvar o componente.'))
     },
   })
 
@@ -132,7 +144,7 @@ export default function ComponenteEditPage() {
     },
   })
 
-  if (isLoading) {
+  if (!isCreateMode && isLoading) {
     return (
       <div className="page page--wide">
         <div className="page-loader" role="status" aria-live="polite">
@@ -143,7 +155,7 @@ export default function ComponenteEditPage() {
     )
   }
 
-  if (isError || !data) {
+  if (!isCreateMode && (isError || !data)) {
     return (
       <div className="page page--wide">
         <div className="page-error">
@@ -156,6 +168,7 @@ export default function ComponenteEditPage() {
 
   const onSubmit = handleSubmit(async (formData) => {
     const payload = {
+      curso: Number(formData.curso),
       descricao: formData.descricao.trim(),
       descricao_diploma_historico: formData.descricao_diploma_historico.trim(),
       abreviatura: formData.abreviatura.trim(),
@@ -173,7 +186,7 @@ export default function ComponenteEditPage() {
     }
 
     await saveMutation.mutateAsync({
-      id: data.id,
+      id: data?.id,
       payload,
     })
   })
@@ -192,20 +205,29 @@ export default function ComponenteEditPage() {
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <Link to="/ensino/componentes/">Componentes</Link>
-        <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to={`/componentes/${data.id}`}>{data.sigla || data.descricao}</Link>
-        <span className="profile-breadcrumb__sep">&gt;</span>
-        <span>Editar</span>
+        {isCreateMode ? (
+          <>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <span>Novo</span>
+          </>
+        ) : (
+          <>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <Link to={`/componentes/${data.id}`}>{data.sigla || data.descricao}</Link>
+            <span className="profile-breadcrumb__sep">&gt;</span>
+            <span>Editar</span>
+          </>
+        )}
       </nav>
 
       <div className="page-header componente-edit-page__header">
         <div>
-          <h1 className="page-title">Editar componente</h1>
-          <p className="page-subtitle">{data.sigla || 'Sem sigla'} • {data.matriz_curricular || 'Sem matriz curricular'}</p>
+          <h1 className="page-title">{isCreateMode ? 'Novo componente' : 'Editar componente'}</h1>
+          <p className="page-subtitle">{isCreateMode ? 'Cadastre um novo componente curricular.' : `${data.sigla || 'Sem sigla'} • ${data.matriz_curricular || 'Sem matriz curricular'}`}</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate(`/componentes/${data.id}`)}>
-            <ArrowLeft size={16} /> Voltar para detalhes
+          <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/componentes/' : `/componentes/${data.id}`)}>
+            <ArrowLeft size={16} /> {isCreateMode ? 'Voltar para listagem' : 'Voltar para detalhes'}
           </button>
         </div>
       </div>
@@ -213,6 +235,17 @@ export default function ComponenteEditPage() {
       <form className="dashboard-card componente-edit-form" onSubmit={onSubmit}>
         <div className="componente-edit-form__body">
           <div className="componente-edit-form__grid componente-edit-form__grid--wide">
+            <label className="form-field">
+              <span className="form-field__label">Matriz curricular</span>
+              <select {...register('curso', { required: 'Selecione a matriz curricular.' })}>
+                <option value="">Selecione...</option>
+                {(opcoes?.matrizes_curriculares || []).map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+              {errors.curso ? <span className="form-field__error">{errors.curso.message}</span> : null}
+            </label>
+
             <label className="form-field form-field--full">
               <span className="form-field__label">Descrição</span>
               <input {...register('descricao', { required: 'Informe a descrição.' })} />
@@ -311,14 +344,16 @@ export default function ComponenteEditPage() {
           >
             <Save size={16} /> Salvar e continuar editando
           </button>
-          <button
-            type="button"
-            className="btn btn--danger"
-            disabled={deleteMutation.isPending}
-            onClick={handleDelete}
-          >
-            <Trash2 size={16} /> Remover
-          </button>
+          {!isCreateMode ? (
+            <button
+              type="button"
+              className="btn btn--danger"
+              disabled={deleteMutation.isPending}
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} /> Remover
+            </button>
+          ) : null}
         </div>
       </form>
     </div>

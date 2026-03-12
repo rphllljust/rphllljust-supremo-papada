@@ -27,12 +27,6 @@ export default function AreasCursosPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
 
-  const openPlaceholder = (slug, title, description) => {
-    navigate(`/indisponivel/${slug}`, {
-      state: { title, description },
-    })
-  }
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ['areas-curso', { search, page }],
     queryFn: () => areasCursoApi.list({ search, page }).then((response) => response.data),
@@ -58,7 +52,7 @@ export default function AreasCursosPage() {
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => openPlaceholder('nova-area-curso', 'Adicionar Área de Curso', 'O formulário de cadastro de área de curso ainda não foi portado para o frontend React.')}
+            onClick={() => navigate('/ensino/areacurso/nova')}
           >
             <Plus size={16} /> Adicionar Área de Curso
           </button>

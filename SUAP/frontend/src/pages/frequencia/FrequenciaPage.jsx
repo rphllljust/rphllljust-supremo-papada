@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { frequenciasApi, matriculasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -44,14 +45,16 @@ const COLUMNS = [
 ]
 
 export default function FrequenciaPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedFrequenciaId, setSelectedFrequenciaId] = useState(null)
   const [presencaFiltro, setPresencaFiltro] = useState('')
   const [editingFrequenciaId, setEditingFrequenciaId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [matriculaSearch, setMatriculaSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/frequencia/nova')
   const [formData, setFormData] = useState({
     matricula: '',
     data: '',
@@ -111,9 +114,11 @@ export default function FrequenciaPage() {
         queryClient.invalidateQueries({ queryKey: ['frequencia', variables.id] })
       }
       setEditingFrequenciaId(null)
-      setIsCreating(false)
       setFormData({ matricula: '', data: '', presente: 'true', observacao: '' })
       toast.success(variables.id ? 'Frequencia atualizada com sucesso.' : 'Frequencia criada com sucesso.')
+      if (!variables.id) {
+        navigate('/frequencia')
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a frequencia.')),
   })
@@ -125,7 +130,6 @@ export default function FrequenciaPage() {
       queryClient.invalidateQueries({ queryKey: ['frequencia', id] })
       setSelectedFrequenciaId((current) => (current === id ? null : current))
       setEditingFrequenciaId((current) => (current === id ? null : current))
-      setIsCreating(false)
       toast.success('Frequencia excluida com sucesso.')
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir a frequencia.')),
@@ -138,23 +142,64 @@ export default function FrequenciaPage() {
     aluno_nome: editingFrequencia.aluno_nome,
   } : null
 
-  const openCreateForm = () => {
-    setSelectedFrequenciaId(null)
-    setEditingFrequenciaId(null)
-    setIsCreating(true)
-    setFormData({ matricula: '', data: '', presente: 'true', observacao: '' })
-  }
-
   const openEditForm = (id) => {
     setSelectedFrequenciaId(null)
-    setIsCreating(false)
     setEditingFrequenciaId(id)
   }
 
   const closeForm = () => {
     setEditingFrequenciaId(null)
-    setIsCreating(false)
     setFormData({ matricula: '', data: '', presente: 'true', observacao: '' })
+  }
+
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/frequencia">Frequência</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Nova Frequência</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Nova frequência</h1>
+            <p className="page-subtitle">A criação de frequência agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/frequencia')}>
+              Voltar para frequência
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Nova frequencia"
+          subtitle="Lance presenca ou falta por matricula e data."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              payload: {
+                matricula: Number(formData.matricula),
+                data: formData.data,
+                presente: formData.presente === 'true',
+                observacao: formData.observacao,
+              },
+            })
+          }}
+          onCancel={() => navigate('/frequencia')}
+          submitLabel="Criar frequencia"
+          isSubmitting={saveMutation.isPending}
+        >
+          <SearchableRemoteSelect id="frequencia-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
+          <div className="form-field"><label>Data</label><input type="date" value={formData.data} onChange={(event) => setFormData((current) => ({ ...current, data: event.target.value }))} /></div>
+          <div className="form-field"><label>Presenca</label><select className="select" value={formData.presente} onChange={(event) => setFormData((current) => ({ ...current, presente: event.target.value }))}><option value="true">Presente</option><option value="false">Falta</option></select></div>
+          <div className="form-field form-field--full"><label>Observacao</label><textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} /></div>
+        </EntityFormPanel>
+      </div>
+    )
   }
 
   const detailsFields = selectedFrequencia
@@ -180,7 +225,7 @@ export default function FrequenciaPage() {
             <option value="true">Presentes</option>
             <option value="false">Faltas</option>
           </select>
-          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/frequencia/nova')}>
             <Plus size={16} /> Nova Frequencia
           </button>
         </div>
@@ -228,9 +273,9 @@ export default function FrequenciaPage() {
         />
       ) : null}
 
-      {(isCreating || editingFrequenciaId) ? (
+      {editingFrequenciaId ? (
         <EntityFormPanel
-          title={editingFrequenciaId ? 'Editar frequencia' : 'Nova frequencia'}
+          title="Editar frequencia"
           subtitle="Lance presenca ou falta por matricula e data."
           onSubmit={(event) => {
             event.preventDefault()
@@ -245,7 +290,7 @@ export default function FrequenciaPage() {
             })
           }}
           onCancel={closeForm}
-          submitLabel={editingFrequenciaId ? 'Salvar alteracoes' : 'Criar frequencia'}
+          submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
           <SearchableRemoteSelect

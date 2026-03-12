@@ -35,7 +35,9 @@ const MatriculasPage = lazy(() => import('@/pages/matriculas/MatriculasPage'))
 const NotasPage      = lazy(() => import('@/pages/notas/NotasPage'))
 const FrequenciaPage = lazy(() => import('@/pages/frequencia/FrequenciaPage'))
 const TurmasPage     = lazy(() => import('@/pages/turmas/TurmasPage'))
+const TurmaCreatePage = lazy(() => import('@/pages/turmas/TurmaCreatePage'))
 const ProcessosPage  = lazy(() => import('@/pages/processos/ProcessosPage'))
+const ProcessoCreatePage = lazy(() => import('@/pages/processos/ProcessoCreatePage'))
 const CatalogoCursosTecnicosPage = lazy(() => import('@/pages/cursos/CatalogoCursosTecnicosPage'))
 const AreasCursosPage = lazy(() => import('@/pages/cursos/AreasCursosPage'))
 const AreaCursoDetailPage = lazy(() => import('@/pages/cursos/AreaCursoDetailPage'))
@@ -58,8 +60,12 @@ const SetoresPage    = lazy(() => import('@/pages/setores/SetoresPage'))
 const UsuariosPage   = lazy(() => import('@/pages/usuarios/UsuariosPage'))
 const UnidadesPage   = lazy(() => import('@/pages/unidades/UnidadesPage'))
 const AgendaPage     = lazy(() => import('@/pages/agenda/AgendaPage'))
+const EventoCreatePage = lazy(() => import('@/pages/agenda/EventoCreatePage'))
 const ArquivoPage    = lazy(() => import('@/pages/arquivo/ArquivoPage'))
+const GuardaCreatePage = lazy(() => import('@/pages/arquivo/GuardaCreatePage'))
 const InscricoesPage = lazy(() => import('@/pages/inscricoes/InscricoesPage'))
+const PublicacaoCreatePage = lazy(() => import('@/pages/inscricoes/PublicacaoCreatePage'))
+const InscricaoCreatePage = lazy(() => import('@/pages/inscricoes/InscricaoCreatePage'))
 const EstagiosPage   = lazy(() => import('@/pages/estagios/EstagiosPage'))
 const EstagioDetailPage = lazy(() => import('@/pages/estagios/EstagioDetailPage'))
 const AvaExportPreviewPage = lazy(() => import('@/pages/access/AvaExportPreviewPage'))
@@ -198,18 +204,27 @@ export default function App() {
                   <Route path="/dashboard"  element={<RouteShell><DashboardPage /></RouteShell>} />
                   <Route path="/documentos" element={<RouteShell><DocumentosPage /></RouteShell>} />
                   <Route path="/documentos/declaracoes" element={<RouteShell><DeclaracoesPage /></RouteShell>} />
+                  <Route path="/documentos/declaracoes/nova" element={<RouteShell><DeclaracoesPage /></RouteShell>} />
                   <Route path="/documentos/historicos" element={<RouteShell><HistoricosPage /></RouteShell>} />
+                  <Route path="/documentos/historicos/novo" element={<RouteShell><HistoricosPage /></RouteShell>} />
                   <Route path="/documentos/guias" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
+                  <Route path="/documentos/guias/nova" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/matriculas" element={<RouteShell><MatriculasPage /></RouteShell>} />
+                  <Route path="/matriculas/nova" element={<RouteShell><MatriculasPage /></RouteShell>} />
                   <Route path="/notas"      element={<RouteShell><NotasPage /></RouteShell>} />
+                  <Route path="/notas/nova" element={<RouteShell><NotasPage /></RouteShell>} />
                   <Route path="/frequencia" element={<RouteShell><FrequenciaPage /></RouteShell>} />
+                  <Route path="/frequencia/nova" element={<RouteShell><FrequenciaPage /></RouteShell>} />
                   <Route path="/turmas"     element={<RouteShell><TurmasPage /></RouteShell>} />
+                  <Route path="/turmas/nova" element={<RouteShell><TurmaCreatePage /></RouteShell>} />
                   <Route path="/cursos"     element={<Navigate to="/ensino/areacurso/" replace />} />
                   <Route path="/cursos/"     element={<Navigate to="/ensino/areacurso/" replace />} />
                   <Route path="/ensino/cursotecnico" element={<RouteShell><CatalogoCursosTecnicosPage /></RouteShell>} />
                   <Route path="/ensino/cursotecnico/" element={<RouteShell><CatalogoCursosTecnicosPage /></RouteShell>} />
                   <Route path="/ensino/areacurso" element={<RouteShell><AreasCursosPage /></RouteShell>} />
                   <Route path="/ensino/areacurso/" element={<RouteShell><AreasCursosPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/nova" element={<RouteShell><AreaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/areacurso/nova/" element={<RouteShell><AreaCursoEditPage /></RouteShell>} />
                   <Route path="/ensino/areacurso/:areaCursoId" element={<RouteShell><AreaCursoDetailPage /></RouteShell>} />
                   <Route path="/ensino/areacurso/:areaCursoId/" element={<RouteShell><AreaCursoDetailPage /></RouteShell>} />
                   <Route path="/ensino/areacurso/:areaCursoId/editar" element={<RouteShell><AreaCursoEditPage /></RouteShell>} />
@@ -220,6 +235,10 @@ export default function App() {
                   <Route path="/ensino/cursoformacaosuperior/" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
                   <Route path="/cursoformacaosuperior" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
                   <Route path="/cursoformacaosuperior/" element={<RouteShell><CursosFormacaoSuperiorPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/novo" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/novo/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/componentes/novo" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/componentes/novo/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/ensino/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/ensino/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/componentes" element={<RouteShell><ComponentesPage /></RouteShell>} />
@@ -238,17 +257,23 @@ export default function App() {
                   <Route path="/usuarios"   element={<RouteShell><UsuariosPage /></RouteShell>} />
                   <Route path="/unidades"   element={<RouteShell><UnidadesPage /></RouteShell>} />
                   <Route path="/agenda"     element={<RouteShell><AgendaPage /></RouteShell>} />
+                  <Route path="/agenda/novo" element={<RouteShell><EventoCreatePage /></RouteShell>} />
                   <Route path="/ata-professores" element={<RouteShell><AtaProfessoresPage /></RouteShell>} />
                   <Route path="/ata-professores/nova" element={<RouteShell><AtaProfessoresAssistantPage /></RouteShell>} />
                   <Route path="/ata-professores/:ataId/editar" element={<RouteShell><AtaProfessoresAssistantPage /></RouteShell>} />
                   <Route path="/processos"  element={<RouteShell><ProcessosPage /></RouteShell>} />
+                  <Route path="/processos/novo" element={<RouteShell><ProcessoCreatePage /></RouteShell>} />
                   <Route path="/arquivo"    element={<RouteShell><ArquivoPage /></RouteShell>} />
+                  <Route path="/arquivo/novo" element={<RouteShell><GuardaCreatePage /></RouteShell>} />
                   <Route path="/inscricoes" element={<RouteShell><InscricoesPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/novo" element={<RouteShell><PublicacaoCreatePage /></RouteShell>} />
+                  <Route path="/inscricoes/nova" element={<RouteShell><InscricaoCreatePage /></RouteShell>} />
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
                   <Route path="/estagio/:estagioId" element={<RouteShell><EstagioDetailPage /></RouteShell>} />
                   <Route path="/estagio/:estagioId/" element={<RouteShell><EstagioDetailPage /></RouteShell>} />
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
+                  <Route path="/rh/servidores/novo" element={<RouteShell><ServidoresPage /></RouteShell>} />
                   <Route path="/comum/notificacoes" element={<RouteShell><NotificationsPage /></RouteShell>} />
                   <Route path="/comum/notificacoes/preferencias" element={<RouteShell><NotificationPreferencesPage /></RouteShell>} />
                   <Route path="/comum/minha_conta" element={<RouteShell><MinhaContaPage /></RouteShell>} />
@@ -261,6 +286,7 @@ export default function App() {
                   <Route path="/rh/servidor/:matricula" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
                   <Route path="/rh/servidor/:matricula/" element={<RouteShell><ServidorProfilePage /></RouteShell>} />
                   <Route path="/rh/setores" element={<RouteShell><SetoresPage /></RouteShell>} />
+                  <Route path="/rh/setores/novo" element={<RouteShell><SetoresPage /></RouteShell>} />
                   <Route path="/rh/docentes" element={<Navigate to="/usuarios?tipo=PROFESSOR" replace />} />
                   <Route path="/rh/instituicoes" element={<RouteShell><UnidadesPage /></RouteShell>} />
                   <Route path="/rh/servidor/*" element={<Navigate to="/rh/servidores" replace />} />

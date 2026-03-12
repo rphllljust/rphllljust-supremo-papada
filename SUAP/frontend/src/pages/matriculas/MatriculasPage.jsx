@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { cursosApi, matriculasApi, turmasApi, usuariosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -80,17 +81,19 @@ const COLUMNS = [
 ]
 
 export default function MatriculasPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [selectedMatriculaId, setSelectedMatriculaId] = useState(null)
   const [editingMatriculaId, setEditingMatriculaId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState(DEFAULT_FORM)
   const [alunoSearch, setAlunoSearch] = useState('')
   const [cursoSearch, setCursoSearch] = useState('')
   const [turmaSearch, setTurmaSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/matriculas/nova')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['matriculas', { search, status: statusFilter, page }],
@@ -152,8 +155,10 @@ export default function MatriculasPage() {
       }
       toast.success(variables.id ? 'Matricula atualizada com sucesso.' : 'Matricula criada com sucesso.')
       setEditingMatriculaId(null)
-      setIsCreating(false)
       setFormData(DEFAULT_FORM)
+      if (!variables.id) {
+        navigate('/matriculas')
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a matricula.')),
   })
@@ -165,7 +170,6 @@ export default function MatriculasPage() {
       queryClient.invalidateQueries({ queryKey: ['matricula', id] })
       setSelectedMatriculaId((current) => (current === id ? null : current))
       setEditingMatriculaId((current) => (current === id ? null : current))
-      setIsCreating(false)
       setFormData(DEFAULT_FORM)
       toast.success('Matricula excluida com sucesso.')
     },
@@ -203,23 +207,68 @@ export default function MatriculasPage() {
     { label: 'Data da matricula', value: formatDate(selectedMatricula.data_matricula) },
   ] : []
 
-  const openCreateForm = () => {
-    setSelectedMatriculaId(null)
-    setEditingMatriculaId(null)
-    setIsCreating(true)
-    setFormData(DEFAULT_FORM)
-  }
-
   const openEditForm = (id) => {
     setSelectedMatriculaId(null)
-    setIsCreating(false)
     setEditingMatriculaId(id)
   }
 
   const closeForm = () => {
     setEditingMatriculaId(null)
-    setIsCreating(false)
     setFormData(DEFAULT_FORM)
+  }
+
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/matriculas">Matrículas</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Nova Matrícula</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Nova matrícula</h1>
+            <p className="page-subtitle">A criação agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/matriculas')}>
+              Voltar para matrículas
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Nova matricula"
+          subtitle="Informe aluno, curso, turma e situacao da matricula."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              payload: {
+                aluno: Number(formData.aluno),
+                curso: Number(formData.curso),
+                turma: Number(formData.turma),
+                status: formData.status,
+                tipo_matricula: formData.tipo_matricula,
+                turno: formData.turno || '',
+              },
+            })
+          }}
+          onCancel={() => navigate('/matriculas')}
+          submitLabel="Criar matricula"
+          isSubmitting={saveMutation.isPending}
+        >
+          <SearchableRemoteSelect id="matricula-aluno" label="Aluno" searchLabel="Buscar aluno" searchPlaceholder="Digite nome, CPF ou usuario" searchValue={alunoSearch} onSearchChange={setAlunoSearch} value={formData.aluno} onChange={(nextValue) => setFormData((current) => ({ ...current, aluno: nextValue }))} options={alunos} getOptionLabel={(item) => `${item.nome_completo} - ${item.username}`} />
+          <SearchableRemoteSelect id="matricula-curso" label="Curso" searchLabel="Buscar curso" searchPlaceholder="Digite nome, sigla ou unidade" searchValue={cursoSearch} onSearchChange={setCursoSearch} value={formData.curso} onChange={(nextValue) => setFormData((current) => ({ ...current, curso: nextValue, turma: '' }))} options={cursos} getOptionLabel={(item) => `${item.nome}${item.sigla ? ` - ${item.sigla}` : ''}`} />
+          <SearchableRemoteSelect id="matricula-turma" label="Turma" searchLabel="Buscar turma" searchPlaceholder="Digite nome da turma" searchValue={turmaSearch} onSearchChange={setTurmaSearch} value={formData.turma} onChange={(nextValue) => setFormData((current) => ({ ...current, turma: nextValue }))} options={turmas} getOptionLabel={(item) => `${item.nome} - ${item.curso_nome}`} />
+          <div className="form-field"><label>Status</label><select className="select" value={formData.status} onChange={(event) => setFormData((current) => ({ ...current, status: event.target.value }))}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+          <div className="form-field"><label>Tipo da matricula</label><select className="select" value={formData.tipo_matricula} onChange={(event) => setFormData((current) => ({ ...current, tipo_matricula: event.target.value }))}>{TIPO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+          <div className="form-field"><label>Turno</label><select className="select" value={formData.turno} onChange={(event) => setFormData((current) => ({ ...current, turno: event.target.value }))}>{TURNO_OPTIONS.map((option) => <option key={option.value || 'blank'} value={option.value}>{option.label}</option>)}</select></div>
+        </EntityFormPanel>
+      </div>
+    )
   }
 
   return (
@@ -237,7 +286,7 @@ export default function MatriculasPage() {
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
-          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/matriculas/nova')}>
             <Plus size={16} /> Nova Matrícula
           </button>
         </div>
@@ -278,9 +327,9 @@ export default function MatriculasPage() {
         />
       ) : null}
 
-      {(isCreating || editingMatriculaId) ? (
+      {editingMatriculaId ? (
         <EntityFormPanel
-          title={editingMatriculaId ? 'Editar matricula' : 'Nova matricula'}
+          title="Editar matricula"
           subtitle="Informe aluno, curso, turma e situacao da matricula."
           onSubmit={(event) => {
             event.preventDefault()
@@ -297,7 +346,7 @@ export default function MatriculasPage() {
             })
           }}
           onCancel={closeForm}
-          submitLabel={editingMatriculaId ? 'Salvar alteracoes' : 'Criar matricula'}
+          submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
           <SearchableRemoteSelect

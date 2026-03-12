@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { matriculasApi, notasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -32,13 +33,15 @@ const COLUMNS = [
 ]
 
 export default function NotasPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedNotaId, setSelectedNotaId] = useState(null)
   const [editingNotaId, setEditingNotaId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [matriculaSearch, setMatriculaSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/notas/nova')
   const [formData, setFormData] = useState({
     matricula: '',
     descricao: '',
@@ -100,9 +103,11 @@ export default function NotasPage() {
         queryClient.invalidateQueries({ queryKey: ['nota', variables.id] })
       }
       setEditingNotaId(null)
-      setIsCreating(false)
       setFormData({ matricula: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
       toast.success(variables.id ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.')
+      if (!variables.id) {
+        navigate('/notas')
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a nota.')),
   })
@@ -114,7 +119,6 @@ export default function NotasPage() {
       queryClient.invalidateQueries({ queryKey: ['nota', id] })
       setSelectedNotaId((current) => (current === id ? null : current))
       setEditingNotaId((current) => (current === id ? null : current))
-      setIsCreating(false)
       toast.success('Nota excluida com sucesso.')
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir a nota.')),
@@ -127,23 +131,66 @@ export default function NotasPage() {
     aluno_nome: editingNota.aluno_nome,
   } : null
 
-  const openCreateForm = () => {
-    setSelectedNotaId(null)
-    setEditingNotaId(null)
-    setIsCreating(true)
-    setFormData({ matricula: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
-  }
-
   const openEditForm = (id) => {
     setSelectedNotaId(null)
-    setIsCreating(false)
     setEditingNotaId(id)
   }
 
   const closeForm = () => {
     setEditingNotaId(null)
-    setIsCreating(false)
     setFormData({ matricula: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
+  }
+
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/notas">Notas</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Nova Nota</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Nova nota</h1>
+            <p className="page-subtitle">A criação de notas agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/notas')}>
+              Voltar para notas
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Nova nota"
+          subtitle="Lance uma avaliacao vinculada a matricula do aluno."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              payload: {
+                matricula: Number(formData.matricula),
+                descricao: formData.descricao,
+                valor: formData.valor,
+                peso: formData.peso,
+                data_lancamento: formData.data_lancamento,
+              },
+            })
+          }}
+          onCancel={() => navigate('/notas')}
+          submitLabel="Criar nota"
+          isSubmitting={saveMutation.isPending}
+        >
+          <SearchableRemoteSelect id="nota-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
+          <div className="form-field form-field--full"><label>Avaliacao</label><input type="text" value={formData.descricao} onChange={(event) => setFormData((current) => ({ ...current, descricao: event.target.value }))} /></div>
+          <div className="form-field"><label>Nota</label><input type="number" step="0.01" min="0" value={formData.valor} onChange={(event) => setFormData((current) => ({ ...current, valor: event.target.value }))} /></div>
+          <div className="form-field"><label>Peso</label><input type="number" step="0.01" min="0" value={formData.peso} onChange={(event) => setFormData((current) => ({ ...current, peso: event.target.value }))} /></div>
+          <div className="form-field"><label>Data de lancamento</label><input type="date" value={formData.data_lancamento} onChange={(event) => setFormData((current) => ({ ...current, data_lancamento: event.target.value }))} /></div>
+        </EntityFormPanel>
+      </div>
+    )
   }
 
   const detailsFields = selectedNota
@@ -165,7 +212,7 @@ export default function NotasPage() {
       <div className="page-header">
         <h1 className="page-title">Notas</h1>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/notas/nova')}>
             <Plus size={16} /> Nova Nota
           </button>
         </div>
@@ -213,9 +260,9 @@ export default function NotasPage() {
         />
       ) : null}
 
-      {(isCreating || editingNotaId) ? (
+      {editingNotaId ? (
         <EntityFormPanel
-          title={editingNotaId ? 'Editar nota' : 'Nova nota'}
+          title="Editar nota"
           subtitle="Lance uma avaliacao vinculada a matricula do aluno."
           onSubmit={(event) => {
             event.preventDefault()
@@ -231,7 +278,7 @@ export default function NotasPage() {
             })
           }}
           onCancel={closeForm}
-          submitLabel={editingNotaId ? 'Salvar alteracoes' : 'Criar nota'}
+          submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
           <SearchableRemoteSelect

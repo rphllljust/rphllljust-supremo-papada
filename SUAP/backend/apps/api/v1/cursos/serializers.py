@@ -8,6 +8,7 @@ class EixoTecnologicoSerializer(serializers.Serializer):
 
 
 class ComponenteCurricularSerializer(serializers.ModelSerializer):
+    curso = serializers.PrimaryKeyRelatedField(queryset=Curso.objects.all(), write_only=True)
     nome = serializers.CharField(read_only=True)
     descricao = serializers.CharField(source='nome')
     matriz_curricular = serializers.CharField(source='curso.nome', read_only=True)
@@ -27,6 +28,7 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
             'diretoria',
             'tipo_componente',
             'nivel_ensino',
+            'curso',
             'matriz_curricular',
             'curso_id',
             'grupo_atuacao',

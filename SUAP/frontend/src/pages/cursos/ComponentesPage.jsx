@@ -210,7 +210,9 @@ export default function ComponentesPage() {
   return (
     <div className="componentes-page page page--wide">
       <div className="componentes-page__toolbar">
-        <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--green">+ Adicionar Componente</button>
+        <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--green" onClick={() => navigate('/ensino/componentes/novo')}>
+          + Adicionar Componente
+        </button>
         <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--dgreen">Exportar para XLS</button>
         <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--blue">? Ajuda</button>
       </div>

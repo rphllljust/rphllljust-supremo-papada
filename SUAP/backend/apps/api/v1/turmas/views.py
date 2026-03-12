@@ -8,13 +8,20 @@ from apps.turmas.models import Turma
 from .serializers import TurmaSerializer
 
 
-class TurmaListApiView(generics.ListAPIView):
+class TurmaListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "turmas"
     access_surface = "api"
     access_action = "view"
     serializer_class = TurmaSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = Turma.objects.select_related("curso", "professor_responsavel").order_by(
@@ -42,10 +49,17 @@ class TurmaListApiView(generics.ListAPIView):
         return queryset.distinct()
 
 
-class TurmaDetailApiView(generics.RetrieveAPIView):
+class TurmaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "turmas"
     access_surface = "api"
     access_action = "view"
     serializer_class = TurmaSerializer
     queryset = Turma.objects.select_related("curso", "professor_responsavel")
+
+    def get_permissions(self):
+        if self.request.method in {"PATCH", "PUT", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()

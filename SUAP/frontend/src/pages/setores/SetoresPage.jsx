@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -49,14 +50,16 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function SetoresPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [ativoFiltro, setAtivoFiltro] = useState('')
   const [selectedSetorId, setSelectedSetorId] = useState(null)
   const [editingSetorId, setEditingSetorId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [setorSuperiorSearch, setSetorSuperiorSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/rh/setores/novo')
 
   const {
     register,
@@ -131,8 +134,10 @@ export default function SetoresPage() {
         toast.success('Setor criado com sucesso.')
       }
       setEditingSetorId(null)
-      setIsCreating(false)
       reset(DEFAULT_VALUES)
+      if (!variables.id) {
+        navigate('/rh/setores')
+      }
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Nao foi possivel salvar o setor.'))
@@ -149,7 +154,6 @@ export default function SetoresPage() {
       }
       if (editingSetorId === id) {
         setEditingSetorId(null)
-        setIsCreating(false)
         reset(DEFAULT_VALUES)
       }
       toast.success('Setor excluido com sucesso.')
@@ -170,21 +174,13 @@ export default function SetoresPage() {
       ]
     : []
 
-  const openCreateForm = () => {
-    setEditingSetorId(null)
-    setIsCreating(true)
-    reset(DEFAULT_VALUES)
-  }
-
   const openEditForm = (id) => {
     setSelectedSetorId(null)
-    setIsCreating(false)
     setEditingSetorId(id)
   }
 
   const closeForm = () => {
     setEditingSetorId(null)
-    setIsCreating(false)
     reset(DEFAULT_VALUES)
   }
 
@@ -211,6 +207,47 @@ export default function SetoresPage() {
     deleteMutation.mutate(row.id)
   }
 
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/rh/setores">Setores</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Novo Setor</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Novo setor</h1>
+            <p className="page-subtitle">A criação agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/rh/setores')}>
+              Voltar para setores
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Novo setor"
+          subtitle="Cadastre um novo setor para organizacao de servidores."
+          onSubmit={onSubmit}
+          onCancel={() => navigate('/rh/setores')}
+          submitLabel="Criar setor"
+          isSubmitting={isSubmitting || saveMutation.isPending}
+        >
+          <div className="form-field"><label htmlFor="setor-nome">Nome</label><input id="setor-nome" type="text" {...register('nome', { required: 'Informe o nome do setor' })} />{errors.nome ? <span className="field-error">{errors.nome.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="setor-sigla">Sigla</label><input id="setor-sigla" type="text" {...register('sigla')} /></div>
+          <div className="form-field"><label htmlFor="setor-codigo">Codigo</label><input id="setor-codigo" type="text" {...register('codigo', { required: 'Informe o codigo do setor' })} />{errors.codigo ? <span className="field-error">{errors.codigo.message}</span> : null}</div>
+          <SearchableRemoteSelect id="setor-superior" label="Setor superior" searchLabel="Buscar setor superior" searchPlaceholder="Digite nome, sigla ou codigo" searchValue={setorSuperiorSearch} onSearchChange={setSetorSuperiorSearch} value={setorSuperiorValue || ''} onChange={(nextValue) => setValue('setor_superior', nextValue)} options={setorOptions} emptyOptionLabel="Sem setor superior" getOptionLabel={(setor) => setor.nome} />
+          <div className="form-field form-field--checkbox"><label className="checkbox-field"><input type="checkbox" {...register('ativo')} /><span>Setor ativo</span></label></div>
+        </EntityFormPanel>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -224,7 +261,7 @@ export default function SetoresPage() {
             <option value="true">Ativos</option>
             <option value="false">Inativos</option>
           </select>
-          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/rh/setores/novo')}>
             <Plus size={16} /> Novo Setor
           </button>
         </div>
@@ -272,13 +309,13 @@ export default function SetoresPage() {
         />
       ) : null}
 
-      {(isCreating || editingSetorId) ? (
+      {editingSetorId ? (
         <EntityFormPanel
-          title={editingSetorId ? 'Editar setor' : 'Novo setor'}
-          subtitle={editingSetorId ? 'Atualize os dados do setor selecionado.' : 'Cadastre um novo setor para organizacao de servidores.'}
+          title="Editar setor"
+          subtitle="Atualize os dados do setor selecionado."
           onSubmit={onSubmit}
           onCancel={closeForm}
-          submitLabel={editingSetorId ? 'Salvar alteracoes' : 'Criar setor'}
+          submitLabel="Salvar alteracoes"
           isSubmitting={isSubmitting || saveMutation.isPending || isLoadingEditing}
         >
           <div className="form-field">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { guiasTransferenciaApi, matriculasApi, transferenciasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -36,15 +37,17 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function GuiasTransferenciaPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
   const [editingId, setEditingId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState(DEFAULT_FORM)
   const [matriculaSearch, setMatriculaSearch] = useState('')
   const [transferenciaSearch, setTransferenciaSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/documentos/guias/nova')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['guias-transferencia', { search, page }],
@@ -96,8 +99,10 @@ export default function GuiasTransferenciaPage() {
       queryClient.invalidateQueries({ queryKey: ['guias-transferencia'] })
       toast.success(editingId ? 'Guia atualizada com sucesso.' : 'Guia emitida com sucesso.')
       setEditingId(null)
-      setIsCreating(false)
       setFormData(DEFAULT_FORM)
+      if (!editingId) {
+        navigate('/documentos/guias')
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a guia.')),
   })
@@ -126,6 +131,57 @@ export default function GuiasTransferenciaPage() {
     status_display: '',
   } : null
 
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/documentos/guias">Guias de Transferência</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Nova Guia</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Nova guia</h1>
+            <p className="page-subtitle">A emissão agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/documentos/guias')}>
+              Voltar para guias
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Emitir guia de transferencia"
+          subtitle="Preencha os dados da guia vinculada a matricula e transferencia."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({
+              payload: {
+                ...formData,
+                matricula: Number(formData.matricula),
+                transferencia: formData.transferencia ? Number(formData.transferencia) : null,
+              },
+            })
+          }}
+          onCancel={() => navigate('/documentos/guias')}
+          submitLabel="Emitir guia"
+          isSubmitting={saveMutation.isPending}
+        >
+          <div className="form-field form-field--full"><label>Assunto</label><input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} /></div>
+          <SearchableRemoteSelect id="guia-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
+          <SearchableRemoteSelect id="guia-transferencia" label="Transferencia vinculada" searchLabel="Buscar transferencia" searchPlaceholder="Digite matricula, tipo ou status" searchValue={transferenciaSearch} onSearchChange={setTransferenciaSearch} value={formData.transferencia} onChange={(nextValue) => setFormData((current) => ({ ...current, transferencia: nextValue }))} options={transferencias} emptyOptionLabel="Sem transferencia" getOptionLabel={(item) => `${item.matricula_numero} - ${item.tipo_display}${item.status_display ? ` - ${item.status_display}` : ''}`} />
+          <div className="form-field"><label>Escola de origem</label><input type="text" value={formData.escola_origem} onChange={(event) => setFormData((current) => ({ ...current, escola_origem: event.target.value }))} /></div>
+          <div className="form-field"><label>Escola de destino</label><input type="text" value={formData.escola_destino} onChange={(event) => setFormData((current) => ({ ...current, escola_destino: event.target.value }))} /></div>
+          <div className="form-field form-field--full"><label>Observacao</label><textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} /></div>
+        </EntityFormPanel>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -134,7 +190,7 @@ export default function GuiasTransferenciaPage() {
           <p className="page-subtitle">Documentos eletronicos</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--primary" onClick={() => { setEditingId(null); setIsCreating(true); setFormData(DEFAULT_FORM) }}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/documentos/guias/nova')}>
             <Plus size={16} /> Nova Guia
           </button>
         </div>
@@ -152,7 +208,7 @@ export default function GuiasTransferenciaPage() {
         rowActions={(row) => (
           <div className="table-actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}><Eye size={14} /> Visualizar</button>
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setIsCreating(false); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
             <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir a guia ${row.numero_protocolo}?`) && deleteMutation.mutate(row.id)}><Trash2 size={14} /> Excluir</button>
           </div>
         )}
@@ -179,9 +235,9 @@ export default function GuiasTransferenciaPage() {
         />
       ) : null}
 
-      {(isCreating || editingId) ? (
+      {editingId ? (
         <EntityFormPanel
-          title={editingId ? 'Editar guia' : 'Emitir guia de transferencia'}
+          title="Editar guia"
           subtitle="Preencha os dados da guia vinculada a matricula e transferencia."
           onSubmit={(event) => {
             event.preventDefault()
@@ -194,8 +250,8 @@ export default function GuiasTransferenciaPage() {
               },
             })
           }}
-          onCancel={() => { setEditingId(null); setIsCreating(false); setFormData(DEFAULT_FORM) }}
-          submitLabel={editingId ? 'Salvar alteracoes' : 'Emitir guia'}
+          onCancel={() => { setEditingId(null); setFormData(DEFAULT_FORM) }}
+          submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
           <div className="form-field form-field--full">

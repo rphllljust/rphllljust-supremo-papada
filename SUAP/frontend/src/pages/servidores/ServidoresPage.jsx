@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { servidoresApi, setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -62,6 +62,8 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function ServidoresPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
@@ -70,8 +72,8 @@ export default function ServidoresPage() {
   const [setorFiltro, setSetorFiltro] = useState('')
   const [selectedServidorId, setSelectedServidorId] = useState(searchParams.get('servidorId'))
   const [editingServidorId, setEditingServidorId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [setorSearch, setSetorSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/rh/servidores/novo')
 
   const {
     register,
@@ -154,8 +156,10 @@ export default function ServidoresPage() {
         toast.success('Servidor criado com sucesso.')
       }
       setEditingServidorId(null)
-      setIsCreating(false)
       reset(DEFAULT_VALUES)
+      if (!variables.id) {
+        navigate('/rh/servidores')
+      }
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Nao foi possivel salvar o servidor.'))
@@ -172,7 +176,6 @@ export default function ServidoresPage() {
       }
       if (editingServidorId === id) {
         setEditingServidorId(null)
-        setIsCreating(false)
         reset(DEFAULT_VALUES)
       }
       toast.success('Servidor excluido com sucesso.')
@@ -195,21 +198,13 @@ export default function ServidoresPage() {
       ]
     : []
 
-  const openCreateForm = () => {
-    setEditingServidorId(null)
-    setIsCreating(true)
-    reset(DEFAULT_VALUES)
-  }
-
   const openEditForm = (id) => {
     setSelectedServidorId(null)
-    setIsCreating(false)
     setEditingServidorId(id)
   }
 
   const closeForm = () => {
     setEditingServidorId(null)
-    setIsCreating(false)
     reset(DEFAULT_VALUES)
   }
 
@@ -242,6 +237,50 @@ export default function ServidoresPage() {
     deleteMutation.mutate(row.id)
   }
 
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/rh/servidores">Servidores</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Novo Servidor</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Novo servidor</h1>
+            <p className="page-subtitle">A criação agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/rh/servidores')}>
+              Voltar para servidores
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Novo servidor"
+          subtitle="Cadastre um novo servidor no modulo de Gestao de Pessoas."
+          onSubmit={onSubmit}
+          onCancel={() => navigate('/rh/servidores')}
+          submitLabel="Criar servidor"
+          isSubmitting={isSubmitting || saveMutation.isPending}
+        >
+          <div className="form-field"><label htmlFor="servidor-username">Usuario</label><input id="servidor-username" type="text" {...register('username', { required: 'Informe o usuario' })} />{errors.username ? <span className="field-error">{errors.username.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="servidor-nome">Nome completo</label><input id="servidor-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />{errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="servidor-cpf">CPF</label><input id="servidor-cpf" type="text" {...register('cpf', { required: 'Informe o CPF' })} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="servidor-email">E-mail</label><input id="servidor-email" type="email" {...register('email')} /></div>
+          <div className="form-field"><label htmlFor="servidor-tipo">Perfil</label><select id="servidor-tipo" className="select" {...register('tipo', { required: 'Selecione o perfil' })}>{PERFIL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.tipo ? <span className="field-error">{errors.tipo.message}</span> : null}</div>
+          <SearchableRemoteSelect id="servidor-setor" label="Setor" searchLabel="Buscar setor" searchPlaceholder="Digite nome, sigla ou codigo" searchValue={setorSearch} onSearchChange={setSetorSearch} value={setorValue || ''} onChange={(nextValue) => setValue('setor', nextValue)} options={setorOptions} emptyOptionLabel="Sem setor" getOptionLabel={(setor) => setor.nome} />
+          <div className="form-field"><label htmlFor="servidor-password">Senha</label><input id="servidor-password" type="password" {...register('password', { required: 'Informe a senha inicial' })} />{errors.password ? <span className="field-error">{errors.password.message}</span> : null}</div>
+          <div className="form-field form-field--checkbox"><label className="checkbox-field"><input type="checkbox" {...register('is_active')} /><span>Servidor ativo</span></label></div>
+        </EntityFormPanel>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -262,7 +301,7 @@ export default function ServidoresPage() {
               <option key={setor.id} value={setor.id}>{setor.nome}</option>
             ))}
           </select>
-          <button type="button" className="btn btn--primary" onClick={openCreateForm}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/rh/servidores/novo')}>
             <Plus size={16} /> Novo Servidor
           </button>
         </div>
@@ -310,13 +349,13 @@ export default function ServidoresPage() {
         />
       ) : null}
 
-      {(isCreating || editingServidorId) ? (
+      {editingServidorId ? (
         <EntityFormPanel
-          title={editingServidorId ? 'Editar servidor' : 'Novo servidor'}
-          subtitle={editingServidorId ? 'Atualize os dados do servidor selecionado.' : 'Cadastre um novo servidor no modulo de Gestao de Pessoas.'}
+          title="Editar servidor"
+          subtitle="Atualize os dados do servidor selecionado."
           onSubmit={onSubmit}
           onCancel={closeForm}
-          submitLabel={editingServidorId ? 'Salvar alteracoes' : 'Criar servidor'}
+          submitLabel="Salvar alteracoes"
           isSubmitting={isSubmitting || saveMutation.isPending || isLoadingEditing}
         >
           <div className="form-field">

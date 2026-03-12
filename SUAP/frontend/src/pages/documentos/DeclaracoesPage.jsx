@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { declaracoesApi, matriculasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
@@ -35,14 +36,16 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function DeclaracoesPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
   const [editingId, setEditingId] = useState(null)
-  const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState(DEFAULT_FORM)
   const [matriculaSearch, setMatriculaSearch] = useState('')
+  const isCreatePage = location.pathname.endsWith('/documentos/declaracoes/nova')
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['declaracoes', { search, page }],
@@ -86,8 +89,10 @@ export default function DeclaracoesPage() {
       queryClient.invalidateQueries({ queryKey: ['declaracoes'] })
       toast.success(editingId ? 'Declaracao atualizada com sucesso.' : 'Declaracao emitida com sucesso.')
       setEditingId(null)
-      setIsCreating(false)
       setFormData(DEFAULT_FORM)
+      if (!editingId) {
+        navigate('/documentos/declaracoes')
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a declaracao.')),
   })
@@ -109,6 +114,49 @@ export default function DeclaracoesPage() {
     aluno_nome: editingItem.aluno_nome,
   } : null
 
+  if (isCreatePage) {
+    return (
+      <div className="page page--wide">
+        <nav className="profile-breadcrumb">
+          <Link to="/dashboard">Início</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <Link to="/documentos/declaracoes">Declarações</Link>
+          <span className="profile-breadcrumb__sep">&gt;</span>
+          <span>Nova Declaração</span>
+        </nav>
+
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Nova declaração</h1>
+            <p className="page-subtitle">A emissão agora acontece em uma página separada da listagem.</p>
+          </div>
+          <div className="page-header__actions">
+            <button type="button" className="btn btn--outline" onClick={() => navigate('/documentos/declaracoes')}>
+              Voltar para declarações
+            </button>
+          </div>
+        </div>
+
+        <EntityFormPanel
+          title="Emitir declaracao"
+          subtitle="Preencha os dados do documento."
+          onSubmit={(event) => {
+            event.preventDefault()
+            saveMutation.mutate({ payload: { ...formData, matricula: Number(formData.matricula) } })
+          }}
+          onCancel={() => navigate('/documentos/declaracoes')}
+          submitLabel="Emitir declaracao"
+          isSubmitting={saveMutation.isPending}
+        >
+          <div className="form-field"><label>Tipo</label><select className="select" value={formData.tipo} onChange={(event) => setFormData((current) => ({ ...current, tipo: event.target.value }))}>{TIPO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+          <div className="form-field form-field--full"><label>Assunto</label><input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} /></div>
+          <SearchableRemoteSelect id="declaracao-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
+          <div className="form-field form-field--full"><label>Observacao</label><textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} /></div>
+        </EntityFormPanel>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -117,7 +165,7 @@ export default function DeclaracoesPage() {
           <p className="page-subtitle">Documentos eletronicos</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--primary" onClick={() => { setEditingId(null); setIsCreating(true); setFormData(DEFAULT_FORM) }}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate('/documentos/declaracoes/nova')}>
             <Plus size={16} /> Nova Declaracao
           </button>
         </div>
@@ -135,7 +183,7 @@ export default function DeclaracoesPage() {
         rowActions={(row) => (
           <div className="table-actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}><Eye size={14} /> Visualizar</button>
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setIsCreating(false); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
             <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir a declaracao ${row.numero_protocolo}?`) && deleteMutation.mutate(row.id)}><Trash2 size={14} /> Excluir</button>
           </div>
         )}
@@ -160,16 +208,16 @@ export default function DeclaracoesPage() {
         />
       ) : null}
 
-      {(isCreating || editingId) ? (
+      {editingId ? (
         <EntityFormPanel
-          title={editingId ? 'Editar declaracao' : 'Emitir declaracao'}
+          title="Editar declaracao"
           subtitle="Preencha os dados do documento."
           onSubmit={(event) => {
             event.preventDefault()
             saveMutation.mutate({ id: editingId, payload: { ...formData, matricula: Number(formData.matricula) } })
           }}
-          onCancel={() => { setEditingId(null); setIsCreating(false); setFormData(DEFAULT_FORM) }}
-          submitLabel={editingId ? 'Salvar alteracoes' : 'Emitir declaracao'}
+          onCancel={() => { setEditingId(null); setFormData(DEFAULT_FORM) }}
+          submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
           <div className="form-field">
