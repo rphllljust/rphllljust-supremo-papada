@@ -1,4 +1,6 @@
 param(
+    [ValidateSet("development", "homolog", "production")]
+    [string]$Environment = "development",
     [int]$Port = 5173,
     [switch]$HostPublica
 )
@@ -22,7 +24,15 @@ try {
         }
     }
 
-    $viteArgs = @("run", "dev", "--", "--port", $Port)
+    $scriptName = switch ($Environment) {
+        "homolog" { "dev:homolog" }
+        "production" { "dev:production" }
+        default { "dev" }
+    }
+
+    Write-Host "Ambiente selecionado: $Environment"
+
+    $viteArgs = @("run", $scriptName, "--", "--port", $Port)
 
     if ($HostPublica) {
         $viteArgs += "--host"

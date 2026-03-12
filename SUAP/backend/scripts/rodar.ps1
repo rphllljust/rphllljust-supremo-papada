@@ -1,5 +1,7 @@
 [CmdletBinding()]
 param(
+	[ValidateSet("development", "homolog", "production")]
+	[string]$Environment = "development",
 	[string]$HostAddress = "127.0.0.1",
 	[int]$Port = 8000
 )
@@ -21,13 +23,22 @@ if (-not (Test-Path -Path $activateScript)) {
 }
 
 Push-Location $projectRoot
+$previousAppEnv = $env:APP_ENV
 try {
 	Write-Host "Ativando ambiente virtual..." -ForegroundColor Cyan
 	. $activateScript
+
+	$env:APP_ENV = $Environment
+	Write-Host "Ambiente selecionado: $Environment" -ForegroundColor Yellow
 
 	Write-Host "Iniciando servidor Django em $HostAddress`:$Port..." -ForegroundColor Green
 	python manage.py runserver "$HostAddress`:$Port"
 }
 finally {
+	if ($null -ne $previousAppEnv) {
+		$env:APP_ENV = $previousAppEnv
+	} else {
+		Remove-Item Env:APP_ENV -ErrorAction SilentlyContinue
+	}
 	Pop-Location
 }

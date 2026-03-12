@@ -108,6 +108,55 @@ O frontend React em desenvolvimento ficará disponível no host/porta configurad
 http://127.0.0.1:5173/
 ```
 
+## Ambientes: desenvolvimento, homologação e produção
+
+O backend agora suporta três ambientes via `APP_ENV`:
+
+* `development`
+* `homolog`
+* `production`
+
+Ordem de resolução do arquivo de ambiente no backend:
+
+```text
+development: .env.development -> .env -> .env.development.sample -> .env.sample
+homolog/production: .env.<ambiente> -> .env.<ambiente>.sample -> .env -> .env.sample
+```
+
+Arquivos de exemplo disponíveis:
+
+```text
+.env.development.sample
+.env.homolog.sample
+.env.production.sample
+```
+
+Exemplos de execução do backend:
+
+```powershell
+cd backend
+.\scripts\rodar.ps1 -Environment development
+.\scripts\rodar.ps1 -Environment homolog -HostAddress 0.0.0.0 -Port 8001
+.\scripts\rodar.ps1 -Environment production -HostAddress 0.0.0.0 -Port 8000
+```
+
+No frontend, o Vite usa os modos `development`, `homolog` e `production`, com arquivos `.env` equivalentes:
+
+```text
+frontend/.env.development.example
+frontend/.env.homolog.example
+frontend/.env.production.example
+```
+
+Exemplos de execução do frontend:
+
+```powershell
+cd ..\frontend
+npm.cmd run dev
+npm.cmd run dev:homolog
+npm.cmd run build:production
+```
+
 Django Admin
 
 O Django Admin pode ser utilizado para gerenciar os dados do sistema de forma administrativa, incluindo cadastros e consultas internas.

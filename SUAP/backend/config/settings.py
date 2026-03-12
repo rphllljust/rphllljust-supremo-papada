@@ -1,12 +1,41 @@
+import os
 from pathlib import Path
 from datetime import timedelta
 
 from decouple import Csv, RepositoryEnv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-ENV_PATH = BASE_DIR / ".env"
-ENV_SAMPLE_PATH = BASE_DIR / ".env.sample"
-ENV_SOURCE_PATH = ENV_PATH if ENV_PATH.exists() else ENV_SAMPLE_PATH
+VALID_APP_ENVS = {"development", "homolog", "production"}
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+
+if APP_ENV not in VALID_APP_ENVS:
+    APP_ENV = "development"
+
+
+def env_default(development, homolog=None, production=None):
+    values = {
+        "development": development,
+        "homolog": development if homolog is None else homolog,
+        "production": (development if homolog is None else homolog) if production is None else production,
+    }
+    return values[APP_ENV]
+
+
+if APP_ENV == "development":
+    ENV_CANDIDATE_PATHS = [
+        BASE_DIR / ".env.development",
+        BASE_DIR / ".env",
+        BASE_DIR / ".env.development.sample",
+        BASE_DIR / ".env.sample",
+    ]
+else:
+    ENV_CANDIDATE_PATHS = [
+        BASE_DIR / f".env.{APP_ENV}",
+        BASE_DIR / f".env.{APP_ENV}.sample",
+        BASE_DIR / ".env",
+        BASE_DIR / ".env.sample",
+    ]
+ENV_SOURCE_PATH = next((path for path in ENV_CANDIDATE_PATHS if path.exists()), BASE_DIR / ".env.sample")
 ENV_REPOSITORY = RepositoryEnv(str(ENV_SOURCE_PATH))
 ENV_DATA = ENV_REPOSITORY.data
 
@@ -33,15 +62,51 @@ def env(key, default=None, cast=None):
     return cast(value)
 
 
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-troque-isso-depois")
+def env_str(key, default=""):
+    value = env(key, default=default)
+    return default if value is None else str(value)
 
-DEBUG = env("DEBUG", default=True, cast=bool)
-DJANGO_TEMPLATE_UI_ENABLED = env("DJANGO_TEMPLATE_UI_ENABLED", default=True, cast=bool)
 
-ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="", cast=Csv())
+def env_bool(key, default=False):
+    return bool(env(key, default=default, cast=bool))
 
-CORS_ALLOWED_ORIGINS = [origin for origin in env("CORS_ALLOWED_ORIGINS", default="", cast=Csv()) if origin]
-CORS_ALLOW_CREDENTIALS = env("CORS_ALLOW_CREDENTIALS", default=True, cast=bool)
+
+def env_int(key, default=0):
+    value = env(key, default=default, cast=int)
+
+    if isinstance(value, int):
+        return value
+
+    if value is None or isinstance(value, (list, tuple)):
+        return int(default)
+
+    return int(str(value))
+
+
+def env_csv(key, default=""):
+    value = env(key, default=default, cast=Csv())
+
+    if value is None:
+        return []
+
+    if isinstance(value, (list, tuple)):
+        return [str(item) for item in value if item]
+
+    return [item.strip() for item in str(value).split(",") if item.strip()]
+
+
+SECRET_KEY = env_str("SECRET_KEY", default="django-insecure-troque-isso-depois")
+
+APP_ENVIRONMENT = APP_ENV
+
+DEBUG = env_bool("DEBUG", default=env_default(True, homolog=False, production=False))
+DJANGO_TEMPLATE_UI_ENABLED = env_bool("DJANGO_TEMPLATE_UI_ENABLED", default=True)
+
+ALLOWED_HOSTS = env_csv("ALLOWED_HOSTS", default=env_default("127.0.0.1,localhost", homolog="", production=""))
+
+CORS_ALLOWED_ORIGINS = env_csv("CORS_ALLOWED_ORIGINS", default=env_default("http://127.0.0.1:5173,http://localhost:5173", homolog="", production=""))
+CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", default=True)
+CSRF_TRUSTED_ORIGINS = env_csv("CSRF_TRUSTED_ORIGINS", default="")
 
 
 INSTALLED_APPS = [
@@ -113,39 +178,47 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": env("DATABASE_ENGINE", default="django.db.backends.sqlite3"),
-        "NAME": env("DATABASE_NAME", default=str(BASE_DIR / "db.sqlite3")),
+        "ENGINE": env("DATABASE_ENGINE", default=env_default("django.db.backends.sqlite3", homolog="django.db.backends.postgresql", production="django.db.backends.postgresql")),
+        "NAME": env_str("DATABASE_NAME", default=env_default(str(BASE_DIR / "db.sqlite3"), homolog="suap_idep_homolog", production="suap_idep")),
+        "USER": env_str("DATABASE_USER", default=""),
+        "PASSWORD": env_str("DATABASE_PASSWORD", default=""),
+        "HOST": env_str("DATABASE_HOST", default=""),
+        "PORT": env_str("DATABASE_PORT", default=""),
+        "CONN_MAX_AGE": env_int("DATABASE_CONN_MAX_AGE", default=env_default(0, homolog=60, production=300)),
     }
 }
 
 AUTH_PASSWORD_VALIDATORS = []
 
-LANGUAGE_CODE = env("LANGUAGE_CODE", default="pt-br")
+LANGUAGE_CODE = env_str("LANGUAGE_CODE", default="pt-br")
 
-TIME_ZONE = env("TIME_ZONE", default="America/Cuiaba")
+TIME_ZONE = env_str("TIME_ZONE", default="America/Cuiaba")
 
-USE_I18N = env("USE_I18N", default=True, cast=bool)
+USE_I18N = env_bool("USE_I18N", default=True)
 
-USE_TZ = env("USE_TZ", default=True, cast=bool)
+USE_TZ = env_bool("USE_TZ", default=True)
 
 
 TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 
 
-STATIC_URL = env("STATIC_URL", default="/static/")
+STATIC_URL = env_str("STATIC_URL", default="/static/")
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = Path(env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles")))
+STATIC_ROOT = Path(env_str("STATIC_ROOT", default=str(BASE_DIR / "staticfiles")))
 
-MEDIA_URL = env("MEDIA_URL", default="/media/")
-MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
+MEDIA_URL = env_str("MEDIA_URL", default="/media/")
+MEDIA_ROOT = Path(env_str("MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "usuarios.Usuario"
 
-LOGIN_URL = env("LOGIN_URL", default="accounts:login")
-LOGIN_REDIRECT_URL = env("LOGIN_REDIRECT_URL", default="dashboard:index")
-LOGOUT_REDIRECT_URL = env("LOGOUT_REDIRECT_URL", default="accounts:login")
+LOGIN_URL = env_str("LOGIN_URL", default="accounts:login")
+LOGIN_REDIRECT_URL = env_str("LOGIN_REDIRECT_URL", default="dashboard:index")
+LOGOUT_REDIRECT_URL = env_str("LOGOUT_REDIRECT_URL", default="accounts:login")
+SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=env_default(False, homolog=False, production=True))
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", default=env_default(False, homolog=False, production=True))
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", default=env_default(False, homolog=False, production=True))
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -154,11 +227,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=30, cast=int)),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=env("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=1, cast=int)),
-    "ROTATE_REFRESH_TOKENS": env("JWT_ROTATE_REFRESH_TOKENS", default=True, cast=bool),
-    "BLACKLIST_AFTER_ROTATION": env("JWT_BLACKLIST_AFTER_ROTATION", default=True, cast=bool),
-    "UPDATE_LAST_LOGIN": env("JWT_UPDATE_LAST_LOGIN", default=True, cast=bool),
-    "ALGORITHM": env("JWT_ALGORITHM", default="HS256"),
-    "AUTH_HEADER_TYPES": tuple(env("JWT_AUTH_HEADER_TYPES", default="Bearer", cast=Csv())),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env_int("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=env_int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=1)),
+    "ROTATE_REFRESH_TOKENS": env_bool("JWT_ROTATE_REFRESH_TOKENS", default=True),
+    "BLACKLIST_AFTER_ROTATION": env_bool("JWT_BLACKLIST_AFTER_ROTATION", default=True),
+    "UPDATE_LAST_LOGIN": env_bool("JWT_UPDATE_LAST_LOGIN", default=True),
+    "ALGORITHM": env_str("JWT_ALGORITHM", default="HS256"),
+    "AUTH_HEADER_TYPES": tuple(env_csv("JWT_AUTH_HEADER_TYPES", default="Bearer")),
 }
