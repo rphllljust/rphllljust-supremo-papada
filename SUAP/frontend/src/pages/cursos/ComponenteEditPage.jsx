@@ -2,24 +2,22 @@ import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, CircleHelp, Save, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { componentesApi } from '@/api/endpoints'
+import './suap-componentes.css'
 
 const DEFAULT_VALUES = {
-  curso: '',
   descricao: '',
-  descricao_diploma_historico: '',
+  descricao_historico: '',
+  descricao_diploma: '',
   abreviatura: '',
   sigla: '',
   tipo_componente: '',
   diretoria: '',
   nivel_ensino: '',
   esta_ativo: true,
-  carga_horaria: 0,
-  hora_aula: 0,
-  qtd_creditos: 0,
   grupo_atuacao: '',
   sigla_qacademico: '',
   observacao: '',
@@ -44,22 +42,74 @@ function getErrorMessage(error, fallback) {
 }
 
 function buildFormValues(component) {
+  const descricaoOficial = component?.descricao_diploma_historico || ''
+
   return {
-    curso: component?.curso_id ? String(component.curso_id) : '',
     descricao: component?.descricao || '',
-    descricao_diploma_historico: component?.descricao_diploma_historico || '',
+    descricao_historico: descricaoOficial,
+    descricao_diploma: descricaoOficial,
     abreviatura: component?.abreviatura || '',
     sigla: component?.sigla || '',
     tipo_componente: component?.tipo_componente || '',
     diretoria: component?.diretoria || '',
     nivel_ensino: component?.nivel_ensino || '',
     esta_ativo: component?.esta_ativo ?? true,
-    carga_horaria: component?.carga_horaria ?? 0,
-    hora_aula: component?.hora_aula ?? 0,
-    qtd_creditos: component?.qtd_creditos ?? 0,
     grupo_atuacao: component?.grupo_atuacao || '',
     sigla_qacademico: component?.sigla_qacademico || '',
     observacao: component?.observacao || '',
+  }
+}
+
+function parseBooleanSelectValue(value) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  return value === 'true'
+}
+
+function SectionField({ label, error, full = false, children }) {
+  return (
+    <label className={`form-field ${full ? 'componente-form-field--full' : ''}`}>
+      <span className="componente-form-field__label">{label}</span>
+      {children}
+      {error ? <span className="form-field__error">{error}</span> : null}
+    </label>
+  )
+}
+
+function FormRow({ label, required = false, error, hint, children }) {
+  return (
+    <div className="area-curso-edit-row componente-edit-theme-row">
+      <div className="area-curso-edit-row__label componente-edit-theme-row__label">
+        <span className={required ? 'componente-edit-theme-row__label-text componente-edit-theme-row__label-text--required' : 'componente-edit-theme-row__label-text'}>
+          {label}
+        </span>
+      </div>
+      <div className="area-curso-edit-row__field componente-edit-theme-row__field">
+        {children}
+        {hint ? <div className="componente-edit-theme-row__hint">{hint}</div> : null}
+        {error ? <span className="form-field__error">{error}</span> : null}
+      </div>
+    </div>
+  )
+}
+
+function renderSelectOptions(options) {
+  return (options || []).map((item) => (
+    <option key={item.value} value={item.value}>{item.label}</option>
+  ))
+}
+
+function resolveOfficialDescriptions(formData) {
+  const descricaoBase = formData.descricao.trim()
+  const descricaoHistorico = formData.descricao_historico.trim() || descricaoBase
+  const descricaoDiploma = formData.descricao_diploma.trim() || descricaoBase
+
+  return {
+    descricaoHistorico,
+    descricaoDiploma,
+    descricaoPersistida: descricaoDiploma || descricaoHistorico || descricaoBase,
   }
 }
 
@@ -75,6 +125,7 @@ export default function ComponenteEditPage() {
     handleSubmit,
     reset,
     formState: { errors },
+    watch,
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
   const { data, isLoading, isError } = useQuery({
@@ -97,6 +148,9 @@ export default function ComponenteEditPage() {
 
     reset(buildFormValues(data))
   }, [data, reset])
+
+  const descricaoHistoricoValue = watch('descricao_historico')
+  const descricaoDiplomaValue = watch('descricao_diploma')
 
   const saveMutation = useMutation({
     mutationFn: ({ id, payload }) => (id ? componentesApi.patch(id, payload) : componentesApi.create(payload)),
@@ -167,22 +221,35 @@ export default function ComponenteEditPage() {
   }
 
   const onSubmit = handleSubmit(async (formData) => {
+    const { descricaoPersistida } = resolveOfficialDescriptions(formData)
     const payload = {
-      curso: Number(formData.curso),
       descricao: formData.descricao.trim(),
-      descricao_diploma_historico: formData.descricao_diploma_historico.trim(),
+      descricao_diploma_historico: descricaoPersistida,
       abreviatura: formData.abreviatura.trim(),
       sigla: formData.sigla.trim(),
       tipo_componente: formData.tipo_componente.trim(),
       diretoria: formData.diretoria.trim(),
       nivel_ensino: formData.nivel_ensino.trim(),
-      esta_ativo: Boolean(formData.esta_ativo),
-      carga_horaria: Number(formData.carga_horaria) || 0,
-      hora_aula: Number(formData.hora_aula) || 0,
-      qtd_creditos: Number(formData.qtd_creditos) || 0,
+      esta_ativo: parseBooleanSelectValue(formData.esta_ativo),
       grupo_atuacao: formData.grupo_atuacao.trim(),
       sigla_qacademico: formData.sigla_qacademico.trim(),
       observacao: formData.observacao.trim(),
+    }
+
+    if (!isCreateMode && data?.curso_id) {
+      payload.curso = data.curso_id
+    }
+
+    if (!isCreateMode && typeof data?.carga_horaria !== 'undefined') {
+      payload.carga_horaria = data.carga_horaria
+    }
+
+    if (!isCreateMode && typeof data?.hora_aula !== 'undefined') {
+      payload.hora_aula = data.hora_aula
+    }
+
+    if (!isCreateMode && typeof data?.qtd_creditos !== 'undefined') {
+      payload.qtd_creditos = data.qtd_creditos
     }
 
     await saveMutation.mutateAsync({
@@ -208,7 +275,7 @@ export default function ComponenteEditPage() {
         {isCreateMode ? (
           <>
             <span className="profile-breadcrumb__sep">&gt;</span>
-            <span>Novo</span>
+            <span>Adicionar Componente</span>
           </>
         ) : (
           <>
@@ -220,104 +287,118 @@ export default function ComponenteEditPage() {
         )}
       </nav>
 
-      <div className="page-header componente-edit-page__header">
+      <div className="page-header componente-edit-theme-header">
         <div>
-          <h1 className="page-title">{isCreateMode ? 'Novo componente' : 'Editar componente'}</h1>
-          <p className="page-subtitle">{isCreateMode ? 'Cadastre um novo componente curricular.' : `${data.sigla || 'Sem sigla'} • ${data.matriz_curricular || 'Sem matriz curricular'}`}</p>
+          <h1 className="page-title">{isCreateMode ? 'Adicionar Componente' : 'Editar componente curricular'}</h1>
+          <p className="page-subtitle">{isCreateMode ? 'Preencha os dados do componente curricular.' : `${data.sigla || 'Sem sigla'} • ${data.matriz_curricular || 'Sem matriz curricular definida'}`}</p>
         </div>
         <div className="page-header__actions">
+          <Link
+            to="/indisponivel/ajuda-componentes"
+            state={{
+              title: 'Ajuda de Componentes',
+              description: 'A ajuda detalhada desta funcionalidade ainda será portada para o frontend React.',
+            }}
+            className="btn btn--outline"
+          >
+            <CircleHelp size={16} /> Ajuda
+          </Link>
           <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/componentes/' : `/componentes/${data.id}`)}>
             <ArrowLeft size={16} /> {isCreateMode ? 'Voltar para listagem' : 'Voltar para detalhes'}
           </button>
         </div>
       </div>
 
-      <form className="dashboard-card componente-edit-form" onSubmit={onSubmit}>
-        <div className="componente-edit-form__body">
-          <div className="componente-edit-form__grid componente-edit-form__grid--wide">
-            <label className="form-field">
-              <span className="form-field__label">Matriz curricular</span>
-              <select {...register('curso', { required: 'Selecione a matriz curricular.' })}>
-                <option value="">Selecione...</option>
-                {(opcoes?.matrizes_curriculares || []).map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
+      <form className="dashboard-card area-curso-edit-form componente-edit-theme-form" onSubmit={onSubmit}>
+        <section className="componente-edit-theme-section">
+          <div className="componente-edit-theme-section__title">Dados gerais</div>
+          <div className="area-curso-edit-form__rows">
+            <FormRow label="Descrição" required error={errors.descricao?.message}>
+              <input
+                {...register('descricao', { required: 'Informe a descrição.' })}
+                placeholder="Ex.: Instalações Elétricas Prediais"
+              />
+            </FormRow>
+
+            <FormRow label="Abreviatura">
+              <input {...register('abreviatura')} placeholder="Ex.: Inst. Elétricas" />
+            </FormRow>
+
+            <FormRow label="Sigla">
+              <input {...register('sigla')} placeholder="Ex.: IEP" />
+            </FormRow>
+
+            <FormRow label="Tipo do Componente">
+              <select {...register('tipo_componente')}>
+                <option value="">Escolha uma opção</option>
+                {renderSelectOptions(opcoes?.tipos_componente)}
               </select>
-              {errors.curso ? <span className="form-field__error">{errors.curso.message}</span> : null}
-            </label>
+            </FormRow>
 
-            <label className="form-field form-field--full">
-              <span className="form-field__label">Descrição</span>
-              <input {...register('descricao', { required: 'Informe a descrição.' })} />
-              {errors.descricao ? <span className="form-field__error">{errors.descricao.message}</span> : null}
-            </label>
 
-            <label className="form-field form-field--full">
-              <span className="form-field__label">Descrição no diploma e histórico</span>
-              <input {...register('descricao_diploma_historico')} />
-            </label>
+            <FormRow label="Nível de ensino">
+              <select {...register('nivel_ensino')}>
+                <option value="">Escolha uma opção</option>
+                {renderSelectOptions(opcoes?.niveis_ensino)}
+              </select>
+            </FormRow>
 
-            <label className="form-field">
-              <span className="form-field__label">Abreviatura</span>
-              <input {...register('abreviatura')} />
-            </label>
+            <FormRow label="Coordenação/Departamento responsável">
+              <input {...register('diretoria')} placeholder="Ex.: Coordenação de Eletrotécnica" />
+            </FormRow>
 
-            <label className="form-field">
-              <span className="form-field__label">Sigla</span>
-              <input {...register('sigla')} />
-            </label>
+            <FormRow label="Eixo tecnológico / Área de conhecimento">
+              <select {...register('grupo_atuacao')}>
+                <option value="">Escolha uma opção</option>
+                {renderSelectOptions(opcoes?.grupos_atuacao)}
+              </select>
+            </FormRow>
 
-            <label className="form-field">
-              <span className="form-field__label">Tipo do componente</span>
-              <input {...register('tipo_componente')} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Diretoria</span>
-              <input {...register('diretoria')} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Nível de ensino</span>
-              <input {...register('nivel_ensino')} />
-            </label>
-
-            <label className="form-field form-field--checkbox">
-              <input type="checkbox" {...register('esta_ativo')} />
-              <span>Está ativo</span>
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Hora/relógio</span>
-              <input type="number" min="0" {...register('carga_horaria', { valueAsNumber: true })} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Hora/aula</span>
-              <input type="number" min="0" {...register('hora_aula', { valueAsNumber: true })} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Créditos</span>
-              <input type="number" min="0" {...register('qtd_creditos', { valueAsNumber: true })} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Grupo de atuação</span>
-              <input {...register('grupo_atuacao')} />
-            </label>
-
-            <label className="form-field">
-              <span className="form-field__label">Sigla do Q-Acadêmico</span>
-              <input {...register('sigla_qacademico')} />
-            </label>
-
-            <label className="form-field form-field--full">
-              <span className="form-field__label">Observação</span>
-              <textarea rows="5" {...register('observacao')} />
-            </label>
+            <FormRow label="Está ativo">
+              <div className="componente-edit-theme-row__checkbox">
+                <input type="checkbox" {...register('esta_ativo')} />
+              </div>
+            </FormRow>
           </div>
-        </div>
+        </section>
+
+        <section className="componente-edit-theme-section componente-edit-theme-section--muted">
+          <div className="componente-edit-theme-section__title">Documentação Oficial</div>
+          <div className="area-curso-edit-form__rows">
+            <FormRow
+              label="Descrição no Histórico"
+              hint={isCreateMode ? 'Se não for preenchida, será usada a descrição principal do componente.' : `Valor salvo atualmente: ${data?.descricao_diploma_historico || 'será usada a descrição principal.'}`}
+            >
+              <input
+                {...register('descricao_historico')}
+                placeholder="Se vazio, será usada a descrição principal"
+              />
+            </FormRow>
+
+            <FormRow
+              label="Descrição no Diploma"
+              hint={descricaoHistoricoValue && descricaoDiplomaValue && descricaoHistoricoValue !== descricaoDiplomaValue ? 'Atualmente o backend ainda persiste uma única descrição oficial compartilhada entre histórico e diploma.' : 'Se não for preenchida, será usada a descrição principal do componente.'}
+            >
+              <input
+                {...register('descricao_diploma')}
+                placeholder="Se vazio, será usada a descrição principal"
+              />
+            </FormRow>
+          </div>
+        </section>
+
+        <section className="componente-edit-theme-section componente-edit-theme-section--muted">
+          <div className="componente-edit-theme-section__title">Integrações e Controle</div>
+          <div className="area-curso-edit-form__rows">
+            <FormRow label="Código no sistema legado / Q-Acadêmico">
+              <input {...register('sigla_qacademico')} placeholder="Ex.: TEC-ELE-001" />
+            </FormRow>
+
+            <FormRow label="Observação" hint="Campo opcional para anotações administrativas ou acadêmicas do cadastro base.">
+              <textarea rows="5" {...register('observacao')} placeholder="Ex.: Componente comum aos módulos iniciais do curso técnico." />
+            </FormRow>
+          </div>
+        </section>
 
         <div className="componente-edit-form__actions">
           <button

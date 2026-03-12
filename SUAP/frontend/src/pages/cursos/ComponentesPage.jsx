@@ -20,6 +20,7 @@ function mapOptions(summary) {
     niveis: (filterOptions.niveis_ensino || []).map((item) => ({ id: item.value, nome: item.label })),
     tipos: (filterOptions.tipos_componente || []).map((item) => ({ id: item.value, nome: item.label })),
     grupos: (filterOptions.grupos_atuacao || []).map((item) => ({ id: item.value, nome: item.label })),
+    matrizes: (filterOptions.matrizes_curriculares || []).map((item) => ({ id: item.value, nome: item.label })),
   }
 }
 
@@ -40,7 +41,7 @@ function mapRow(row) {
 }
 
 function useOpcoes() {
-  const [opcoes, setOpcoes] = useState({ niveis: [], tipos: [], grupos: [] })
+  const [opcoes, setOpcoes] = useState({ niveis: [], tipos: [], grupos: [], matrizes: [] })
 
   useEffect(() => {
     let isMounted = true
@@ -49,7 +50,7 @@ function useOpcoes() {
       setOpcoes(mapOptions(response.data?.summary))
     }).catch(() => {
       if (!isMounted) return
-      setOpcoes({ niveis: [], tipos: [], grupos: [] })
+      setOpcoes({ niveis: [], tipos: [], grupos: [], matrizes: [] })
     })
 
     return () => {
@@ -147,40 +148,74 @@ const Pagination = memo(({ page, totalPages, onPrev, onNext }) => (
 export default function ComponentesPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('todos')
-  const [siglaRaw, setSiglaRaw] = useState('')
-  const [fullText, setFullText] = useState('')
-  const [nivel, setNivel] = useState('')
-  const [tipo, setTipo] = useState('')
-  const [grupo, setGrupo] = useState('')
+  const [draftFilters, setDraftFilters] = useState({
+    sigla: '',
+    search: '',
+    ativo: 'SIM',
+    nivel: '',
+    tipo: '',
+    grupo: '',
+    matriz: '',
+  })
+  const [filters, setFilters] = useState({
+    sigla: '',
+    search: '',
+    ativo: 'SIM',
+    nivel: '',
+    tipo: '',
+    grupo: '',
+    matriz: '',
+  })
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState('id')
   const [dir, setDir] = useState('ASC')
-  const [ativoChip, setAtivoChip] = useState(true)
 
-  const sigla = useDebounce(siglaRaw, 400)
-  const qDebounced = useDebounce(fullText, 500)
+  const sigla = useDebounce(filters.sigla, 250)
+  const qDebounced = useDebounce(filters.search, 250)
   const opcoes = useOpcoes()
 
   const queryParams = useMemo(() => ({
     ...(tab === 'utilizados' ? { ativo: 'SIM' } : {}),
     ...(tab === 'nao-utilizados' ? { ativo: 'NAO' } : {}),
-    ...(tab === 'todos' && ativoChip ? { ativo: 'SIM' } : {}),
+    ...(tab === 'todos' && filters.ativo ? { ativo: filters.ativo } : {}),
     ...(sigla ? { sigla } : {}),
     ...(qDebounced ? { q: qDebounced } : {}),
-    ...(nivel ? { nivel_id: nivel } : {}),
-    ...(tipo ? { tipo_id: tipo } : {}),
-    ...(grupo ? { grupo_id: grupo } : {}),
+    ...(filters.nivel ? { nivel_id: filters.nivel } : {}),
+    ...(filters.tipo ? { tipo_id: filters.tipo } : {}),
+    ...(filters.grupo ? { grupo_id: filters.grupo } : {}),
+    ...(filters.matriz ? { matriz_id: filters.matriz } : {}),
     page,
     sort,
     dir,
-  }), [tab, ativoChip, sigla, qDebounced, nivel, tipo, grupo, page, sort, dir])
+  }), [tab, filters.ativo, filters.nivel, filters.tipo, filters.grupo, filters.matriz, sigla, qDebounced, page, sort, dir])
 
   const { rows, total, loading, error } = useComponentes(queryParams)
 
   const onTab = useCallback((value) => { setTab(value); setPage(1) }, [])
-  const onNivel = useCallback((value) => { setNivel(value); setPage(1) }, [])
-  const onTipo = useCallback((value) => { setTipo(value); setPage(1) }, [])
-  const onGrupo = useCallback((value) => { setGrupo(value); setPage(1) }, [])
+  const updateDraftFilter = useCallback((field, value) => {
+    setDraftFilters((current) => ({ ...current, [field]: value }))
+  }, [])
+
+  const applyFilters = useCallback(() => {
+    setFilters(draftFilters)
+    setPage(1)
+  }, [draftFilters])
+
+  const clearFilters = useCallback(() => {
+    const initialFilters = {
+      sigla: '',
+      search: '',
+      ativo: 'SIM',
+      nivel: '',
+      tipo: '',
+      grupo: '',
+      matriz: '',
+    }
+
+    setDraftFilters(initialFilters)
+    setFilters(initialFilters)
+    setPage(1)
+  }, [])
 
   const toggleSort = useCallback((col) => {
     setSort((prev) => {
@@ -208,7 +243,7 @@ export default function ComponentesPage() {
   ]
 
   return (
-    <div className="componentes-page page page--wide">
+    <div className="componentes-page page page--wide suap-componentes-shell">
       <div className="componentes-page__toolbar">
         <button className="componentes-page__toolbar-btn componentes-page__toolbar-btn--green" onClick={() => navigate('/ensino/componentes/novo')}>
           + Adicionar Componente
@@ -218,36 +253,38 @@ export default function ComponentesPage() {
       </div>
 
       <div className="componentes-page__breadcrumb">
-        Início &rsaquo; Ensino &rsaquo; Componentes
+        Início &rsaquo; Ensino &rsaquo; Cursos, Matrizes e Componentes &rsaquo; Componentes
       </div>
 
       <div className="componentes-page__content">
         <h2 className="componentes-page__title">Componentes</h2>
 
         <div className="filters">
-          <div className="filters__title">Filtros</div>
+          <div className="filters__header">
+            <div className="filters__title">Filtros de busca</div>
+            <div className="filters__subtitle">Refine a listagem por sigla, texto livre, tipo, matriz curricular e demais atributos.</div>
+          </div>
           <div className="filters__row">
             <div className="filter-group">
               <label>Sigla</label>
-              <input value={siglaRaw} onChange={(e) => { setSiglaRaw(e.target.value); setPage(1) }} placeholder="ex: LIC" />
+              <input value={draftFilters.sigla} onChange={(e) => updateDraftFilter('sigla', e.target.value)} placeholder="ex: LIC" />
             </div>
 
             <div className="filter-group">
-              <label>Busca full-text (PostgreSQL)</label>
-              <input className="filter-group__fulltext" value={fullText} onChange={(e) => { setFullText(e.target.value); setPage(1) }} placeholder="ex: matemática" />
+              <label>Texto</label>
+              <input className="filter-group__fulltext" value={draftFilters.search} onChange={(e) => updateDraftFilter('search', e.target.value)} placeholder="ex: matemática" />
             </div>
 
-            <div className="filter-group">
-              <label>Está ativo</label>
-              <div className="filter-tag">
-                <span>{ativoChip ? 'Sim' : 'Todos'}</span>
-                <span className="filter-tag__remove" onClick={() => { setAtivoChip(false); setPage(1) }}>✕</span>
-              </div>
-            </div>
+            <FilterSelect label="Está ativo" value={draftFilters.ativo} options={[{ id: 'SIM', nome: 'Sim' }, { id: 'NAO', nome: 'Não' }]} onChange={(value) => updateDraftFilter('ativo', value)} />
+            <FilterSelect label="Tipo" value={draftFilters.tipo} options={opcoes.tipos} onChange={(value) => updateDraftFilter('tipo', value)} />
+            <FilterSelect label="Nível de ensino" value={draftFilters.nivel} options={opcoes.niveis} onChange={(value) => updateDraftFilter('nivel', value)} />
+            <FilterSelect label="Matriz curricular" value={draftFilters.matriz} options={opcoes.matrizes} onChange={(value) => updateDraftFilter('matriz', value)} />
+            <FilterSelect label="Grupo" value={draftFilters.grupo} options={opcoes.grupos} onChange={(value) => updateDraftFilter('grupo', value)} />
+          </div>
 
-            <FilterSelect label="Tipo" value={tipo} options={opcoes.tipos} onChange={onTipo} />
-            <FilterSelect label="Nível de ensino" value={nivel} options={opcoes.niveis} onChange={onNivel} />
-            <FilterSelect label="Grupo" value={grupo} options={opcoes.grupos} onChange={onGrupo} />
+          <div className="filters__actions">
+            <button type="button" className="filters__button filters__button--primary" onClick={applyFilters}>Filtrar</button>
+            <button type="button" className="filters__button" onClick={clearFilters}>Limpar</button>
           </div>
         </div>
 
@@ -260,9 +297,9 @@ export default function ComponentesPage() {
         <div className="table-wrapper">
           <div className={`table-info ${error ? 'table-info--error' : ''}`}>
             {loading
-              ? '⏳ Consultando PostgreSQL…'
+              ? 'Consultando componentes...'
               : error
-                ? `❌ ${error}`
+                ? error
                 : `Mostrando ${rows.length} de ${total} Componentes`}
           </div>
 

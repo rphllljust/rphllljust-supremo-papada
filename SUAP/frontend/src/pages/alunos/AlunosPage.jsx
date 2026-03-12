@@ -9,6 +9,7 @@ import { alunosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import { formatCpf } from '@/utils/cpf'
 
 const SITUACAO_OPTIONS = [
   { value: 'ATIVO', label: 'Ativo' },
@@ -70,8 +71,23 @@ export default function AlunosPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: DEFAULT_VALUES })
+
+  const cpfField = register('cpf', { required: 'Informe o CPF' })
+
+  const handleCpfChange = (event) => {
+    const formattedValue = formatCpf(event.target.value)
+    setValue('cpf', formattedValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+  }
+
+  const handleCpfPaste = (event) => {
+    event.preventDefault()
+    const pastedText = event.clipboardData?.getData('text') || ''
+    const formattedValue = formatCpf(pastedText)
+    setValue('cpf', formattedValue, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+  }
 
   const listParams = useMemo(() => ({
     search,
@@ -110,7 +126,7 @@ export default function AlunosPage() {
 
     reset({
       nome_completo: editingAluno.nome_completo || '',
-      cpf: editingAluno.cpf || '',
+      cpf: formatCpf(editingAluno.cpf || ''),
       email: editingAluno.email || '',
       situacao: editingAluno.situacao || 'ATIVO',
       is_active: Boolean(editingAluno.is_active),
@@ -235,7 +251,7 @@ export default function AlunosPage() {
           isSubmitting={isSubmitting || saveMutation.isPending}
         >
           <div className="form-field"><label htmlFor="aluno-nome">Nome completo</label><input id="aluno-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />{errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}</div>
-          <div className="form-field"><label htmlFor="aluno-cpf">CPF</label><input id="aluno-cpf" type="text" {...register('cpf', { required: 'Informe o CPF' })} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="aluno-cpf">CPF</label><input id="aluno-cpf" type="text" inputMode="numeric" maxLength={14} {...cpfField} onChange={handleCpfChange} onPaste={handleCpfPaste} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
           <div className="form-field"><label htmlFor="aluno-email">E-mail</label><input id="aluno-email" type="email" {...register('email')} /></div>
           <div className="form-field"><label htmlFor="aluno-situacao">Situacao academica</label><select id="aluno-situacao" className="select" {...register('situacao', { required: 'Selecione a situacao' })}>{SITUACAO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.situacao ? <span className="field-error">{errors.situacao.message}</span> : null}</div>
           <div className="form-field form-field--checkbox"><label className="checkbox-field"><input type="checkbox" {...register('is_active')} /><span>Aluno ativo</span></label></div>
@@ -322,7 +338,7 @@ export default function AlunosPage() {
           </div>
           <div className="form-field">
             <label htmlFor="aluno-edit-cpf">CPF</label>
-            <input id="aluno-edit-cpf" type="text" {...register('cpf', { required: 'Informe o CPF' })} />
+            <input id="aluno-edit-cpf" type="text" inputMode="numeric" maxLength={14} {...cpfField} onChange={handleCpfChange} onPaste={handleCpfPaste} />
             {errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}
           </div>
           <div className="form-field">

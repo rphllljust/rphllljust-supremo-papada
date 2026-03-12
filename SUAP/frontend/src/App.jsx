@@ -47,6 +47,7 @@ const CursosFormacaoSuperiorPage = lazy(() => import('@/pages/cursos/CursosForma
 const ComponentesPage = lazy(() => import('@/pages/cursos/ComponentesPage'))
 const ComponenteDetailPage = lazy(() => import('@/pages/cursos/ComponenteDetailPage'))
 const ComponenteEditPage = lazy(() => import('@/pages/cursos/ComponenteEditPage'))
+const ComponenteVinculacaoPage = lazy(() => import('@/pages/cursos/ComponenteVinculacaoPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
@@ -252,10 +253,14 @@ export default function App() {
                   <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId/vinculacao" element={<RouteShell><ComponenteVinculacaoPage /></RouteShell>} />
+                  <Route path="/ensino/componentes/:componenteId/vinculacao/" element={<RouteShell><ComponenteVinculacaoPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
                   <Route path="/componentes/:componenteId/editar/" element={<RouteShell><ComponenteEditPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId/vinculacao" element={<RouteShell><ComponenteVinculacaoPage /></RouteShell>} />
+                  <Route path="/componentes/:componenteId/vinculacao/" element={<RouteShell><ComponenteVinculacaoPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/alunos/novo" element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/servidores" element={<Navigate to="/rh/servidores" replace />} />

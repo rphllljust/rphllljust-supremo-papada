@@ -167,13 +167,6 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/cursoformacaosuperior', '/cursoformacaosuperior'],
           },
           {
-            id: 'componentes',
-            type: 'link',
-            label: 'Componentes',
-            to: '/ensino/componentes/',
-            activePrefixes: ['/ensino/componentes', '/componentes'],
-          },
-          {
             id: 'areas-cursos',
             type: 'link',
             label: 'Áreas de Cursos',
@@ -186,6 +179,20 @@ export const sidebarItems = [
             label: 'Catálogo de cursos técnicos',
             to: '/ensino/cursotecnico/',
             activePrefixes: ['/ensino/cursotecnico'],
+          },
+        ],
+      },
+      {
+        id: 'cursos-matrizes-componentes',
+        type: 'group',
+        label: 'Cursos, Matrizes e Componentes',
+        items: [
+          {
+            id: 'componentes',
+            type: 'link',
+            label: 'Componentes',
+            to: '/ensino/componentes/',
+            activePrefixes: ['/ensino/componentes', '/componentes'],
           },
         ],
       },

@@ -6,17 +6,8 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { formatCpf } from '@/utils/cpf'
 import toast from 'react-hot-toast'
-
-function formatCpf(value) {
-  const digits = String(value || '').replace(/\D/g, '').slice(0, 11)
-
-  if (digits.length <= 3) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
-
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
-}
 
 const PERFIL_OPTIONS = [
   { value: 'SECRETARIA', label: 'Secretaria' },
