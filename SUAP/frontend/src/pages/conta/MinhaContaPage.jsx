@@ -58,10 +58,7 @@ export default function MinhaContaPage() {
       return '/rh/servidores'
     }
 
-    return {
-      pathname: '/rh/servidores',
-      search: `?servidorId=${user.id}`,
-    }
+    return `/rh/servidores/${user.id}`
   }, [user?.id])
 
   const summary = useMemo(() => ({
@@ -193,7 +190,7 @@ export default function MinhaContaPage() {
 
       <section className="account-shortcuts">
         <ShortcutCard
-          to="/rh/servidores"
+          to={registryLink}
           icon={Shield}
           title="Meu cadastro"
           description="Abra a listagem de servidores e consulte os dados funcionais vinculados a sua conta."

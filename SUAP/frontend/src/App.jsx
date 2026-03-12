@@ -55,6 +55,8 @@ const NotificationPreferencesPage = lazy(() => import('@/pages/notificacoes/Noti
 const ChangePasswordPage = lazy(() => import('@/pages/auth/ChangePasswordPage'))
 const MinhaContaPage = lazy(() => import('@/pages/conta/MinhaContaPage'))
 const ServidorProfilePage = lazy(() => import('@/pages/servidores/ServidorProfilePage'))
+const ServidorDetailPage = lazy(() => import('@/pages/servidores/ServidorDetailPage'))
+const ServidorEditPage = lazy(() => import('@/pages/servidores/ServidorEditPage'))
 const ServidoresPage = lazy(() => import('@/pages/servidores/ServidoresPage'))
 const SetoresPage    = lazy(() => import('@/pages/setores/SetoresPage'))
 const UsuariosPage   = lazy(() => import('@/pages/usuarios/UsuariosPage'))
@@ -64,7 +66,10 @@ const EventoCreatePage = lazy(() => import('@/pages/agenda/EventoCreatePage'))
 const ArquivoPage    = lazy(() => import('@/pages/arquivo/ArquivoPage'))
 const GuardaCreatePage = lazy(() => import('@/pages/arquivo/GuardaCreatePage'))
 const InscricoesPage = lazy(() => import('@/pages/inscricoes/InscricoesPage'))
+const PublicacoesPage = lazy(() => import('@/pages/inscricoes/PublicacoesPage'))
+const PublicacaoDetailPage = lazy(() => import('@/pages/inscricoes/PublicacaoDetailPage'))
 const PublicacaoCreatePage = lazy(() => import('@/pages/inscricoes/PublicacaoCreatePage'))
+const PublicacaoEditPage = lazy(() => import('@/pages/inscricoes/PublicacaoEditPage'))
 const InscricaoCreatePage = lazy(() => import('@/pages/inscricoes/InscricaoCreatePage'))
 const EstagiosPage   = lazy(() => import('@/pages/estagios/EstagiosPage'))
 const EstagioDetailPage = lazy(() => import('@/pages/estagios/EstagioDetailPage'))
@@ -267,7 +272,14 @@ export default function App() {
                   <Route path="/arquivo"    element={<RouteShell><ArquivoPage /></RouteShell>} />
                   <Route path="/arquivo/novo" element={<RouteShell><GuardaCreatePage /></RouteShell>} />
                   <Route path="/inscricoes" element={<RouteShell><InscricoesPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais" element={<RouteShell><PublicacoesPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/" element={<RouteShell><PublicacoesPage /></RouteShell>} />
                   <Route path="/inscricoes/editais/novo" element={<RouteShell><PublicacaoCreatePage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/novo/" element={<RouteShell><PublicacaoCreatePage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/:publicacaoId" element={<RouteShell><PublicacaoDetailPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/:publicacaoId/" element={<RouteShell><PublicacaoDetailPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/:publicacaoId/editar" element={<RouteShell><PublicacaoEditPage /></RouteShell>} />
+                  <Route path="/inscricoes/editais/:publicacaoId/editar/" element={<RouteShell><PublicacaoEditPage /></RouteShell>} />
                   <Route path="/inscricoes/nova" element={<RouteShell><InscricaoCreatePage /></RouteShell>} />
                   <Route path="/estagio"    element={<RouteShell><EstagiosPage /></RouteShell>} />
                   <Route path="/estagio/:estagioId" element={<RouteShell><EstagioDetailPage /></RouteShell>} />
@@ -275,6 +287,8 @@ export default function App() {
                   <Route path="/access/ava-export/preview" element={<RouteShell><AvaExportPreviewPage /></RouteShell>} />
                   <Route path="/rh/servidores" element={<RouteShell><ServidoresPage /></RouteShell>} />
                   <Route path="/rh/servidores/novo" element={<RouteShell><ServidoresPage /></RouteShell>} />
+                  <Route path="/rh/servidores/:servidorId" element={<RouteShell><ServidorDetailPage /></RouteShell>} />
+                  <Route path="/rh/servidores/:servidorId/editar" element={<RouteShell><ServidorEditPage /></RouteShell>} />
                   <Route path="/comum/notificacoes" element={<RouteShell><NotificationsPage /></RouteShell>} />
                   <Route path="/comum/notificacoes/preferencias" element={<RouteShell><NotificationPreferencesPage /></RouteShell>} />
                   <Route path="/comum/minha_conta" element={<RouteShell><MinhaContaPage /></RouteShell>} />

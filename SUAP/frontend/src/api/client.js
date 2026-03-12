@@ -15,6 +15,11 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+function clearAuthStorage() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+}
+
 instrumentAxiosClient(client, 'api.private')
 
 // Injeta o access token em todas as requests
@@ -86,7 +91,7 @@ client.interceptors.response.use(
       if (!refreshToken) {
         // Sem refresh token — desloga
         debugLog('error', 'auth.refresh.missing_token')
-        localStorage.clear()
+        clearAuthStorage()
         requestAuthRedirect('missing-refresh-token')
         return Promise.reject(error)
       }
@@ -96,6 +101,9 @@ client.interceptors.response.use(
           refresh: refreshToken,
         })
         localStorage.setItem('access_token', data.access)
+        if (data.refresh) {
+          localStorage.setItem('refresh_token', data.refresh)
+        }
         debugLog('info', 'auth.refresh.success')
         processQueue(null, data.access)
         originalRequest.headers.Authorization = `Bearer ${data.access}`
@@ -105,7 +113,7 @@ client.interceptors.response.use(
           error: normalizeError(refreshError),
         })
         processQueue(refreshError, null)
-        localStorage.clear()
+        clearAuthStorage()
         requestAuthRedirect('refresh-failed')
         return Promise.reject(refreshError)
       } finally {

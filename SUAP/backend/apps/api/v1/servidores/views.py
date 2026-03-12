@@ -20,7 +20,7 @@ class ServidorViewSet(viewsets.ModelViewSet):
     access_surface = "api"
     serializer_class = ServidorSerializer
     pagination_class = StandardResultsSetPagination
-    queryset = Usuario.objects.select_related("pessoa", "setor").exclude(tipo=PerfilUsuario.ALUNO).order_by(
+    queryset = Usuario.objects.select_related("pessoa", "setor", "perfil_servidor").exclude(tipo=PerfilUsuario.ALUNO).order_by(
         "pessoa__nome_completo", "first_name", "last_name", "username"
     )
 

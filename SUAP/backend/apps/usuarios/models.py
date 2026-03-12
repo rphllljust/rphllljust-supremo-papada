@@ -118,9 +118,13 @@ class ServidorPerfil(models.Model):
     titulo_eleitor_uf = models.CharField(max_length=2, blank=True)
     posicao_atual = models.CharField(max_length=120, blank=True)
     cargo_atual = models.CharField(max_length=120, blank=True)
+    regime_trabalho = models.CharField(max_length=80, blank=True)
     jornada_trabalho = models.CharField(max_length=80, blank=True)
     classe_funcional = models.CharField(max_length=80, blank=True)
     nivel_funcional = models.CharField(max_length=80, blank=True)
+    banco = models.CharField(max_length=120, blank=True)
+    agencia = models.CharField(max_length=40, blank=True)
+    conta_corrente = models.CharField(max_length=60, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 

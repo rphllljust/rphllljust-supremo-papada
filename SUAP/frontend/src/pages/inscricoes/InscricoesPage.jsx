@@ -9,6 +9,7 @@ import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
+import ProcessosSeletivosTabs from '@/pages/inscricoes/ProcessosSeletivosTabs'
 
 const TAB_PUBLICACOES = 'publicacoes'
 const TAB_INSCRICOES = 'inscricoes'
@@ -116,7 +117,7 @@ export default function InscricoesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get('aba') === TAB_INSCRICOES ? TAB_INSCRICOES : TAB_PUBLICACOES
+  const activeTab = searchParams.get('aba') === TAB_PUBLICACOES ? TAB_PUBLICACOES : TAB_INSCRICOES
 
   const [publicacaoSearch, setPublicacaoSearch] = useState('')
   const [publicacaoStatusFilter, setPublicacaoStatusFilter] = useState('')
@@ -185,6 +186,11 @@ export default function InscricoesPage() {
     enabled: Boolean(editingInscricaoId),
     staleTime: 0,
   })
+
+  useEffect(() => {
+    if (activeTab !== TAB_PUBLICACOES) return
+    navigate('/inscricoes/editais', { replace: true })
+  }, [activeTab, navigate])
 
   useEffect(() => {
     if (!editingPublicacao) return
@@ -319,18 +325,12 @@ export default function InscricoesPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header processos-seletivos-page__header">
         <div>
-          <h1 className="page-title">Inscrições / Editais</h1>
-          <p className="page-subtitle">Gerencie os editais de inscrição e os candidatos vinculados pelo frontend React.</p>
+          <h1 className="page-title">Processos seletivos</h1>
+          <p className="page-subtitle">Gerencie inscrições e editais a partir de uma navegação única do módulo.</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className={`btn ${activeTab === TAB_PUBLICACOES ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setSearchParams({ aba: TAB_PUBLICACOES })}>
-            Editais
-          </button>
-          <button type="button" className={`btn ${activeTab === TAB_INSCRICOES ? 'btn--primary' : 'btn--secondary'}`} onClick={() => setSearchParams({ aba: TAB_INSCRICOES })}>
-            Inscrições
-          </button>
           {activeTab === TAB_PUBLICACOES ? (
             <>
               <select
@@ -366,6 +366,8 @@ export default function InscricoesPage() {
           )}
         </div>
       </div>
+
+      <ProcessosSeletivosTabs activeTab="inscricoes" />
 
       {activeTab === TAB_PUBLICACOES && isErrorPublicacoes ? <div className="alert alert--error">Nao foi possivel carregar os editais.</div> : null}
       {activeTab === TAB_INSCRICOES && isErrorInscricoes ? <div className="alert alert--error">Nao foi possivel carregar as inscricoes.</div> : null}

@@ -7,7 +7,6 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 
 import { servidoresApi, setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
-import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
@@ -65,13 +64,11 @@ export default function ServidoresPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [tipoFiltro, setTipoFiltro] = useState('')
   const [setorFiltro, setSetorFiltro] = useState('')
-  const [selectedServidorId, setSelectedServidorId] = useState(searchParams.get('servidorId'))
-  const [editingServidorId, setEditingServidorId] = useState(null)
   const [setorSearch, setSetorSearch] = useState('')
   const isCreatePage = location.pathname.endsWith('/rh/servidores/novo')
 
@@ -103,63 +100,27 @@ export default function ServidoresPage() {
     staleTime: 60_000,
   })
 
-  const { data: selectedServidor, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
-    queryKey: ['servidor', selectedServidorId],
-    queryFn: () => servidoresApi.get(selectedServidorId).then((response) => response.data),
-    enabled: Boolean(selectedServidorId),
-    staleTime: 30_000,
-  })
-
-  const { data: editingServidor, isLoading: isLoadingEditing } = useQuery({
-    queryKey: ['servidor-edit', editingServidorId],
-    queryFn: () => servidoresApi.get(editingServidorId).then((response) => response.data),
-    enabled: Boolean(editingServidorId),
-    staleTime: 0,
-  })
-
-  const setorOptions = setoresData?.results || []
-  const setorValue = watch('setor')
-  const selectedSetorOption = setorValue && editingServidor ? {
-    id: editingServidor.setor,
-    nome: editingServidor.setor_nome,
-  } : null
-
   useEffect(() => {
-    setSelectedServidorId(searchParams.get('servidorId'))
-  }, [searchParams])
+    const servidorId = searchParams.get('servidorId')
+    const mode = searchParams.get('mode')
 
-  useEffect(() => {
-    if (!editingServidor) {
+    if (!servidorId || isCreatePage) {
       return
     }
 
-    reset({
-      username: editingServidor.username || '',
-      nome_completo: editingServidor.nome_completo || '',
-      cpf: editingServidor.cpf || '',
-      email: editingServidor.email || '',
-      tipo: editingServidor.tipo || 'PROFESSOR',
-      setor: editingServidor.setor ? String(editingServidor.setor) : '',
-      is_active: Boolean(editingServidor.is_active),
-      password: '',
-    })
-  }, [editingServidor, reset])
+    navigate(mode === 'edit' ? `/rh/servidores/${servidorId}/editar` : `/rh/servidores/${servidorId}`, { replace: true })
+  }, [isCreatePage, navigate, searchParams])
+
+  const setorOptions = setoresData?.results || []
+  const setorValue = watch('setor')
 
   const saveMutation = useMutation({
-    mutationFn: ({ id, payload }) => (id ? servidoresApi.update(id, payload) : servidoresApi.create(payload)),
-    onSuccess: (_response, variables) => {
+    mutationFn: ({ payload }) => servidoresApi.create(payload),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servidores'] })
-      if (variables.id) {
-        queryClient.invalidateQueries({ queryKey: ['servidor', variables.id] })
-        toast.success('Servidor atualizado com sucesso.')
-      } else {
-        toast.success('Servidor criado com sucesso.')
-      }
-      setEditingServidorId(null)
+      toast.success('Servidor criado com sucesso.')
       reset(DEFAULT_VALUES)
-      if (!variables.id) {
-        navigate('/rh/servidores')
-      }
+      navigate('/rh/servidores')
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Nao foi possivel salvar o servidor.'))
@@ -171,42 +132,12 @@ export default function ServidoresPage() {
     onSuccess: (_response, id) => {
       queryClient.invalidateQueries({ queryKey: ['servidores'] })
       queryClient.invalidateQueries({ queryKey: ['servidor', id] })
-      if (selectedServidorId === id) {
-        setSelectedServidorId(null)
-      }
-      if (editingServidorId === id) {
-        setEditingServidorId(null)
-        reset(DEFAULT_VALUES)
-      }
       toast.success('Servidor excluido com sucesso.')
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Nao foi possivel excluir o servidor.'))
     },
   })
-
-  const detailsFields = selectedServidor
-    ? [
-        { label: 'ID', value: selectedServidor.id },
-        { label: 'Servidor', value: selectedServidor.nome_completo },
-        { label: 'Usuario', value: selectedServidor.username },
-        { label: 'CPF', value: selectedServidor.cpf },
-        { label: 'E-mail', value: selectedServidor.email || '-' },
-        { label: 'Perfil', value: selectedServidor.tipo_display },
-        { label: 'Setor', value: selectedServidor.setor_nome || '-' },
-        { label: 'Ativo', value: selectedServidor.is_active },
-      ]
-    : []
-
-  const openEditForm = (id) => {
-    setSelectedServidorId(null)
-    setEditingServidorId(id)
-  }
-
-  const closeForm = () => {
-    setEditingServidorId(null)
-    reset(DEFAULT_VALUES)
-  }
 
   const onSubmit = handleSubmit(async (formData) => {
     const payload = {
@@ -223,10 +154,7 @@ export default function ServidoresPage() {
       payload.password = formData.password
     }
 
-    await saveMutation.mutateAsync({
-      id: editingServidorId,
-      payload,
-    })
+    await saveMutation.mutateAsync({ payload })
   })
 
   const handleDelete = (row) => {
@@ -325,10 +253,10 @@ export default function ServidoresPage() {
         emptyMessage="Nenhum servidor encontrado."
         rowActions={(row) => (
           <div className="table-actions">
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSearchParams({ servidorId: String(row.id) })}>
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => navigate(`/rh/servidores/${row.id}`)}>
               <Eye size={14} /> Visualizar
             </button>
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => openEditForm(row.id)}>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/rh/servidores/${row.id}/editar`)}>
               <Pencil size={14} /> Editar
             </button>
             <button type="button" className="btn btn--danger btn--sm" onClick={() => handleDelete(row)}>
@@ -337,93 +265,6 @@ export default function ServidoresPage() {
           </div>
         )}
       />
-
-      {selectedServidorId ? (
-        <EntityDetailsPanel
-          title="Detalhes do servidor"
-          subtitle={selectedServidor?.nome_completo || 'Consultando servidor selecionado'}
-          fields={detailsFields}
-          isLoading={isLoadingDetails}
-          errorMessage={isErrorDetails ? 'Nao foi possivel carregar os detalhes deste servidor.' : ''}
-          onClose={() => setSearchParams({})}
-        />
-      ) : null}
-
-      {editingServidorId ? (
-        <EntityFormPanel
-          title="Editar servidor"
-          subtitle="Atualize os dados do servidor selecionado."
-          onSubmit={onSubmit}
-          onCancel={closeForm}
-          submitLabel="Salvar alteracoes"
-          isSubmitting={isSubmitting || saveMutation.isPending || isLoadingEditing}
-        >
-          <div className="form-field">
-            <label htmlFor="servidor-username">Usuario</label>
-            <input id="servidor-username" type="text" {...register('username', { required: 'Informe o usuario' })} />
-            {errors.username ? <span className="field-error">{errors.username.message}</span> : null}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="servidor-nome">Nome completo</label>
-            <input id="servidor-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />
-            {errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="servidor-cpf">CPF</label>
-            <input id="servidor-cpf" type="text" {...register('cpf', { required: 'Informe o CPF' })} />
-            {errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="servidor-email">E-mail</label>
-            <input id="servidor-email" type="email" {...register('email')} />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="servidor-tipo">Perfil</label>
-            <select id="servidor-tipo" className="select" {...register('tipo', { required: 'Selecione o perfil' })}>
-              {PERFIL_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            {errors.tipo ? <span className="field-error">{errors.tipo.message}</span> : null}
-          </div>
-
-          <SearchableRemoteSelect
-            id="servidor-setor"
-            label="Setor"
-            searchLabel="Buscar setor"
-            searchPlaceholder="Digite nome, sigla ou codigo"
-            searchValue={setorSearch}
-            onSearchChange={setSetorSearch}
-            value={setorValue || ''}
-            onChange={(nextValue) => setValue('setor', nextValue)}
-            options={setorOptions}
-            selectedOption={selectedSetorOption}
-            emptyOptionLabel="Sem setor"
-            getOptionLabel={(setor) => setor.nome}
-          />
-
-          <div className="form-field">
-            <label htmlFor="servidor-password">{editingServidorId ? 'Nova senha' : 'Senha'}</label>
-            <input
-              id="servidor-password"
-              type="password"
-              {...register('password', editingServidorId ? {} : { required: 'Informe a senha inicial' })}
-            />
-            {errors.password ? <span className="field-error">{errors.password.message}</span> : null}
-          </div>
-
-          <div className="form-field form-field--checkbox">
-            <label className="checkbox-field">
-              <input type="checkbox" {...register('is_active')} />
-              <span>Servidor ativo</span>
-            </label>
-          </div>
-        </EntityFormPanel>
-      ) : null}
 
       {data ? (
         <div className="pagination">

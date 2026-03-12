@@ -61,6 +61,7 @@ class ServidorProfileSerializer(serializers.ModelSerializer):
     historico_funcional = ServidorHistoricoFuncionalSerializer(many=True, read_only=True)
     ferias = ServidorFeriasSerializer(many=True, read_only=True)
     posicao = serializers.SerializerMethodField(read_only=True)
+    dados_bancarios = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ServidorPerfil
@@ -113,6 +114,7 @@ class ServidorProfileSerializer(serializers.ModelSerializer):
             "historico_funcional",
             "ferias",
             "posicao",
+            "dados_bancarios",
         ]
 
     def get_nome_registro(self, obj):
@@ -143,8 +145,16 @@ class ServidorProfileSerializer(serializers.ModelSerializer):
         return {
             "posicao_atual": obj.posicao_atual,
             "cargo_atual": obj.cargo_atual or obj.usuario.get_tipo_display(),
+            "regime_trabalho": obj.regime_trabalho,
             "jornada_trabalho": obj.jornada_trabalho,
             "classe_funcional": obj.classe_funcional,
             "nivel_funcional": obj.nivel_funcional,
             "setor_atual": getattr(obj.usuario.setor, "nome", ""),
+        }
+
+    def get_dados_bancarios(self, obj):
+        return {
+            "banco": obj.banco,
+            "agencia": obj.agencia,
+            "conta_corrente": obj.conta_corrente,
         }

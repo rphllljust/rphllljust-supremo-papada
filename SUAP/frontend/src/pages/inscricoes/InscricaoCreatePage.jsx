@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { inscricoesApi, publicacoesApi } from '@/api/endpoints'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
@@ -38,8 +38,10 @@ function getErrorMessage(error, fallback) {
 export default function InscricaoCreatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const preselectedPublicacaoId = searchParams.get('publicacao') || ''
   const [editalSearch, setEditalSearch] = useState('')
-  const [formData, setFormData] = useState(DEFAULT_INSCRICAO_FORM)
+  const [formData, setFormData] = useState(() => ({ ...DEFAULT_INSCRICAO_FORM, publicacao: preselectedPublicacaoId }))
 
   const { data: editaisData } = useQuery({
     queryKey: ['publicacoes', 'inscricoes-options', editalSearch],
@@ -47,24 +49,43 @@ export default function InscricaoCreatePage() {
     staleTime: 60_000,
   })
 
+  const { data: preselectedEdital } = useQuery({
+    queryKey: ['publicacao', preselectedPublicacaoId],
+    queryFn: () => publicacoesApi.get(preselectedPublicacaoId).then((response) => response.data),
+    enabled: Boolean(preselectedPublicacaoId),
+    staleTime: 60_000,
+  })
+
   const saveMutation = useMutation({
     mutationFn: (payload) => inscricoesApi.create(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['inscricoes'] })
+      if (preselectedPublicacaoId) {
+        await queryClient.invalidateQueries({ queryKey: ['publicacao', preselectedPublicacaoId] })
+      }
       toast.success('Inscricao criada com sucesso.')
-      navigate('/inscricoes?aba=inscricoes')
+      navigate(preselectedPublicacaoId ? `/inscricoes/editais/${preselectedPublicacaoId}?aba=candidatos` : '/inscricoes?aba=inscricoes')
     },
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a inscricao.')),
   })
 
   const editais = editaisData?.results || []
+  const selectedOption = useMemo(() => {
+    if (!formData.publicacao) return null
+    if (preselectedEdital && String(preselectedEdital.id) === String(formData.publicacao)) {
+      return preselectedEdital
+    }
+    return editais.find((item) => String(item.id) === String(formData.publicacao)) || null
+  }, [editais, formData.publicacao, preselectedEdital])
+
+  const backTarget = preselectedPublicacaoId ? `/inscricoes/editais/${preselectedPublicacaoId}?aba=candidatos` : '/inscricoes?aba=inscricoes'
 
   return (
     <div className="page page--wide">
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to="/inscricoes?aba=inscricoes">Inscrições / Editais</Link>
+        <Link to={backTarget}>Inscrições / Editais</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <span>Nova Inscrição</span>
       </nav>
@@ -75,7 +96,7 @@ export default function InscricaoCreatePage() {
           <p className="page-subtitle">O cadastro do candidato agora usa uma página separada da listagem.</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate('/inscricoes?aba=inscricoes')}>
+          <button type="button" className="btn btn--outline" onClick={() => navigate(backTarget)}>
             <ArrowLeft size={16} /> Voltar para inscrições
           </button>
         </div>
@@ -103,7 +124,7 @@ export default function InscricaoCreatePage() {
             observacao: formData.observacao.trim(),
           })
         }}
-        onCancel={() => navigate('/inscricoes?aba=inscricoes')}
+        onCancel={() => navigate(backTarget)}
         submitLabel="Criar inscrição"
         isSubmitting={saveMutation.isPending}
       >
@@ -117,6 +138,7 @@ export default function InscricaoCreatePage() {
           value={formData.publicacao}
           onChange={(nextValue) => setFormData((current) => ({ ...current, publicacao: nextValue }))}
           options={editais}
+          selectedOption={selectedOption}
           getOptionLabel={(item) => `${item.titulo} - ${item.curso_nome}`}
         />
 

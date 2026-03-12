@@ -16,6 +16,11 @@ const PROFILE_LABELS = {
   ADMIN: 'Administrador',
 }
 
+function clearAuthStorage() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+}
+
 function normalizeUser(user) {
   if (!user) return null
 
@@ -51,7 +56,7 @@ export function AuthProvider({ children }) {
           debugLog('error', 'auth.bootstrap.failed', {
             error: normalizeError(error),
           })
-          localStorage.clear()
+          clearAuthStorage()
           setUser(null)
         })
         .finally(() => {
@@ -94,7 +99,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    localStorage.clear()
+    clearAuthStorage()
     setUser(null)
     debugLog('info', 'auth.logout.finished')
   }, [])

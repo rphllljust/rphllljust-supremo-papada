@@ -331,10 +331,7 @@ function buildRegistryLink(user) {
     return '/rh/servidores'
   }
 
-  return {
-    pathname: '/rh/servidores',
-    search: `?servidorId=${user.id}`,
-  }
+  return `/rh/servidores/${user.id}`
 }
 
 function SidebarLeaf({ item }) {
