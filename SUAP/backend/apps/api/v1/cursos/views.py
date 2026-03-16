@@ -3,27 +3,57 @@ from rest_framework import generics
 
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
-from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso
+from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso, EixoTecnologico
 
-from .serializers import AreaCursoSerializer, ComponenteCurricularSerializer, CursoSerializer, EixoTecnologicoSerializer
+from .serializers import AreaCursoSerializer, ComponenteCurricularSerializer, CursoSerializer, EixoTecnologicoManageSerializer, EixoTecnologicoSerializer
 
 
-class EixoTecnologicoListApiView(generics.ListAPIView):
+class EixoTecnologicoListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
     access_surface = "api"
     access_action = "view"
-    serializer_class = EixoTecnologicoSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return EixoTecnologicoManageSerializer
+        return EixoTecnologicoSerializer
 
     def get_queryset(self):
         search = self.request.query_params.get("search", "").strip()
-        queryset = Curso.objects.exclude(eixo_tecnologico="")
+        queryset = EixoTecnologico.objects.order_by("descricao")
 
         if search:
-            queryset = queryset.filter(eixo_tecnologico__icontains=search)
+            queryset = queryset.filter(descricao__icontains=search)
 
-        return queryset.values("eixo_tecnologico").distinct().order_by("eixo_tecnologico")
+        return queryset
+
+
+class EixoTecnologicoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    serializer_class = EixoTecnologicoManageSerializer
+    queryset = EixoTecnologico.objects.order_by("descricao")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def perform_destroy(self, instance):
+        Curso.objects.filter(eixo_tecnologico=instance.descricao).update(eixo_tecnologico="")
+        instance.delete()
 
 
 class ComponenteCurricularListApiView(generics.ListCreateAPIView):
@@ -185,13 +215,20 @@ class AreaCursoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
         return super().get_permissions()
 
 
-class CursoListApiView(generics.ListAPIView):
+class CursoListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
     access_surface = "api"
     access_action = "view"
     serializer_class = CursoSerializer
     pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
 
     def get_queryset(self):
         queryset = Curso.objects.select_related("unidade", "area_curso").order_by("nome")
@@ -219,10 +256,17 @@ class CursoListApiView(generics.ListAPIView):
         return queryset.distinct()
 
 
-class CursoDetailApiView(generics.RetrieveAPIView):
+class CursoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
     access_surface = "api"
     access_action = "view"
     serializer_class = CursoSerializer
     queryset = Curso.objects.select_related("unidade", "area_curso")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()

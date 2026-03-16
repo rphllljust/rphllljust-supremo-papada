@@ -1,21 +1,54 @@
-version: '3'
 services:
   postgres:
-    image: postgres
-    ports:
-      - 5432:5432
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_USER: user
-      POSTGRES_DB: gestao_escolar
+      TZ: America/Cuiaba
+      PGTZ: America/Cuiaba
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-user-postgresql.sql:/docker-entrypoint-initdb.d/init-user-postgresql.sql
-      - /etc/localtime:/etc/localtime:ro
-      
+
+  backend:
+    build:
+      context: ./SUAP/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    working_dir: /app
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DJANGO_SEED_DEV_DATA: "0"
+      DJANGO_IMPORT_SQLITE_PATH: ""
+    command:
+      - sh
+      - -c
+      - |
+        if [ -n "$$DJANGO_IMPORT_SQLITE_PATH" ]; then
+          python manage.py migrate_sqlite_to_postgres --source "$$DJANGO_IMPORT_SQLITE_PATH" --flush-target
+        else
+          python manage.py migrate --noinput
+          if [ "$$DJANGO_SEED_DEV_DATA" = "1" ]; then
+            python manage.py seed_development_data --reset
+          fi
+        fi
+        python manage.py runserver 0.0.0.0:8000
+
+  frontend:
+    build:
+      context: ./SUAP/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    working_dir: /app
+
 volumes:
-  db_data:
   postgres_data:
-  esdata:
-    driver: local
-  esdata2:  # Added the missing volume declaration

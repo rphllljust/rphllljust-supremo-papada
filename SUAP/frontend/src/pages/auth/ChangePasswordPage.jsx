@@ -1,10 +1,11 @@
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { KeyRound, ShieldCheck } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 import { authApi } from '@/api/endpoints'
+import { useAuth } from '@/context/AuthContext'
 
 function getErrorMessage(error) {
   const data = error?.response?.data
@@ -21,6 +22,8 @@ function getErrorMessage(error) {
 }
 
 export default function ChangePasswordPage() {
+  const navigate = useNavigate()
+  const { user, refreshUser } = useAuth()
   const {
     register,
     handleSubmit,
@@ -39,9 +42,11 @@ export default function ChangePasswordPage() {
 
   const changePasswordMutation = useMutation({
     mutationFn: (payload) => authApi.changePassword(payload),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refreshUser()
       reset()
       toast.success('Senha alterada com sucesso.')
+      navigate('/dashboard', { replace: true })
     },
     onError: (error) => {
       toast.error(getErrorMessage(error))
@@ -61,7 +66,7 @@ export default function ChangePasswordPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Alterar senha</h1>
-          <p className="page-subtitle">Atualize sua credencial de acesso ao SUAP.</p>
+          <p className="page-subtitle">{user?.must_change_password ? 'Este e o seu primeiro acesso. Defina uma nova senha para continuar.' : 'Atualize sua credencial de acesso ao SUAP.'}</p>
         </div>
       </div>
 

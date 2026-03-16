@@ -7,23 +7,57 @@ Sistema web em **Django** para gestão escolar, com módulos de:
 * cursos
 * turmas
 * matrículas
-
-## Requisitos
+* **PostgreSQL** para desenvolvimento, homologação e produção
 
 * Python 3.12+
 * pip
-* **SQLite** para desenvolvimento
-* **PostgreSQL** para produção
+Todos os ambientes agora usam **PostgreSQL**, mas o Compose foi separado por perfil operacional usando arquivos específicos:
 
-## Banco de dados
+* `docker-compose.yml` -> base compartilhada
+* `docker-compose.development.yml` -> desenvolvimento
+* `docker-compose.homolog.yml` -> homologação
+* `docker-compose.production.yml` -> produção
 
-Atualmente, o projeto está configurado para utilizar **SQLite** durante a etapa de desenvolvimento, por ser mais simples de configurar e executar localmente.
+Com isso, cada ambiente tem portas, modo de frontend e credenciais próprias, sem misturar configuração.
 
-Para o ambiente de **produção**, o banco de dados previsto é o **PostgreSQL**, por oferecer mais robustez, desempenho e recursos adequados para uso em ambiente real.
+Para subir o ambiente de **desenvolvimento** completo:
+
+Nos ambientes de **homologação** e **produção**, o banco previsto é **PostgreSQL**.
+
+docker compose -p suap-dev -f docker-compose.yml -f docker-compose.development.yml up -d --build
+
+Para subir o ambiente de desenvolvimento completo:
+Para subir **homologação** local:
+```powershell
+cd ..\..
+docker compose up -d --build backend frontend
+docker compose -p suap-homolog -f docker-compose.yml -f docker-compose.homolog.yml up -d --build
+
+Ou simplesmente:
+Para subir **produção** local:
+```powershell
+```powershell
+cd ..\..
+docker compose -p suap-prod -f docker-compose.yml -f docker-compose.production.yml up -d --build
+```
+
+Portas previstas por ambiente:
+
+```text
+development: postgres 5432, backend 8000, frontend 5173
+homolog:     postgres 5433, backend 8001, frontend 5174
+production:  postgres 5434, backend 8002, frontend 4173
+```
 
 ## Como rodar o projeto no Windows
 
 ### 1. Clonar o repositório e entrar na pasta
+docker compose up -d --build
+```powershell
+git clone <url-do-repositorio>
+cd SUAP
+Nesse modo, o backend usa o `db.sqlite3` montado do diretório [SUAP/backend](c:\Users\jacja\Documents\github\suap-idep\SUAP\backend) e o frontend fica disponível em `http://127.0.0.1:5173/`.
+
 
 ```powershell
 git clone <url-do-repositorio>
@@ -43,17 +77,65 @@ py -m venv .venv
 pip install -r requirements.txt
 ```
 
+### 3.1. Subir desenvolvimento com Docker Compose
+
+```powershell
+cd ..\..
+docker compose -p suap-dev -f docker-compose.yml -f docker-compose.development.yml up -d --build
+cd SUAP\backend
+```
+
 ### 4. Aplicar as migrações
 
 ```powershell
 py manage.py migrate
 ```
 
+### 4.1. Popular o banco de desenvolvimento
+
+```powershell
+.\scripts\popular_banco.ps1 -Reset
+```
+
+Esse comando cria usuários, cursos, turmas, matrículas, notas, frequências, edital e processo de exemplo no banco atualmente configurado. Em `development`, isso significa o Postgres de desenvolvimento.
+
+Usuários padrão do seed:
+
+```text
+admin.dev / admin123
+secretaria.dev / secretaria123
+professor.dev / professor123
+aluno.dev.1 / aluno123
+aluno.dev.2 / aluno123
+```
+
+### 4.2. Migrar um SQLite existente para o Postgres
+
+```powershell
+.\scripts\migrar_sqlite_para_postgres.ps1 -Environment development -SqlitePath db.sqlite3
+```
+
+Esse comando foi pensado para levar uma base SQLite legada para qualquer ambiente Postgres configurado. Por padrão ele limpa o Postgres de destino antes da carga. Para preservar dados atuais, passe `-FlushTarget $false`.
+
 ### 5. Criar um usuário administrador *(opcional)*
 
 ```powershell
 py manage.py createsuperuser
 ```
+
+### 5.1. Bootstrap do administrador inicial
+
+```powershell
+py manage.py bootstrap_initial_admin
+```
+
+O comando acima cria ou recria o administrador inicial usando os valores de `INITIAL_ADMIN_CPF`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_ADMIN_FIRST_NAME` e `INITIAL_ADMIN_LAST_NAME` definidos no `.env` do ambiente. Por padrao ele marca o usuario com troca obrigatoria de senha no primeiro acesso.
+
+Politica de primeiro acesso:
+
+* contas com `must_change_password=True` sao redirecionadas para a troca de senha no login web do Django
+* a API JWT tambem expõe `must_change_password` no payload do usuario e em `/api/v1/auth/me`
+* o frontend React bloqueia a navegacao comum ate a senha ser alterada em `/comum/alterar-senha`
 
 ### 6. Rodar o servidor local
 
@@ -116,6 +198,8 @@ O backend agora suporta três ambientes via `APP_ENV`:
 * `homolog`
 * `production`
 
+Todos os arquivos de ambiente do backend usam PostgreSQL; o que muda entre eles é base, credencial, host/porta e flags de segurança.
+
 Ordem de resolução do arquivo de ambiente no backend:
 
 ```text
@@ -138,6 +222,14 @@ cd backend
 .\scripts\rodar.ps1 -Environment development
 .\scripts\rodar.ps1 -Environment homolog -HostAddress 0.0.0.0 -Port 8001
 .\scripts\rodar.ps1 -Environment production -HostAddress 0.0.0.0 -Port 8000
+```
+
+Exemplos de execução via Compose por ambiente:
+
+```powershell
+docker compose -p suap-dev -f docker-compose.yml -f docker-compose.development.yml up -d --build
+docker compose -p suap-homolog -f docker-compose.yml -f docker-compose.homolog.yml up -d --build
+docker compose -p suap-prod -f docker-compose.yml -f docker-compose.production.yml up -d --build
 ```
 
 No frontend, o Vite usa os modos `development`, `homolog` e `production`, com arquivos `.env` equivalentes:
@@ -364,8 +456,8 @@ py manage.py shell
 
 ## Observações
 
-* O projeto utiliza **SQLite apenas no ambiente de desenvolvimento**.
-* Para **produção**, o banco de dados planejado é o **PostgreSQL**.
+* O backend agora aceita sobrescrever configurações por variáveis de ambiente reais, além dos arquivos `.env*`.
+* O projeto usa **PostgreSQL** nos três ambientes; o `db.sqlite3` pode ser usado como origem para carga histórica via script.
 * O arquivo `README.md` pode ser expandido futuramente com:
 
   * padrões de código

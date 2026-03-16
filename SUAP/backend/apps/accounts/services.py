@@ -26,7 +26,14 @@ def authenticate_user_by_cpf_profile(*, cpf: str, password: str, perfil: str):
     return usuario
 
 
+def requires_password_change(user) -> bool:
+    return bool(user and getattr(user, "must_change_password", False))
+
+
 def redirect_by_profile(user) -> str:
+    if requires_password_change(user):
+        return reverse("accounts:password_change")
+
     tipo = getattr(user, "tipo", None)
     if tipo == PerfilUsuario.SECRETARIA:
         return reverse("matriculas:matriculas_list")
@@ -57,3 +64,45 @@ def create_public_user(*, first_name, last_name, email, cpf, perfil, password):
         password=password,
         pessoa=pessoa,
     )
+
+
+def ensure_initial_admin(*, cpf, password, first_name="Administrador", last_name="Inicial", force_password_change=True):
+    nome_completo = " ".join(part for part in [first_name, last_name] if part).strip() or cpf
+    pessoa, _ = Pessoa.objects.update_or_create(
+        cpf=cpf,
+        defaults={
+            "nome_completo": nome_completo,
+            "email": "",
+            "telefone": "",
+            "ativo": True,
+        },
+    )
+
+    usuario, _ = Usuario.objects.get_or_create(
+        cpf=cpf,
+        defaults={
+            "username": cpf,
+            "tipo": PerfilUsuario.ADMIN,
+            "pessoa": pessoa,
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": "",
+            "is_active": True,
+            "is_staff": True,
+            "is_superuser": True,
+        },
+    )
+
+    usuario.username = cpf
+    usuario.tipo = PerfilUsuario.ADMIN
+    usuario.pessoa = pessoa
+    usuario.first_name = first_name
+    usuario.last_name = last_name
+    usuario.email = ""
+    usuario.is_active = True
+    usuario.is_staff = True
+    usuario.is_superuser = True
+    usuario.must_change_password = force_password_change
+    usuario.set_password(password)
+    usuario.save()
+    return usuario

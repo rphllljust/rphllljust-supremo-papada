@@ -63,7 +63,7 @@ export const sidebarItems = [
     label: 'Acesso Rapido',
     icon: Rocket,
     items: [
-      { id: 'cursos', type: 'link', label: 'Cursos', to: '/ensino/areacurso/' },
+      { id: 'cursos', type: 'link', label: 'Cursos', to: '/ensino/cursoinicial/' },
       { id: 'turmas', type: 'link', label: 'Turmas', to: '/turmas' },
       { id: 'matriculas', type: 'link', label: 'Matriculas', to: '/matriculas' },
       { id: 'notas', type: 'link', label: 'Notas', to: '/notas' },
@@ -162,16 +162,16 @@ export const sidebarItems = [
           {
             id: 'cursos-formacao-superior',
             type: 'link',
-            label: 'Cursos de formação superior',
-            to: '/ensino/cursoformacaosuperior/',
-            activePrefixes: ['/ensino/cursoformacaosuperior', '/cursoformacaosuperior'],
+            label: 'Cursos itinerantes',
+            to: '/ensino/cursoitinerante/',
+            activePrefixes: ['/ensino/cursoitinerante', '/cursoitinerante', '/ensino/cursoformacaosuperior', '/cursoformacaosuperior'],
           },
           {
             id: 'areas-cursos',
             type: 'link',
-            label: 'Áreas de Cursos',
-            to: '/ensino/areacurso/',
-            activePrefixes: ['/ensino/areacurso'],
+            label: 'Cursos iniciais',
+            to: '/ensino/cursoinicial/',
+            activePrefixes: ['/ensino/cursoinicial', '/ensino/areacurso'],
           },
           {
             id: 'catalogo-cursos-tecnicos',

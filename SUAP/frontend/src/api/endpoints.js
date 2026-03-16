@@ -78,6 +78,11 @@ export const areasCursoApi = {
 }
 export const eixosTecnologicosApi = {
   list: (params) => client.get('/cursos/eixos-tecnologicos/', { params }),
+  get: (id) => client.get(`/cursos/eixos-tecnologicos/${id}/`),
+  create: (data) => client.post('/cursos/eixos-tecnologicos/', data),
+  update: (id, data) => client.put(`/cursos/eixos-tecnologicos/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/eixos-tecnologicos/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/eixos-tecnologicos/${id}/`),
 }
 export const componentesApi = {
   list: (params) => client.get('/cursos/componentes/', { params }),

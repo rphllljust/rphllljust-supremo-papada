@@ -36,8 +36,13 @@ class AuthChangePasswordApiView(APIView):
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"detail": "Senha alterada com sucesso."})
+        user = serializer.save()
+        return Response(
+            {
+                "detail": "Senha alterada com sucesso.",
+                "must_change_password": user.must_change_password,
+            }
+        )
 
 
 class AuthMeApiView(APIView):
@@ -51,6 +56,7 @@ class AuthMeApiView(APIView):
                 "id": user.id,
                 "cpf": user.cpf,
                 "perfil": user.tipo,
+                "must_change_password": user.must_change_password,
                 "username": user.username,
                 "first_name": user.first_name,
                 "last_name": user.last_name,

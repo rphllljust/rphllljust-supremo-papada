@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { CircleHelp, FileSpreadsheet } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
+import { CircleHelp, FileSpreadsheet, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { eixosTecnologicosApi } from '@/api/endpoints'
@@ -22,9 +23,12 @@ function exportRowsToExcel(rows) {
 }
 
 export default function EixosTecnologicosPage() {
+  const queryClient = useQueryClient()
   const [draftSearch, setDraftSearch] = useState('')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [draftDescription, setDraftDescription] = useState('')
+  const [editingRow, setEditingRow] = useState(null)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['eixos-tecnologicos', { search, page }],
@@ -32,8 +36,70 @@ export default function EixosTecnologicosPage() {
     staleTime: 30_000,
   })
 
+  const saveMutation = useMutation({
+    mutationFn: ({ id, payload }) => (id ? eixosTecnologicosApi.patch(id, payload) : eixosTecnologicosApi.create(payload)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['eixos-tecnologicos'] })
+      toast.success(editingRow ? 'Eixo tecnológico atualizado com sucesso.' : 'Eixo tecnológico criado com sucesso.')
+      setEditingRow(null)
+      setDraftDescription('')
+    },
+    onError: (error) => {
+      const detail = error?.response?.data?.descricao?.[0] || error?.response?.data?.detail
+      toast.error(detail || 'Não foi possível salvar o eixo tecnológico.')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => eixosTecnologicosApi.remove(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['eixos-tecnologicos'] })
+      toast.success('Eixo tecnológico removido com sucesso.')
+    },
+    onError: (error) => {
+      const detail = error?.response?.data?.detail
+      toast.error(detail || 'Não foi possível remover o eixo tecnológico.')
+    },
+  })
+
   const rows = data?.results || []
   const total = data?.count || 0
+  const formTitle = useMemo(() => (editingRow ? 'Editar eixo tecnológico' : 'Novo eixo tecnológico'), [editingRow])
+
+  const startCreate = () => {
+    setEditingRow(null)
+    setDraftDescription('')
+  }
+
+  const startEdit = (row) => {
+    setEditingRow(row)
+    setDraftDescription(row.descricao)
+  }
+
+  const cancelForm = () => {
+    setEditingRow(null)
+    setDraftDescription('')
+  }
+
+  const handleSave = () => {
+    const descricao = draftDescription.trim()
+    if (!descricao) {
+      toast.error('Informe a descrição do eixo tecnológico.')
+      return
+    }
+
+    saveMutation.mutate({
+      id: editingRow?.id,
+      payload: { descricao },
+    })
+  }
+
+  const handleDelete = (row) => {
+    if (!window.confirm(`Deseja realmente remover o eixo tecnológico ${row.descricao}? Os cursos vinculados ficarão sem eixo.`)) {
+      return
+    }
+    deleteMutation.mutate(row.id)
+  }
 
   return (
     <div className="page page--wide area-cursos-page">
@@ -48,6 +114,9 @@ export default function EixosTecnologicosPage() {
           <h1 className="page-title">Eixos Tecnológicos</h1>
         </div>
         <div className="page-header__actions">
+          <button type="button" className="btn btn--primary" onClick={startCreate}>
+            <Plus size={16} /> Novo Eixo
+          </button>
           <button type="button" className="btn btn--dark" onClick={() => exportRowsToExcel(rows)}>
             <FileSpreadsheet size={16} /> Exportar para XLS
           </button>
@@ -63,6 +132,26 @@ export default function EixosTecnologicosPage() {
           </Link>
         </div>
       </div>
+
+      <section className="dashboard-card area-curso-edit-form">
+        <div className="area-cursos-filters-card__title">{formTitle}</div>
+        <div className="area-curso-edit-row">
+          <label className="area-curso-edit-row__label">* Descrição</label>
+          <div className="area-curso-edit-row__field">
+            <input value={draftDescription} onChange={(event) => setDraftDescription(event.target.value)} />
+          </div>
+        </div>
+        <div className="componente-edit-form__actions">
+          <button type="button" className="btn btn--primary" onClick={handleSave} disabled={saveMutation.isPending}>
+            <Save size={16} /> Salvar
+          </button>
+          {(editingRow || draftDescription) ? (
+            <button type="button" className="btn btn--outline" onClick={cancelForm}>
+              <X size={16} /> Cancelar
+            </button>
+          ) : null}
+        </div>
+      </section>
 
       <section className="dashboard-card area-cursos-filters-card">
         <div className="area-cursos-filters-card__title">Filtros:</div>
@@ -103,17 +192,28 @@ export default function EixosTecnologicosPage() {
                   <tr>
                     <th className="area-cursos-table__index">#</th>
                     <th>Descrição</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={2} className="area-cursos-table__empty">Carregando eixos tecnológicos...</td>
+                      <td colSpan={3} className="area-cursos-table__empty">Carregando eixos tecnológicos...</td>
                     </tr>
                   ) : rows.map((row, index) => (
-                    <tr key={row.descricao}>
+                    <tr key={row.id}>
                       <td>{(page - 1) * 10 + index + 1}</td>
                       <td>{row.descricao}</td>
+                      <td>
+                        <div className="area-cursos-table__actions">
+                          <button type="button" className="btn btn--outline btn--icon" onClick={() => startEdit(row)} aria-label={`Editar eixo ${row.descricao}`}>
+                            <Pencil size={14} />
+                          </button>
+                          <button type="button" className="btn btn--outline btn--icon" onClick={() => handleDelete(row)} aria-label={`Remover eixo ${row.descricao}`} disabled={deleteMutation.isPending}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

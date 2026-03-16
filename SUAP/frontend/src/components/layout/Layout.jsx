@@ -35,9 +35,11 @@ const BREADCRUMB_LABELS = {
   'alterar-senha': 'Alterar Senha',
   ensino: 'Ensino',
   componentes: 'Componentes',
-  areacurso: 'Areas de Cursos',
+  areacurso: 'Cursos iniciais',
+  cursoinicial: 'Cursos iniciais',
   eixotecnologico: 'Eixos Tecnologicos',
-  cursoformacaosuperior: 'Cursos de formacao superior',
+  cursoformacaosuperior: 'Cursos itinerantes',
+  cursoitinerante: 'Cursos itinerantes',
   cursotecnico: 'Catalogo de cursos tecnicos',
   editar: 'Editar',
   nova: 'Nova',
@@ -73,6 +75,19 @@ const STATIC_BREADCRUMB_PREFIXES = [
     ],
   },
 ]
+
+const ENVIRONMENT_LABELS = {
+  development: 'DEV.',
+  homolog: 'HOMOLOG.',
+  production: 'PROD.',
+}
+
+function getEnvironmentLabel() {
+  const rawEnvironment = (import.meta.env.VITE_APP_ENV || import.meta.env.MODE || 'development').trim().toLowerCase()
+  return ENVIRONMENT_LABELS[rawEnvironment] || rawEnvironment.toUpperCase()
+}
+
+const SIDEBAR_ENVIRONMENT_LABEL = getEnvironmentLabel()
 
 function normalizePath(path) {
   if (!path) return '/'
@@ -553,7 +568,7 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar__header">
           <span className="sidebar__wordmark">suap</span>
-          <span className="sidebar__environment">HOMOLOG.</span>
+          <span className="sidebar__environment">{SIDEBAR_ENVIRONMENT_LABEL}</span>
           <span className="sidebar__header-spacer" aria-hidden="true" />
           <NavLink
             to="/comum/notificacoes"

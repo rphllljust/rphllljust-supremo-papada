@@ -1,10 +1,31 @@
 from rest_framework import serializers
 
-from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso
+from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso, EixoTecnologico
 
 
-class EixoTecnologicoSerializer(serializers.Serializer):
-    descricao = serializers.CharField(source='eixo_tecnologico')
+class EixoTecnologicoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EixoTecnologico
+        fields = ['id', 'descricao']
+
+
+class EixoTecnologicoManageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EixoTecnologico
+        fields = ['id', 'descricao']
+
+    def validate_descricao(self, value):
+        descricao = value.strip()
+        if not descricao:
+            raise serializers.ValidationError('Informe a descrição do eixo tecnológico.')
+        return descricao
+
+    def update(self, instance, validated_data):
+        descricao_anterior = instance.descricao
+        instance = super().update(instance, validated_data)
+        if descricao_anterior != instance.descricao:
+            Curso.objects.filter(eixo_tecnologico=descricao_anterior).update(eixo_tecnologico=instance.descricao)
+        return instance
 
 
 class ComponenteCurricularSerializer(serializers.ModelSerializer):
@@ -98,3 +119,28 @@ class CursoSerializer(serializers.ModelSerializer):
             "eixo_tecnologico",
             "carga_horaria",
         ]
+
+    def validate_nome(self, value):
+        nome = value.strip()
+        if not nome:
+            raise serializers.ValidationError('Informe o nome do curso.')
+        return nome
+
+    def validate_sigla(self, value):
+        return value.strip()
+
+    def validate_eixo_tecnologico(self, value):
+        return value.strip()
+
+    def create(self, validated_data):
+        self._sync_eixo_tecnologico(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        self._sync_eixo_tecnologico(validated_data)
+        return super().update(instance, validated_data)
+
+    def _sync_eixo_tecnologico(self, validated_data):
+        descricao = validated_data.get('eixo_tecnologico', '')
+        if descricao:
+            EixoTecnologico.objects.get_or_create(descricao=descricao)

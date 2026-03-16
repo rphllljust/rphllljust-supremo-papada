@@ -77,6 +77,7 @@ class DocumentoPessoal(models.Model):
 class Usuario(AbstractUser):
     cpf = models.CharField(max_length=11, unique=True)
     tipo = models.CharField(max_length=20, choices=PerfilUsuario)
+    must_change_password = models.BooleanField(default=False)
     pessoa = models.OneToOneField(Pessoa, on_delete=models.SET_NULL, null=True, blank=True, related_name="usuario")
     setor = models.ForeignKey("setores.Setor", on_delete=models.SET_NULL, null=True, blank=True, related_name="servidores")
 

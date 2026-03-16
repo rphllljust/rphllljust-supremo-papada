@@ -28,6 +28,7 @@ function normalizeUser(user) {
 
   return {
     ...user,
+    must_change_password: Boolean(user.must_change_password),
     nome_completo: user.nome_completo || nomeCompleto || user.username,
     tipo_display: user.tipo_display || PROFILE_LABELS[user.perfil] || PROFILE_LABELS[user.tipo] || user.perfil || user.tipo,
   }
@@ -37,20 +38,25 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const refreshUser = useCallback(async () => {
+    const { data } = await authApi.me()
+    const normalizedUser = normalizeUser(data)
+    setUser(normalizedUser)
+    return normalizedUser
+  }, [])
+
   // Carrega usuário na inicialização se tiver token salvo
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     debugLog('info', 'auth.bootstrap.begin', { hasToken: Boolean(token) })
     if (token) {
-      authApi.me()
-        .then((res) => {
-          const normalizedUser = normalizeUser(res.data)
+      refreshUser()
+        .then((normalizedUser) => {
           debugLog('info', 'auth.bootstrap.success', {
             userId: normalizedUser?.id,
             username: normalizedUser?.username,
             tipo: normalizedUser?.tipo,
           })
-          setUser(normalizedUser)
         })
         .catch((error) => {
           debugLog('error', 'auth.bootstrap.failed', {
@@ -67,7 +73,7 @@ export function AuthProvider({ children }) {
       debugLog('info', 'auth.bootstrap.no_token')
       setLoading(false)
     }
-  }, [])
+  }, [refreshUser])
 
   const login = useCallback(async ({ cpf, password, perfil }) => {
     debugLog('info', 'auth.login.begin', { cpf, perfil })
@@ -107,7 +113,7 @@ export function AuthProvider({ children }) {
   const isAuthenticated = Boolean(user)
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, isAuthenticated, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

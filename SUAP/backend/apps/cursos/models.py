@@ -2,6 +2,18 @@ from django.db import models
 from apps.unidades.models import Unidade
 
 
+class EixoTecnologico(models.Model):
+    descricao = models.CharField(max_length=200, unique=True, verbose_name='Descrição')
+
+    class Meta:
+        verbose_name = 'Eixo Tecnológico'
+        verbose_name_plural = 'Eixos Tecnológicos'
+        ordering = ['descricao']
+
+    def __str__(self):
+        return self.descricao
+
+
 class AreaCurso(models.Model):
     descricao = models.CharField(max_length=200, unique=True, verbose_name='Descrição')
     codigo_cine = models.CharField(max_length=20, blank=True, default='', verbose_name='Código CINE')

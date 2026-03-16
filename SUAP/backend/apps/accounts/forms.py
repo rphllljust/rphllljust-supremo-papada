@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
@@ -93,6 +94,8 @@ class CadastroPublicoForm(forms.Form):
 
         if cleaned_data.get("password1") != cleaned_data.get("password2"):
             raise ValidationError("As senhas nao conferem.")
+
+        validate_password(cleaned_data["password1"])
         return cleaned_data
 
 

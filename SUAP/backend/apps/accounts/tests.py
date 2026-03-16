@@ -112,6 +112,41 @@ class AccountsFlowTests(TestCase):
         self.assertContains(response, "Agora faca login")
         self.assertTrue(Usuario.objects.filter(username=cpf, tipo=PerfilUsuario.PROFESSOR).exists())
 
+    def test_login_redirects_to_password_change_when_first_access_is_required(self):
+        cpf = gerar_cpf(123456798)
+        Usuario.objects.create_user(
+            username=cpf,
+            cpf=cpf,
+            tipo=PerfilUsuario.ADMIN,
+            password="senha12345",
+            must_change_password=True,
+        )
+
+        response = self.client.post(
+            reverse("accounts:login"),
+            {"username": cpf, "password": "senha12345", "perfil": PerfilUsuario.ADMIN},
+        )
+
+        self.assertRedirects(response, reverse("accounts:password_change"))
+
+    def test_signup_rejects_weak_password(self):
+        response = self.client.post(
+            reverse("accounts:register"),
+            {
+                "first_name": "Novo",
+                "last_name": "Usuario",
+                "email": "fraca@example.com",
+                "cpf": gerar_cpf(123456799),
+                "perfil": PerfilUsuario.PROFESSOR,
+                "password1": "12345678",
+                "password2": "12345678",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "muito comum")
+
     def test_signup_rejects_invalid_cpf(self):
         cpf_valido = gerar_cpf(123456788)
         ultimo = "0" if cpf_valido[-1] != "0" else "1"
@@ -374,3 +409,58 @@ class ApiJwtAuthenticationTests(TestCase):
         self.assertEqual(response.data["perfil"], PerfilUsuario.SECRETARIA)
         self.assertIn("access_context", response.data)
         self.assertIn("api:usuarios:view", response.data["access_context"]["permission_claims"])
+
+    def test_token_and_me_include_first_access_flag(self):
+        self.secretaria.must_change_password = True
+        self.secretaria.save(update_fields=["must_change_password"])
+
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+
+        self.assertEqual(token_response.status_code, 200)
+        self.assertTrue(token_response.data["user"]["must_change_password"])
+
+        access_token = token_response.data["access"]
+        self.api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        me_response = self.api_client.get(reverse("api_v1_auth:me"))
+
+        self.assertEqual(me_response.status_code, 200)
+        self.assertTrue(me_response.data["must_change_password"])
+
+    def test_change_password_clears_first_access_flag(self):
+        self.secretaria.must_change_password = True
+        self.secretaria.save(update_fields=["must_change_password"])
+
+        token_response = self.api_client.post(
+            reverse("api_v1_auth:token_obtain_pair"),
+            {
+                "cpf": self.cpf_secretaria,
+                "password": "senha123",
+                "perfil": PerfilUsuario.SECRETARIA,
+            },
+            format="json",
+        )
+        access_token = token_response.data["access"]
+
+        self.api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+        response = self.api_client.post(
+            reverse("api_v1_auth:change-password"),
+            {
+                "current_password": "senha123",
+                "new_password": "SenhaSegura123!",
+                "new_password_confirm": "SenhaSegura123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["must_change_password"])
+        self.secretaria.refresh_from_db()
+        self.assertFalse(self.secretaria.must_change_password)

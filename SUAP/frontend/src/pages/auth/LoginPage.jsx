@@ -49,9 +49,9 @@ export default function LoginPage() {
 
   const onSubmit = async (formData) => {
     try {
-      await login(formData)
+      const authenticatedUser = await login(formData)
       toast.success('Login realizado com sucesso!')
-      navigate(nextPath, { replace: true })
+      navigate(authenticatedUser?.must_change_password ? '/comum/alterar-senha' : nextPath, { replace: true })
     } catch (err) {
       const data = err.response?.data
       const msg = data?.detail || data?.cpf?.[0] || data?.perfil?.[0] || 'Credenciais inválidas.'

@@ -13,12 +13,6 @@ export default function CursosFormacaoSuperiorPage() {
   const [areaCurso, setAreaCurso] = useState('')
   const [page, setPage] = useState(1)
 
-  const openPlaceholder = (slug, title, description) => {
-    navigate(`/indisponivel/${slug}`, {
-      state: { title, description },
-    })
-  }
-
   const { data, isLoading, isError } = useQuery({
     queryKey: ['cursos-formacao-superior', { search, areaCurso, page }],
     queryFn: () => cursosApi.list({ apenas_superiores: true, search, area_curso: areaCurso || undefined, page }).then((response) => response.data),
@@ -40,25 +34,25 @@ export default function CursosFormacaoSuperiorPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <span>Cursos de formação superior</span>
+        <span>Cursos itinerantes</span>
       </nav>
 
       <div className="page-header area-cursos-page__header">
         <div>
-          <h1 className="page-title">Cursos de formação superior</h1>
+          <h1 className="page-title">Cursos itinerantes</h1>
         </div>
         <div className="page-header__actions">
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => openPlaceholder('novo-curso-formacao-superior', 'Adicionar Curso de formação superior', 'O formulário de cadastro de curso de formação superior ainda não foi portado para o frontend React.')}
+            onClick={() => navigate('/ensino/cursoitinerante/novo')}
           >
-            <Plus size={16} /> Adicionar Curso de formação superior
+            <Plus size={16} /> Adicionar Curso itinerante
           </button>
           <Link
-            to="/indisponivel/ajuda-cursos-formacao-superior"
+            to="/indisponivel/ajuda-cursos-itinerantes"
             state={{
-              title: 'Ajuda de Cursos de formação superior',
+              title: 'Ajuda de Cursos itinerantes',
               description: 'A ajuda detalhada desta funcionalidade ainda será portada para o frontend React.',
             }}
             className="btn btn--outline"
@@ -103,16 +97,16 @@ export default function CursosFormacaoSuperiorPage() {
       </section>
 
       {isError ? (
-        <div className="alert alert--error">Não foi possível carregar os cursos de formação superior com as permissões atuais.</div>
+        <div className="alert alert--error">Não foi possível carregar os cursos itinerantes com as permissões atuais.</div>
       ) : null}
 
       {!isLoading && rows.length === 0 ? (
-        <div className="area-cursos-empty-notice">Nenhum Curso de formação superior encontrado.</div>
+        <div className="area-cursos-empty-notice">Nenhum curso itinerante encontrado.</div>
       ) : null}
 
       {rows.length > 0 ? (
         <>
-          <div className="area-cursos-page__summary">Mostrando {rows.length} Curso de formação superior{rows.length !== 1 ? 'es' : ''}</div>
+          <div className="area-cursos-page__summary">Mostrando {rows.length} curso itinerante{rows.length !== 1 ? 's' : ''}</div>
 
           <section className="dashboard-card area-cursos-table-card">
             <div className="area-cursos-table-wrapper">
@@ -143,7 +137,7 @@ export default function CursosFormacaoSuperiorPage() {
             </div>
           </section>
 
-          <div className="area-cursos-page__summary">Mostrando {rows.length} Curso de formação superior{rows.length !== 1 ? 'es' : ''}</div>
+          <div className="area-cursos-page__summary">Mostrando {rows.length} curso itinerante{rows.length !== 1 ? 's' : ''}</div>
         </>
       ) : null}
 

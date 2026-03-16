@@ -53,7 +53,7 @@ export default function AreaCursoDetailPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to="/ensino/areacurso/">Áreas de cursos de formação superior</Link>
+        <Link to="/ensino/cursoinicial/">Cursos iniciais</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <span>{titulo}</span>
       </nav>
@@ -63,7 +63,7 @@ export default function AreaCursoDetailPage() {
           <h1 className="page-title">{titulo}</h1>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate(`/ensino/areacurso/${data.id}/editar`)}>
+          <button type="button" className="btn btn--outline" onClick={() => navigate(`/ensino/cursoinicial/${data.id}/editar`)}>
             <Pencil size={16} /> Editar
           </button>
         </div>

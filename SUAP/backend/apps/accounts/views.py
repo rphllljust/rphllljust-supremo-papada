@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.views import (
     LoginView,
+    PasswordChangeDoneView,
+    PasswordChangeView,
     PasswordResetCompleteView,
     PasswordResetConfirmView,
     PasswordResetDoneView,
@@ -95,4 +97,22 @@ class AccountsPasswordResetConfirmView(PasswordResetConfirmView):
 
 class AccountsPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = "accounts/password_reset_complete.html"
+
+
+class AccountsPasswordChangeView(PasswordChangeView):
+    template_name = "accounts/password_change_form.html"
+    success_url = reverse_lazy("accounts:password_change_done")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        user = self.request.user
+        if getattr(user, "must_change_password", False):
+            user.must_change_password = False
+            user.save(update_fields=["must_change_password"])
+        messages.success(self.request, "Senha alterada com sucesso.")
+        return response
+
+
+class AccountsPasswordChangeDoneView(PasswordChangeDoneView):
+    template_name = "accounts/password_change_done.html"
 

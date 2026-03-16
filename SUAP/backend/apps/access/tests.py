@@ -65,6 +65,16 @@ class AccessRoutesTests(TestCase):
         )
         self.assertEqual(redirect_by_profile(aluno), reverse("access:acesso_negado"))
 
+    def test_redirect_by_profile_prioritizes_password_change_when_required(self):
+        admin = Usuario.objects.create_user(
+            username="admin_access",
+            cpf=gerar_cpf(923456788),
+            tipo=PerfilUsuario.ADMIN,
+            password="x",
+            must_change_password=True,
+        )
+        self.assertEqual(redirect_by_profile(admin), reverse("accounts:password_change"))
+
 
 class AccessPoliciesTests(TestCase):
     def setUp(self):

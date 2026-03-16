@@ -88,19 +88,19 @@ export default function AreaCursoEditPage() {
 
       if (submitModeRef.current === 'add') {
         reset(DEFAULT_VALUES)
-        navigate('/ensino/areacurso/nova')
+        navigate('/ensino/cursoinicial/nova')
         return
       }
 
       if (submitModeRef.current === 'stay') {
         if (isCreateMode && savedId) {
-          navigate(`/ensino/areacurso/${savedId}/editar`, { replace: true })
+          navigate(`/ensino/cursoinicial/${savedId}/editar`, { replace: true })
         }
         return
       }
 
       if (savedId) {
-        navigate(`/ensino/areacurso/${savedId}`)
+        navigate(`/ensino/cursoinicial/${savedId}`)
       }
     },
     onError: (error) => {
@@ -113,7 +113,7 @@ export default function AreaCursoEditPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['areas-curso'] })
       toast.success('Área de curso removida com sucesso.')
-      navigate('/ensino/areacurso/')
+      navigate('/ensino/cursoinicial/')
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Não foi possível remover a área de curso.'))
@@ -172,7 +172,7 @@ export default function AreaCursoEditPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to="/ensino/areacurso/">Áreas de cursos de formação superior</Link>
+        <Link to="/ensino/cursoinicial/">Cursos iniciais</Link>
         {isCreateMode ? (
           <>
             <span className="profile-breadcrumb__sep">&gt;</span>
@@ -181,7 +181,7 @@ export default function AreaCursoEditPage() {
         ) : (
           <>
             <span className="profile-breadcrumb__sep">&gt;</span>
-            <Link to={`/ensino/areacurso/${data.id}`}>{titulo}</Link>
+            <Link to={`/ensino/cursoinicial/${data.id}`}>{titulo}</Link>
             <span className="profile-breadcrumb__sep">&gt;</span>
             <span>Editar {titulo}</span>
           </>
@@ -193,7 +193,7 @@ export default function AreaCursoEditPage() {
           <h1 className="page-title">{isCreateMode ? titulo : `Editar ${titulo}`}</h1>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/areacurso/' : `/ensino/areacurso/${data.id}`)}>
+          <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/cursoinicial/' : `/ensino/cursoinicial/${data.id}`)}>
             <ArrowLeft size={16} /> {isCreateMode ? 'Voltar para listagem' : 'Voltar para detalhes'}
           </button>
         </div>

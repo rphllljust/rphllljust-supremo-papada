@@ -17,6 +17,8 @@ export default function CatalogoCursosTecnicosPage() {
       listParams={{ apenas_tecnicos: true }}
       searchPlaceholder="Buscar curso técnico..."
       emptyMessage="Nenhum curso técnico encontrado."
+      createPath="/ensino/cursotecnico/novo"
+      editPathBuilder={(cursoId) => `/ensino/cursotecnico/${cursoId}/editar`}
     />
   )
 }

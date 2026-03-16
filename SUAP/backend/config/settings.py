@@ -41,7 +41,10 @@ ENV_DATA = ENV_REPOSITORY.data
 
 
 def env(key, default=None, cast=None):
-    value = ENV_DATA.get(key, default)
+    value = os.getenv(key)
+
+    if value is None:
+        value = ENV_DATA.get(key, default)
 
     if value is None or cast is None:
         return value
@@ -151,6 +154,7 @@ MIDDLEWARE = [
     'config.middleware.BlockDjangoTemplateUIMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'config.middleware.ForcePasswordChangeMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -188,7 +192,21 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    },
+]
 
 LANGUAGE_CODE = env_str("LANGUAGE_CODE", default="pt-br")
 
@@ -233,5 +251,6 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": env_bool("JWT_BLACKLIST_AFTER_ROTATION", default=True),
     "UPDATE_LAST_LOGIN": env_bool("JWT_UPDATE_LAST_LOGIN", default=True),
     "ALGORITHM": env_str("JWT_ALGORITHM", default="HS256"),
+    "SIGNING_KEY": env_str("JWT_SIGNING_KEY", default=SECRET_KEY),
     "AUTH_HEADER_TYPES": tuple(env_csv("JWT_AUTH_HEADER_TYPES", default="Bearer")),
 }

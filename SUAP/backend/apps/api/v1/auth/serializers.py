@@ -28,6 +28,7 @@ class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
         access_context = build_access_context(user)
         token["cpf"] = user.cpf
         token["perfil"] = user.tipo
+        token["must_change_password"] = user.must_change_password
         token["first_name"] = user.first_name
         token["last_name"] = user.last_name
         token["claims_version"] = access_context["claims_version"]
@@ -61,6 +62,7 @@ class PerfilTokenObtainPairSerializer(TokenObtainPairSerializer):
                 "id": self.user.id,
                 "cpf": self.user.cpf,
                 "perfil": self.user.tipo,
+                "must_change_password": self.user.must_change_password,
                 "username": self.user.username,
                 "first_name": self.user.first_name,
                 "last_name": self.user.last_name,
@@ -117,5 +119,6 @@ class ChangePasswordSerializer(serializers.Serializer):
     def save(self, **kwargs):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
-        user.save(update_fields=["password"])
+        user.must_change_password = False
+        user.save(update_fields=["password", "must_change_password"])
         return user
