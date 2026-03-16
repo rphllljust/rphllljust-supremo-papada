@@ -129,7 +129,7 @@ py manage.py createsuperuser
 py manage.py bootstrap_initial_admin
 ```
 
-O comando acima cria ou recria o administrador inicial usando os valores de `INITIAL_ADMIN_CPF`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_ADMIN_FIRST_NAME` e `INITIAL_ADMIN_LAST_NAME` definidos no `.env` do ambiente. Por padrao ele marca o usuario com troca obrigatoria de senha no primeiro acesso.
+O comando acima cria o administrador inicial usando os valores de `INITIAL_ADMIN_CPF`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_ADMIN_FIRST_NAME` e `INITIAL_ADMIN_LAST_NAME` definidos no `.env` do ambiente. Se o usuario ja existir, ele e preservado. Para recriar explicitamente o administrador inicial, use `py manage.py bootstrap_initial_admin --force`. Por padrao ele marca o usuario com troca obrigatoria de senha no primeiro acesso.
 
 Politica de primeiro acesso:
 

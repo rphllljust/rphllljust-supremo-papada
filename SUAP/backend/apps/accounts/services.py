@@ -66,7 +66,20 @@ def create_public_user(*, first_name, last_name, email, cpf, perfil, password):
     )
 
 
-def ensure_initial_admin(*, cpf, password, first_name="Administrador", last_name="Inicial", force_password_change=True):
+def ensure_initial_admin(
+    *,
+    cpf,
+    password,
+    first_name="Administrador",
+    last_name="Inicial",
+    force_password_change=True,
+    recreate_existing=False,
+):
+    cpf = normalize_cpf(cpf)
+    existing_user = Usuario.objects.filter(cpf=cpf).first()
+    if existing_user and not recreate_existing:
+        return existing_user, False
+
     nome_completo = " ".join(part for part in [first_name, last_name] if part).strip() or cpf
     pessoa, _ = Pessoa.objects.update_or_create(
         cpf=cpf,
@@ -78,22 +91,9 @@ def ensure_initial_admin(*, cpf, password, first_name="Administrador", last_name
         },
     )
 
-    usuario, _ = Usuario.objects.get_or_create(
-        cpf=cpf,
-        defaults={
-            "username": cpf,
-            "tipo": PerfilUsuario.ADMIN,
-            "pessoa": pessoa,
-            "first_name": first_name,
-            "last_name": last_name,
-            "email": "",
-            "is_active": True,
-            "is_staff": True,
-            "is_superuser": True,
-        },
-    )
-
+    usuario = existing_user or Usuario(cpf=cpf)
     usuario.username = cpf
+    usuario.cpf = cpf
     usuario.tipo = PerfilUsuario.ADMIN
     usuario.pessoa = pessoa
     usuario.first_name = first_name
@@ -105,4 +105,4 @@ def ensure_initial_admin(*, cpf, password, first_name="Administrador", last_name
     usuario.must_change_password = force_password_change
     usuario.set_password(password)
     usuario.save()
-    return usuario
+    return usuario, True
