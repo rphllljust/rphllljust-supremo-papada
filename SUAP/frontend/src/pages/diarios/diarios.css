@@ -1,0 +1,282 @@
+.diarios-page,
+.diario-detail-page {
+  gap: 1.5rem;
+}
+
+.diarios-page__header {
+  align-items: flex-start;
+}
+
+.diarios-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.9rem;
+}
+
+.diarios-summary-card {
+  border: 1px solid rgba(14, 30, 52, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(248, 250, 252, 0.98), rgba(234, 242, 250, 0.94));
+  padding: 1rem 1.1rem;
+  text-align: left;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.06);
+}
+
+.diarios-summary-card--active {
+  border-color: rgba(18, 96, 140, 0.45);
+  background: linear-gradient(160deg, rgba(226, 244, 255, 0.98), rgba(215, 232, 255, 0.96));
+}
+
+.diarios-summary-card--static {
+  cursor: default;
+}
+
+.diarios-summary-card__label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #52606d;
+  margin-bottom: 0.45rem;
+}
+
+.diarios-summary-card__value {
+  display: block;
+  font-size: 1.45rem;
+  color: #16324f;
+}
+
+.diarios-tabs {
+  background: #fff;
+  border-radius: 16px;
+  padding: 0.4rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.diarios-filter-grid,
+.diario-form-grid,
+.diario-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.diario-info-grid {
+  align-items: start;
+}
+
+.diario-info-field {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.diario-info-field--wide {
+  grid-column: 1 / -1;
+}
+
+.diario-info-field__label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+}
+
+.diario-info-field__value {
+  color: #0f172a;
+}
+
+.diarios-pendency-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.diarios-textarea {
+  min-height: 124px;
+  resize: vertical;
+}
+
+.diario-hero-card,
+.diario-panel,
+.diario-document-preview {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 1.35rem;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+.diario-hero-card {
+  background:
+    radial-gradient(circle at top right, rgba(14, 116, 144, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.96));
+}
+
+.diario-hero-card__main,
+.diario-panel__header,
+.diario-record-card__header,
+.diario-record-card__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.diario-hero-card__meta {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #0f766e;
+  margin-bottom: 0.4rem;
+}
+
+.diario-hero-card__summary {
+  margin-top: 1.2rem;
+}
+
+.diario-panel__header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.diario-detail-stack,
+.diario-record-stack,
+.diario-progress-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.diario-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.diario-table-wrap {
+  overflow-x: auto;
+}
+
+.diario-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diario-table th,
+.diario-table td {
+  padding: 0.85rem 0.7rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  text-align: left;
+  vertical-align: top;
+}
+
+.diario-table th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.diario-note-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.diario-note-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.62rem;
+  background: rgba(2, 132, 199, 0.1);
+  color: #0f4c81;
+  font-size: 0.78rem;
+}
+
+.diario-record-card {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.diario-record-card p {
+  margin: 0.7rem 0;
+  color: #334155;
+}
+
+.diario-record-card__footer {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.diario-record-card__footer a {
+  color: #0f4c81;
+  font-weight: 600;
+}
+
+.diario-empty-state {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.95);
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  color: #475569;
+}
+
+.diario-empty-state p {
+  margin: 0.25rem 0 0;
+}
+
+.diario-document-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.86rem;
+  color: #0f172a;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 16px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.diario-progress-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 3fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.diario-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  overflow: hidden;
+}
+
+.diario-progress-bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f766e, #2563eb);
+}
+
+@media (max-width: 900px) {
+  .diario-hero-card__main,
+  .diario-panel__header,
+  .diario-record-card__header,
+  .diario-record-card__footer,
+  .diario-progress-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .diario-progress-row {
+    align-items: stretch;
+  }
+}

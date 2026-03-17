@@ -7,7 +7,7 @@ class PerfilUsuario(models.TextChoices):
     ALUNO = "ALUNO", "Aluno"
     PROFESSOR = "PROFESSOR", "Professor"
     SECRETARIA = "SECRETARIA", "Secretaria"
-    COORDENACAO = "COORDENACAO", "Coordenacao/Consulta"
+    COORDENACAO = "COORDENACAO", "Coordenador de Curso"
     ADMIN = "ADMIN", "Administrador"
 
     @classmethod

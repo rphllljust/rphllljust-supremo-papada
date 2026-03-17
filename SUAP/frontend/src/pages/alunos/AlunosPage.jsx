@@ -9,7 +9,7 @@ import { alunosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
-import { formatCpf } from '@/utils/cpf'
+import { formatCpf, normalizeCpf } from '@/utils/cpf'
 
 const SITUACAO_OPTIONS = [
   { value: 'ATIVO', label: 'Ativo' },
@@ -203,7 +203,7 @@ export default function AlunosPage() {
       id: editingAlunoId,
       payload: {
         nome_completo: formData.nome_completo.trim(),
-        cpf: formData.cpf.trim(),
+        cpf: normalizeCpf(formData.cpf),
         email: formData.email.trim(),
         situacao: formData.situacao,
         is_active: Boolean(formData.is_active),

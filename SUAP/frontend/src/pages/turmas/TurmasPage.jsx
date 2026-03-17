@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
-import DataTable from '@/components/ui/DataTable'
+import { Link, useNavigate } from 'react-router-dom'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { BookOpen, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { cursosApi, turmasApi, usuariosApi } from '@/api/endpoints'
+
+import './turmas.css'
 
 const STATUS_BADGE = {
   PLANEJADA: 'badge--info',
@@ -18,10 +19,20 @@ const STATUS_BADGE = {
 }
 
 const STATUS_OPTIONS = [
+  { value: '', label: 'Todos os status' },
   { value: 'PLANEJADA', label: 'Planejada' },
   { value: 'ATIVA', label: 'Ativa' },
   { value: 'ENCERRADA', label: 'Encerrada' },
   { value: 'CANCELADA', label: 'Cancelada' },
+]
+
+const LIST_TABS = [
+  { key: 'TODOS', label: 'Todos' },
+  { key: 'ATIVAS', label: 'Ativas' },
+  { key: 'PLANEJADAS', label: 'Planejadas' },
+  { key: 'ENCERRADAS', label: 'Encerradas' },
+  { key: 'CANCELADAS', label: 'Canceladas' },
+  { key: 'SEM_DIARIOS', label: 'Sem diários' },
 ]
 
 const DEFAULT_FORM = {
@@ -42,27 +53,15 @@ function getErrorMessage(error, fallback) {
   return Array.isArray(firstValue) ? firstValue[0] : (firstValue || fallback)
 }
 
-const COLUMNS = [
-  { key: 'nome',           label: 'Turma' },
-  { key: 'curso_nome',     label: 'Curso' },
-  { key: 'ano_letivo',     label: 'Ano Letivo' },
-  { key: 'professor_nome', label: 'Professor' },
-  {
-    key: 'status',
-    label: 'Status',
-    render: (row) => (
-      <span className={`badge ${STATUS_BADGE[row.status] || ''}`}>
-        {row.status_display || row.status}
-      </span>
-    ),
-  },
-]
-
 export default function TurmasPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState('TODOS')
   const [statusFilter, setStatusFilter] = useState('')
+  const [anoLetivoFilter, setAnoLetivoFilter] = useState(String(new Date().getFullYear()))
+  const [cursoFilter, setCursoFilter] = useState('')
+  const [professorFilter, setProfessorFilter] = useState('')
   const [page, setPage] = useState(1)
   const [selectedTurmaId, setSelectedTurmaId] = useState(null)
   const [editingTurmaId, setEditingTurmaId] = useState(null)
@@ -71,8 +70,16 @@ export default function TurmasPage() {
   const [formData, setFormData] = useState(DEFAULT_FORM)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['turmas', { search, status: statusFilter, page }],
-    queryFn: () => turmasApi.list({ search, status: statusFilter || undefined, page }).then((r) => r.data),
+    queryKey: ['turmas', { search, status: statusFilter, ano_letivo: anoLetivoFilter, curso: cursoFilter, professor: professorFilter, aba: activeTab, page }],
+    queryFn: () => turmasApi.list({
+      search: search || undefined,
+      status: statusFilter || undefined,
+      ano_letivo: anoLetivoFilter || undefined,
+      curso: cursoFilter || undefined,
+      professor: professorFilter || undefined,
+      aba: activeTab,
+      page,
+    }).then((r) => r.data),
     staleTime: 30_000,
   })
 
@@ -146,6 +153,8 @@ export default function TurmasPage() {
 
   const cursos = cursosData?.results || []
   const professores = professoresData?.results || []
+  const rows = data?.results || []
+  const summary = data?.summary || {}
 
   const selectedCursoOption = formData.curso && editingTurma ? {
     id: editingTurma.curso,
@@ -163,9 +172,12 @@ export default function TurmasPage() {
         { label: 'ID', value: selectedTurma.id },
         { label: 'Turma', value: selectedTurma.nome },
         { label: 'Curso', value: selectedTurma.curso_nome },
+        { label: 'Sigla do curso', value: selectedTurma.curso_sigla || '-' },
         { label: 'Ano Letivo', value: selectedTurma.ano_letivo },
         { label: 'Professor', value: selectedTurma.professor_nome },
         { label: 'Status', value: selectedTurma.status_display || selectedTurma.status },
+        { label: 'Alunos ativos', value: selectedTurma.total_alunos ?? 0 },
+        { label: 'Diários', value: selectedTurma.total_diarios ?? 0 },
       ]
     : []
 
@@ -199,29 +211,146 @@ export default function TurmasPage() {
     })
   }
 
+  const openCreatePage = () => navigate('/turmas/nova')
+
+  const resetFilters = () => {
+    setSearch('')
+    setStatusFilter('')
+    setAnoLetivoFilter(String(new Date().getFullYear()))
+    setCursoFilter('')
+    setProfessorFilter('')
+    setPage(1)
+    setActiveTab('TODOS')
+  }
+
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">Turmas</h1>
+    <div className="page page--wide turmas-page">
+      <nav className="profile-breadcrumb">
+        <Link to="/dashboard">Início</Link>
+        <span className="profile-breadcrumb__sep">&gt;</span>
+        <span>Atividades Específicas</span>
+        <span className="profile-breadcrumb__sep">&gt;</span>
+        <span>Turmas</span>
+      </nav>
+
+      <div className="page-header turmas-page__header">
+        <div>
+          <h1 className="page-title">Turmas</h1>
+          <p className="page-subtitle">Acompanhe a oferta, o vínculo com cursos e a evolução de diários e matrículas por turma.</p>
+        </div>
         <div className="page-header__actions">
-          <select
-            className="select"
-            value={statusFilter}
-            onChange={(event) => { setStatusFilter(event.target.value); setPage(1) }}
-          >
-            <option value="">Todos os status</option>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-          <button
-            className="btn btn--primary"
-            onClick={() => navigate('/turmas/nova')}
-          >
+          <button className="btn btn--outline" onClick={resetFilters}>Limpar filtros</button>
+          <button className="btn btn--primary" onClick={openCreatePage}>
             <Plus size={16} /> Nova Turma
           </button>
         </div>
       </div>
+
+      <div className="turmas-summary-grid">
+        {LIST_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`turmas-summary-card ${activeTab === tab.key ? 'turmas-summary-card--active' : ''}`}
+            onClick={() => {
+              setActiveTab(tab.key)
+              setPage(1)
+            }}
+          >
+            <span className="turmas-summary-card__label">{tab.label}</span>
+            <strong className="turmas-summary-card__value">{summary[tab.key] || 0}</strong>
+          </button>
+        ))}
+      </div>
+
+      <section className="turmas-filters-card">
+        <div className="turmas-filters-card__header">
+          <h2>Filtros</h2>
+          <span>Refine a listagem por situação, ano, curso e professor.</span>
+        </div>
+        <div className="turmas-filter-grid">
+          <div className="form-field">
+            <label htmlFor="turmas-search">Texto</label>
+            <input
+              id="turmas-search"
+              className="form-control"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
+              placeholder="Buscar turma, curso, sigla ou professor"
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="turmas-ano-letivo">Ano letivo</label>
+            <input
+              id="turmas-ano-letivo"
+              type="number"
+              min="2000"
+              max="2100"
+              className="form-control"
+              value={anoLetivoFilter}
+              onChange={(event) => {
+                setAnoLetivoFilter(event.target.value)
+                setPage(1)
+              }}
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="turmas-status">Status</label>
+            <select
+              id="turmas-status"
+              className="select"
+              value={statusFilter}
+              onChange={(event) => {
+                setStatusFilter(event.target.value)
+                setPage(1)
+              }}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <SearchableRemoteSelect
+            id="turmas-filtro-curso"
+            label="Curso"
+            searchLabel="Buscar curso"
+            searchPlaceholder="Digite o nome do curso"
+            searchValue={cursoSearch}
+            onSearchChange={setCursoSearch}
+            value={cursoFilter}
+            onChange={(nextValue) => {
+              setCursoFilter(nextValue)
+              setPage(1)
+            }}
+            options={cursos}
+            emptyOptionLabel="Todos os cursos"
+            getOptionLabel={(item) => `${item.nome}${item.sigla ? ` - ${item.sigla}` : ''}`}
+          />
+
+          <SearchableRemoteSelect
+            id="turmas-filtro-professor"
+            label="Professor"
+            searchLabel="Buscar professor"
+            searchPlaceholder="Digite o nome do professor"
+            searchValue={professorSearch}
+            onSearchChange={setProfessorSearch}
+            value={professorFilter}
+            onChange={(nextValue) => {
+              setProfessorFilter(nextValue)
+              setPage(1)
+            }}
+            options={professores}
+            emptyOptionLabel="Todos os professores"
+            getOptionLabel={(item) => item.username ? `${item.nome_completo} - ${item.username}` : item.nome_completo}
+          />
+        </div>
+      </section>
 
       {isError ? (
         <div className="alert alert--error">
@@ -229,35 +358,85 @@ export default function TurmasPage() {
         </div>
       ) : null}
 
-      <DataTable
-        columns={COLUMNS}
-        data={data}
-        isLoading={isLoading}
-        onSearch={(v) => { setSearch(v); setPage(1) }}
-        searchPlaceholder="Buscar turma..."
-        emptyMessage="Nenhuma turma encontrada."
-        rowActions={(row) => (
-          <div className="table-actions">
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedTurmaId(row.id)}>
-              <Eye size={14} /> Detalhes
-            </button>
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => openEditForm(row.id)}
-            >
-              <Pencil size={14} /> Editar
-            </button>
-            <button
-              type="button"
-              className="btn btn--danger btn--sm"
-              onClick={() => window.confirm(`Excluir a turma ${row.nome}?`) && deleteMutation.mutate(row.id)}
-            >
-              <Trash2 size={14} /> Excluir
-            </button>
+      <section className="turmas-table-card">
+        <div className="turmas-table-card__header">
+          <span>Mostrando {data?.count || 0} turma{(data?.count || 0) === 1 ? '' : 's'}</span>
+          <span>Aba ativa: {LIST_TABS.find((tab) => tab.key === activeTab)?.label || 'Todos'}</span>
+        </div>
+
+        {isLoading ? (
+          <div className="table-skeleton">
+            {Array.from({ length: 6 }).map((_, index) => <div key={index} className="skeleton-row" />)}
+          </div>
+        ) : (
+          <div className="turmas-table-wrap">
+            <table className="turmas-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Turma</th>
+                  <th>Curso</th>
+                  <th>Sigla</th>
+                  <th>Ano letivo</th>
+                  <th>Professor</th>
+                  <th>Diários</th>
+                  <th>Alunos</th>
+                  <th>Status</th>
+                  <th className="turmas-table__actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="empty-state">Nenhuma turma encontrada.</td>
+                  </tr>
+                ) : rows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.id}</td>
+                    <td>
+                      <div className="turmas-table__main-cell">
+                        <strong>{row.nome}</strong>
+                        <span>{row.status_display || row.status}</span>
+                      </div>
+                    </td>
+                    <td>{row.curso_nome}</td>
+                    <td>{row.curso_sigla || '-'}</td>
+                    <td>{row.ano_letivo}</td>
+                    <td>{row.professor_nome || '-'}</td>
+                    <td><span className="badge badge--outline">{row.total_diarios ?? 0}</span></td>
+                    <td><span className="badge badge--outline">{row.total_alunos ?? 0}</span></td>
+                    <td>
+                      <span className={`badge ${STATUS_BADGE[row.status] || ''}`}>
+                        {row.status_display || row.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="turmas-table__actions-group">
+                        <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedTurmaId(row.id)}>
+                          <Eye size={14} /> Detalhes
+                        </button>
+                        <button type="button" className="btn btn--outline btn--sm" onClick={() => navigate(`/diarios?turma=${row.id}`)}>
+                          <BookOpen size={14} /> Diários
+                        </button>
+                        <button type="button" className="btn btn--secondary btn--sm" onClick={() => openEditForm(row.id)}>
+                          <Pencil size={14} /> Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm"
+                          onClick={() => window.confirm(`Excluir a turma ${row.nome}?`) && deleteMutation.mutate(row.id)}
+                        >
+                          <Trash2 size={14} /> Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      />
+      </section>
 
       {selectedTurmaId ? (
         <EntityDetailsPanel

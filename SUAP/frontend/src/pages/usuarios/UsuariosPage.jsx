@@ -8,7 +8,7 @@ const TIPO_LABELS = {
   ALUNO: 'Aluno',
   PROFESSOR: 'Professor',
   SECRETARIA: 'Secretaria',
-  COORDENACAO: 'Coordenação/Consulta',
+  COORDENACAO: 'Coordenador de Curso',
   ADMIN: 'Administrador',
 }
 
@@ -64,7 +64,7 @@ export default function UsuariosPage() {
             <option value="ALUNO">Aluno</option>
             <option value="PROFESSOR">Professor</option>
             <option value="SECRETARIA">Secretaria</option>
-            <option value="COORDENACAO">Coordenação/Consulta</option>
+            <option value="COORDENACAO">Coordenador de Curso</option>
             <option value="ADMIN">Administrador</option>
           </select>
         </div>

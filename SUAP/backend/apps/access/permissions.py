@@ -30,7 +30,9 @@ ACCESS_MATRIX = {
             "academic_diary": TEACHING_MANAGE,
         },
         "api": {
-            "view": STAFF_VIEW,
+            "view": TEACHING_VIEW,
+            "manage": STAFF_MANAGE,
+            "academic_diary": TEACHING_MANAGE,
         },
         "api_ava": {
             "export": STAFF_VIEW,
@@ -107,6 +109,7 @@ ACCESS_MATRIX = {
         },
         "api": {
             "view": TEACHING_VIEW,
+            "manage": TEACHING_MANAGE,
         },
     },
     "frequencia": {
@@ -116,6 +119,7 @@ ACCESS_MATRIX = {
         },
         "api": {
             "view": TEACHING_VIEW,
+            "manage": TEACHING_MANAGE,
         },
     },
     "agenda": {

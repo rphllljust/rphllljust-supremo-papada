@@ -30,6 +30,16 @@ SEED_USER_DEFINITIONS = [
         "matricula": "DEV0002",
     },
     {
+        "username": "coordenacao.dev",
+        "password": "coordenacao123",
+        "cpf": "90000000004",
+        "tipo": "COORDENACAO",
+        "first_name": "Carla",
+        "last_name": "Coordenadora",
+        "email": "coordenacao.dev@idep.local",
+        "matricula": "DEV0004",
+    },
+    {
         "username": "professor.dev",
         "password": "professor123",
         "cpf": "90000000003",
@@ -38,6 +48,16 @@ SEED_USER_DEFINITIONS = [
         "last_name": "Professor",
         "email": "professor.dev@idep.local",
         "matricula": "DEV0003",
+    },
+    {
+        "username": "professor.dev.2",
+        "password": "professor123",
+        "cpf": "90000000005",
+        "tipo": "PROFESSOR",
+        "first_name": "Patricia",
+        "last_name": "Formadora",
+        "email": "professor2.dev@idep.local",
+        "matricula": "DEV0005",
     },
     {
         "username": "aluno.dev.1",
@@ -57,6 +77,24 @@ SEED_USER_DEFINITIONS = [
         "last_name": "Lima",
         "email": "bruno.dev@idep.local",
     },
+    {
+        "username": "aluno.dev.3",
+        "password": "aluno123",
+        "cpf": "90000000013",
+        "tipo": "ALUNO",
+        "first_name": "Camila",
+        "last_name": "Rocha",
+        "email": "camila.dev@idep.local",
+    },
+    {
+        "username": "aluno.dev.4",
+        "password": "aluno123",
+        "cpf": "90000000014",
+        "tipo": "ALUNO",
+        "first_name": "Diego",
+        "last_name": "Mendes",
+        "email": "diego.dev@idep.local",
+    },
 ]
 
 SEED_COMPONENTS = [
@@ -65,9 +103,15 @@ SEED_COMPONENTS = [
     {"nome": "Banco de Dados", "abreviatura": "BD", "ordem": 3, "carga_horaria": 60},
 ]
 
+SEED_FIC_COMPONENTS = [
+    {"nome": "Inclusão Digital", "abreviatura": "IDIG", "ordem": 1, "carga_horaria": 40},
+    {"nome": "Ferramentas de Escritório", "abreviatura": "OFF", "ordem": 2, "carga_horaria": 60},
+    {"nome": "Projeto de Vida e Trabalho", "abreviatura": "PVT", "ordem": 3, "carga_horaria": 60},
+]
+
 
 class Command(BaseCommand):
-    help = "Popula o Postgres local com dados de desenvolvimento idempotentes."
+    help = "Popula o banco configurado com dados acadêmicos de desenvolvimento idempotentes."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -85,7 +129,7 @@ class Command(BaseCommand):
         from apps.notas.models import Nota
         from apps.processos.models import Processo, Tramitacao
         from apps.setores.models import Setor
-        from apps.turmas.models import Turma
+        from apps.turmas.models import DiarioAcademico, DiarioMaterialAula, DiarioOcorrencia, Turma
         from apps.unidades.models import Unidade
         from apps.usuarios.models import Aluno, Pessoa, ServidorPerfil, Usuario
 
@@ -107,6 +151,9 @@ class Command(BaseCommand):
             "Processo": Processo,
             "Tramitacao": Tramitacao,
             "Setor": Setor,
+            "DiarioAcademico": DiarioAcademico,
+            "DiarioMaterialAula": DiarioMaterialAula,
+            "DiarioOcorrencia": DiarioOcorrencia,
             "Turma": Turma,
             "Unidade": Unidade,
             "Aluno": Aluno,
@@ -123,13 +170,13 @@ class Command(BaseCommand):
             setor = self._seed_setor()
             users = self._seed_users(setor)
             area_curso, eixo = self._seed_catalogs()
-            curso, turma = self._seed_course_structure(unidade, area_curso, eixo, users["professor.dev"])
-            matriculas = self._seed_students(curso, turma, users)
-            self._seed_academic_records(turma, matriculas)
-            self._seed_selection_flow(curso, users["secretaria.dev"], users["aluno.dev.1"])
+            cursos, turmas = self._seed_course_structure(unidade, area_curso, eixo, users)
+            matriculas_por_turma = self._seed_students(cursos, turmas, users)
+            self._seed_academic_records(turmas, matriculas_por_turma, users)
+            self._seed_selection_flow(cursos["TDSDEV"], users["secretaria.dev"], users["aluno.dev.1"])
             self._seed_process_flow(users["aluno.dev.1"], users["secretaria.dev"])
 
-        self.stdout.write(self.style.SUCCESS("Dados de desenvolvimento disponíveis no Postgres local."))
+        self.stdout.write(self.style.SUCCESS("Dados de desenvolvimento disponíveis no banco configurado."))
         self.stdout.write("Usuários criados:")
         for definition in SEED_USER_DEFINITIONS:
             self.stdout.write(f"- {definition['username']} / {definition['password']}")
@@ -230,7 +277,7 @@ class Command(BaseCommand):
         return area_curso, eixo
 
     def _seed_course_structure(self, unidade, area_curso, eixo, professor):
-        curso, _ = self.models["Curso"].objects.update_or_create(
+        curso_tecnico, _ = self.models["Curso"].objects.update_or_create(
             sigla="TDSDEV",
             defaults={
                 "unidade": unidade,
@@ -240,7 +287,8 @@ class Command(BaseCommand):
                 "carga_horaria": 1200,
             },
         )
-        self.models["Curso"].objects.update_or_create(
+
+        curso_fic, _ = self.models["Curso"].objects.update_or_create(
             sigla="FICDEV",
             defaults={
                 "unidade": unidade,
@@ -253,7 +301,7 @@ class Command(BaseCommand):
 
         for component in SEED_COMPONENTS:
             self.models["ComponenteCurricular"].objects.update_or_create(
-                curso=curso,
+                curso=curso_tecnico,
                 nome=component["nome"],
                 defaults={
                     "abreviatura": component["abreviatura"],
@@ -269,9 +317,27 @@ class Command(BaseCommand):
                 },
             )
 
+        for component in SEED_FIC_COMPONENTS:
+            self.models["ComponenteCurricular"].objects.update_or_create(
+                curso=curso_fic,
+                nome=component["nome"],
+                defaults={
+                    "abreviatura": component["abreviatura"],
+                    "sigla": component["abreviatura"],
+                    "tipo_componente": "Obrigatório",
+                    "nivel_ensino": "Formação Inicial e Continuada",
+                    "grupo_atuacao": "Qualificação profissional",
+                    "carga_horaria": component["carga_horaria"],
+                    "hora_aula": component["carga_horaria"],
+                    "qtd_creditos": 2,
+                    "ordem": component["ordem"],
+                    "ativo": True,
+                },
+            )
+
         self.models["CalendarioLetivo"].objects.update_or_create(
             ano_letivo="2026/1",
-            curso=curso,
+            curso=curso_tecnico,
             defaults={
                 "data_inicio": date(2026, 2, 2),
                 "data_fim": date(2026, 12, 18),
@@ -281,85 +347,223 @@ class Command(BaseCommand):
             },
         )
 
-        turma, _ = self.models["Turma"].objects.update_or_create(
-            curso=curso,
+        self.models["CalendarioLetivo"].objects.update_or_create(
+            ano_letivo="2026/1",
+            curso=curso_fic,
+            defaults={
+                "data_inicio": date(2026, 2, 10),
+                "data_fim": date(2026, 5, 30),
+                "dias_letivos": 80,
+                "status": "VIGENTE",
+                "descricao": "Calendário FIC de desenvolvimento gerado automaticamente.",
+            },
+        )
+
+        turma_tecnico, _ = self.models["Turma"].objects.update_or_create(
+            curso=curso_tecnico,
             nome="DEV-TDS-2026-1",
             defaults={
                 "ano_letivo": 2026,
                 "status": "ATIVA",
-                "professor_responsavel": professor,
+                "professor_responsavel": professor["professor.dev"],
             },
         )
 
-        return curso, turma
+        turma_fic, _ = self.models["Turma"].objects.update_or_create(
+            curso=curso_fic,
+            nome="DEV-FIC-2026-1",
+            defaults={
+                "ano_letivo": 2026,
+                "status": "ATIVA",
+                "professor_responsavel": professor["professor.dev.2"],
+            },
+        )
 
-    def _seed_students(self, curso, turma, users):
-        matriculas = []
-        student_usernames = ["aluno.dev.1", "aluno.dev.2"]
+        return {"TDSDEV": curso_tecnico, "FICDEV": curso_fic}, {
+            "DEV-TDS-2026-1": turma_tecnico,
+            "DEV-FIC-2026-1": turma_fic,
+        }
 
-        for index, username in enumerate(student_usernames, start=1):
-            matricula, _ = self.models["Matricula"].objects.get_or_create(
-                aluno=users[username],
-                curso=curso,
-                turma=turma,
-                defaults={
-                    "status": "ATIVA",
-                    "tipo_matricula": "NOVA",
-                    "turno": "MANHA",
-                },
-            )
-            matricula.status = "ATIVA"
-            matricula.tipo_matricula = "NOVA"
-            matricula.turno = "MANHA"
-            matricula.save()
-            matriculas.append(matricula)
+    def _seed_students(self, cursos, turmas, users):
+        matriculas_por_turma = {}
+        distribuicao = [
+            ("DEV-TDS-2026-1", cursos["TDSDEV"], ["aluno.dev.1", "aluno.dev.2"], "MANHA"),
+            ("DEV-FIC-2026-1", cursos["FICDEV"], ["aluno.dev.3", "aluno.dev.4"], "NOITE"),
+        ]
 
-            self.stdout.write(f"Matrícula DEV pronta para {users[username].get_full_name()} ({matricula.numero_matricula}).")
+        for turma_nome, curso, student_usernames, turno in distribuicao:
+            turma = turmas[turma_nome]
+            matriculas = []
 
-        return matriculas
-
-    def _seed_academic_records(self, turma, matriculas):
-        reference_dates = [date(2026, 3, 3), date(2026, 3, 10), date(2026, 3, 17)]
-
-        self.models["Nota"].objects.filter(matricula__in=matriculas, descricao__startswith="DEV ").delete()
-        self.models["Frequencia"].objects.filter(matricula__in=matriculas, observacao__startswith="DEV ").delete()
-
-        for index, matricula in enumerate(matriculas, start=1):
-            self.models["Nota"].objects.create(
-                matricula=matricula,
-                descricao="DEV Avaliação Diagnóstica",
-                valor=Decimal("8.50") - Decimal(index - 1) / Decimal("2"),
-                peso=Decimal("1.00"),
-                data_lancamento=date(2026, 3, 20),
-            )
-            self.models["Nota"].objects.create(
-                matricula=matricula,
-                descricao="DEV Projeto Integrador",
-                valor=Decimal("9.00") - Decimal(index - 1) / Decimal("4"),
-                peso=Decimal("2.00"),
-                data_lancamento=date(2026, 4, 5),
-            )
-
-            for offset, lesson_date in enumerate(reference_dates):
-                self.models["Frequencia"].objects.update_or_create(
-                    matricula=matricula,
-                    data=lesson_date,
+            for username in student_usernames:
+                matricula, _ = self.models["Matricula"].objects.get_or_create(
+                    aluno=users[username],
+                    curso=curso,
+                    turma=turma,
                     defaults={
-                        "presente": not (index == 2 and offset == 1),
-                        "observacao": "DEV Presença lançada automaticamente",
+                        "status": "ATIVA",
+                        "tipo_matricula": "NOVA",
+                        "turno": turno,
                     },
                 )
+                matricula.status = "ATIVA"
+                matricula.tipo_matricula = "NOVA"
+                matricula.turno = turno
+                matricula.save()
+                matriculas.append(matricula)
 
-        start = timezone.make_aware(datetime.now().replace(month=3, day=25, hour=19, minute=0, second=0, microsecond=0))
-        self.models["EventoAgenda"].objects.update_or_create(
-            turma=turma,
-            titulo="DEV Aula inaugural do módulo técnico",
-            defaults={
-                "descricao": "Evento criado pelo seed de desenvolvimento.",
-                "inicio": start,
-                "fim": start + timedelta(hours=2),
+                self.stdout.write(
+                    f"Matrícula DEV pronta para {users[username].get_full_name()} ({matricula.numero_matricula})."
+                )
+
+            matriculas_por_turma[turma_nome] = matriculas
+
+        return matriculas_por_turma
+
+    def _seed_academic_records(self, turmas, matriculas_por_turma, users):
+        all_matriculas = [matricula for matriculas in matriculas_por_turma.values() for matricula in matriculas]
+
+        self.models["Nota"].objects.filter(matricula__in=all_matriculas, descricao__startswith="DEV ").delete()
+        self.models["Frequencia"].objects.filter(matricula__in=all_matriculas, observacao__startswith="DEV ").delete()
+
+        cenarios = {
+            "DEV-TDS-2026-1": {
+                "component": "Lógica de Programação",
+                "reference_dates": [date(2026, 3, 3), date(2026, 3, 10), date(2026, 3, 17)],
+                "notes": [
+                    ("DEV Avaliação Diagnóstica", Decimal("8.50"), Decimal("1.00"), date(2026, 3, 20)),
+                    ("DEV Projeto Integrador", Decimal("9.00"), Decimal("2.00"), date(2026, 4, 5)),
+                ],
+                "event_title": "DEV Aula inaugural do módulo técnico",
+                "event_start": datetime(2026, 3, 25, 19, 0, 0),
+                "event_description": "Evento criado pelo seed de desenvolvimento.",
+                "diary_status": "ABERTO",
+                "diary_observations": "DEV Diário aberto para lançamento de aulas, materiais e ocorrências.",
+                "materials": [
+                    {
+                        "titulo": "DEV Plano de aula - Algoritmos introdutórios",
+                        "descricao": "Plano base para as três primeiras aulas do módulo técnico.",
+                        "url_material": "https://idep.local/dev/tds/plano-aula-algoritmos.pdf",
+                        "data_referencia": date(2026, 3, 3),
+                    },
+                    {
+                        "titulo": "DEV Lista de exercícios - Estruturas condicionais",
+                        "descricao": "Exercícios usados no laboratório de programação.",
+                        "url_material": "https://idep.local/dev/tds/lista-condicionais.pdf",
+                        "data_referencia": date(2026, 3, 10),
+                    },
+                ],
+                "occurrences": [
+                    {
+                        "tipo": "OCORRENCIA",
+                        "titulo": "DEV Participação destacada em laboratório",
+                        "descricao": "Turma engajada na resolução prática dos exercícios iniciais.",
+                        "data_ocorrencia": date(2026, 3, 10),
+                    }
+                ],
             },
-        )
+            "DEV-FIC-2026-1": {
+                "component": "Inclusão Digital",
+                "reference_dates": [date(2026, 3, 5), date(2026, 3, 12), date(2026, 3, 19)],
+                "notes": [
+                    ("DEV Produção Guiada em Laboratório", Decimal("8.00"), Decimal("1.00"), date(2026, 3, 21)),
+                    ("DEV Apresentação Final", Decimal("9.25"), Decimal("2.00"), date(2026, 4, 2)),
+                ],
+                "event_title": "DEV Oficina de cidadania digital",
+                "event_start": datetime(2026, 3, 26, 18, 30, 0),
+                "event_description": "Evento FIC criado pelo seed de desenvolvimento.",
+                "diary_status": "REVISAO",
+                "diary_observations": "DEV Diário em revisão para simular fluxo de conferência pedagógica.",
+                "materials": [
+                    {
+                        "titulo": "DEV Guia rápido de navegação segura",
+                        "descricao": "Material introdutório usado na turma FIC.",
+                        "url_material": "https://idep.local/dev/fic/cartilha-seguranca.pdf",
+                        "data_referencia": date(2026, 3, 5),
+                    }
+                ],
+                "occurrences": [
+                    {
+                        "tipo": "OCORRENCIA",
+                        "titulo": "DEV Ajuste de cronograma por atividade externa",
+                        "descricao": "A turma precisou remanejar a prática do laboratório para a semana seguinte.",
+                        "data_ocorrencia": date(2026, 3, 12),
+                    },
+                    {
+                        "tipo": "SUSPENSAO",
+                        "titulo": "DEV Suspensão de aula por manutenção elétrica",
+                        "descricao": "Registro de suspensão para alimentar a visualização de ocorrências especiais no diário.",
+                        "data_ocorrencia": date(2026, 3, 19),
+                    },
+                ],
+            },
+        }
+
+        for turma_nome, configuracao in cenarios.items():
+            matriculas = matriculas_por_turma[turma_nome]
+            turma = turmas[turma_nome]
+
+            for index, matricula in enumerate(matriculas, start=1):
+                for descricao, valor_base, peso, data_lancamento in configuracao["notes"]:
+                    self.models["Nota"].objects.create(
+                        matricula=matricula,
+                        descricao=descricao,
+                        valor=valor_base - Decimal(index - 1) / Decimal("4"),
+                        peso=peso,
+                        data_lancamento=data_lancamento,
+                    )
+
+                for offset, lesson_date in enumerate(configuracao["reference_dates"]):
+                    self.models["Frequencia"].objects.update_or_create(
+                        matricula=matricula,
+                        data=lesson_date,
+                        defaults={
+                            "presente": not (index == len(matriculas) and offset == 1),
+                            "observacao": "DEV Presença lançada automaticamente",
+                        },
+                    )
+
+            start = timezone.make_aware(configuracao["event_start"])
+            self.models["EventoAgenda"].objects.update_or_create(
+                turma=turma,
+                titulo=configuracao["event_title"],
+                defaults={
+                    "descricao": configuracao["event_description"],
+                    "inicio": start,
+                    "fim": start + timedelta(hours=2),
+                },
+            )
+
+            diario_defaults = {
+                "componente_curricular": configuracao["component"],
+                "status": configuracao["diary_status"],
+                "observacoes": configuracao["diary_observations"],
+                "aberto_por": turma.professor_responsavel or users["coordenacao.dev"],
+                "fechado_por": users["coordenacao.dev"] if configuracao["diary_status"] == "FECHADO" else None,
+                "data_fechamento": date(2026, 4, 10) if configuracao["diary_status"] == "FECHADO" else None,
+            }
+            diario, _ = self.models["DiarioAcademico"].objects.update_or_create(
+                turma=turma,
+                periodo="2026/1",
+                defaults=diario_defaults,
+            )
+
+            self.models["DiarioMaterialAula"].objects.filter(diario=diario, titulo__startswith="DEV ").delete()
+            self.models["DiarioOcorrencia"].objects.filter(diario=diario, titulo__startswith="DEV ").delete()
+
+            for material in configuracao["materials"]:
+                self.models["DiarioMaterialAula"].objects.create(
+                    diario=diario,
+                    criado_por=turma.professor_responsavel or users["coordenacao.dev"],
+                    **material,
+                )
+
+            for ocorrencia in configuracao["occurrences"]:
+                self.models["DiarioOcorrencia"].objects.create(
+                    diario=diario,
+                    registrado_por=users["coordenacao.dev"] if ocorrencia["tipo"] == "SUSPENSAO" else turma.professor_responsavel,
+                    **ocorrencia,
+                )
 
     def _seed_selection_flow(self, curso, secretaria, aluno):
         publicacao, _ = self.models["PublicacaoInscricao"].objects.update_or_create(

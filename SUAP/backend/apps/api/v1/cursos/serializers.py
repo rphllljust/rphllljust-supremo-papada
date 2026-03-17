@@ -105,6 +105,7 @@ class AreaCursoSerializer(serializers.ModelSerializer):
 class CursoSerializer(serializers.ModelSerializer):
     unidade_nome = serializers.CharField(source="unidade.nome", read_only=True)
     area_curso_nome = serializers.CharField(source="area_curso.descricao", read_only=True)
+    origem = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Curso
@@ -112,6 +113,9 @@ class CursoSerializer(serializers.ModelSerializer):
             "id",
             "nome",
             "sigla",
+            "moodle_course_id",
+            "moodle_shortname",
+            "origem",
             "unidade",
             "unidade_nome",
             "area_curso",
@@ -144,3 +148,6 @@ class CursoSerializer(serializers.ModelSerializer):
         descricao = validated_data.get('eixo_tecnologico', '')
         if descricao:
             EixoTecnologico.objects.get_or_create(descricao=descricao)
+
+    def get_origem(self, obj):
+        return 'moodle' if obj.moodle_course_id else 'manual'

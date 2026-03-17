@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 
 const PERFIL_OPTIONS = [
   { value: 'SECRETARIA', label: 'Secretaria' },
-  { value: 'COORDENACAO', label: 'Coordenacao/Consulta' },
+  { value: 'COORDENACAO', label: 'Coordenador de Curso' },
   { value: 'PROFESSOR', label: 'Professor' },
   { value: 'ADMIN', label: 'Administrador' },
 ]

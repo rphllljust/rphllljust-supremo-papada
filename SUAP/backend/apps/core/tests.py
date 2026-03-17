@@ -1,7 +1,15 @@
-from django.test import TestCase
+from io import StringIO
+from unittest.mock import patch
+
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from apps.frequencia.models import Frequencia
+from apps.notas.models import Nota
+from apps.turmas.models import DiarioAcademico, DiarioMaterialAula, DiarioOcorrencia, Turma
 from apps.unidades.models import Unidade
 from apps.usuarios.models import PerfilUsuario, Usuario
 
@@ -114,3 +122,37 @@ class SmokeRoutesTests(TestCase):
 class HelloWorldTestCase(TestCase):
     def test_hello_world(self):
         self.assertEqual("hello", "hello")
+
+
+class SeedDevelopmentDataCommandTests(TestCase):
+    def test_seed_creates_complete_academic_development_dataset(self):
+        stdout = StringIO()
+
+        call_command("seed_development_data", stdout=stdout)
+        call_command("seed_development_data", stdout=stdout)
+
+        self.assertTrue(
+            Usuario.objects.filter(username="coordenacao.dev", tipo=PerfilUsuario.COORDENACAO).exists()
+        )
+        self.assertEqual(Turma.objects.filter(nome__startswith="DEV-").count(), 2)
+        self.assertEqual(DiarioAcademico.objects.filter(turma__nome__startswith="DEV-").count(), 2)
+        self.assertEqual(DiarioMaterialAula.objects.filter(diario__turma__nome__startswith="DEV-").count(), 3)
+        self.assertEqual(DiarioOcorrencia.objects.filter(diario__turma__nome__startswith="DEV-").count(), 3)
+        self.assertEqual(Nota.objects.filter(matricula__turma__nome__startswith="DEV-").count(), 8)
+        self.assertEqual(Frequencia.objects.filter(matricula__turma__nome__startswith="DEV-").count(), 12)
+
+
+class BootstrapInitialAdminCommandTests(TestCase):
+    @override_settings(
+        INITIAL_ADMIN_CPF="",
+        INITIAL_ADMIN_PASSWORD="admin",
+        INITIAL_ADMIN_FIRST_NAME="Administrador",
+        INITIAL_ADMIN_LAST_NAME="Inicial",
+    )
+    def test_bootstrap_requires_explicit_cpf_when_env_is_missing(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesMessage(
+                CommandError,
+                "Informe o CPF do administrador inicial via --cpf ou pela variavel de ambiente INITIAL_ADMIN_CPF.",
+            ):
+                call_command("bootstrap_initial_admin")

@@ -22,6 +22,10 @@ def is_admin_user(user) -> bool:
     return bool(getattr(user, "is_superuser", False) or get_user_profile(user) == PerfilUsuario.ADMIN)
 
 
+def is_professor_user(user) -> bool:
+    return is_authenticated_user(user) and get_user_profile(user) == PerfilUsuario.PROFESSOR
+
+
 def _normalize_profiles(profiles: Iterable[object]) -> set[str]:
     normalized = set()
     for profile in profiles:
@@ -113,6 +117,22 @@ def filter_queryset_for_user(user, queryset, *, action: str = "view", surface: s
     if not can_access_module(user, app_label, action=action, surface=surface):
         return queryset.none()
     return queryset
+
+
+def filter_professor_scoped_queryset(user, queryset, *, professor_lookup: str):
+    if not is_authenticated_user(user):
+        return queryset.none()
+    if is_admin_user(user) or not is_professor_user(user):
+        return queryset
+    return queryset.filter(**{professor_lookup: user.id})
+
+
+def professor_owns_related_resource(user, *, professor_id: int | None) -> bool:
+    if not is_authenticated_user(user):
+        return False
+    if is_admin_user(user) or not is_professor_user(user):
+        return True
+    return int(getattr(user, "id", 0)) == int(professor_id or 0)
 
 
 def build_module_access_map(user) -> dict[str, dict[str, list[str]]]:

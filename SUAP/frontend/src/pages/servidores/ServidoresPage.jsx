@@ -9,11 +9,12 @@ import { servidoresApi, setoresApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
+import { normalizeCpf } from '@/utils/cpf'
 
 const PERFIL_OPTIONS = [
   { value: 'PROFESSOR', label: 'Professor' },
   { value: 'SECRETARIA', label: 'Secretaria' },
-  { value: 'COORDENACAO', label: 'Coordenacao/Consulta' },
+  { value: 'COORDENACAO', label: 'Coordenador de Curso' },
   { value: 'ADMIN', label: 'Administrador' },
 ]
 
@@ -143,7 +144,7 @@ export default function ServidoresPage() {
     const payload = {
       username: formData.username.trim(),
       nome_completo: formData.nome_completo.trim(),
-      cpf: formData.cpf.trim(),
+      cpf: normalizeCpf(formData.cpf),
       email: formData.email.trim(),
       tipo: formData.tipo,
       setor: formData.setor ? Number(formData.setor) : null,

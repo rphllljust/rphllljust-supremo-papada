@@ -68,6 +68,10 @@ export const cursosApi = {
   componentes: (id) => client.get(`/cursos/${id}/componentes/`),
   calendarios: (id) => client.get(`/cursos/${id}/calendarios/`),
 }
+export const moodleIntegrationApi = {
+  importCursos: (data) => client.post('/integracoes/moodle/cursos/', data),
+  syncCategorias: (data) => client.post('/integracoes/moodle/categorias/', data),
+}
 export const areasCursoApi = {
   list: (params) => client.get('/cursos/areas/', { params }),
   get: (id) => client.get(`/cursos/areas/${id}/`),
@@ -96,7 +100,14 @@ export const turmasApi = {
   ...crud('turmas'),
   matriculas: (id) => client.get(`/turmas/${id}/matriculas/`),
 }
-export const diarioApi = crud('diarios')
+export const diarioApi = {
+  ...crud('diarios'),
+  fechar: (id) => client.post(`/diarios/${id}/fechar/`),
+  reabrir: (id) => client.post(`/diarios/${id}/reabrir/`),
+  documento: (id) => client.get(`/diarios/${id}/documento/`),
+  criarMaterial: (id, data) => client.post(`/diarios/${id}/materiais/`, data),
+  criarOcorrencia: (id, data) => client.post(`/diarios/${id}/ocorrencias/`, data),
+}
 export const matriculasApi = {
   ...crud('matriculas'),
   notas: (id) => client.get(`/matriculas/${id}/notas/`),

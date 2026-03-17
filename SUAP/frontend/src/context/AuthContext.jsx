@@ -12,7 +12,7 @@ const PROFILE_LABELS = {
   ALUNO: 'Aluno',
   PROFESSOR: 'Professor',
   SECRETARIA: 'Secretaria',
-  COORDENACAO: 'Coordenacao/Consulta',
+  COORDENACAO: 'Coordenador de Curso',
   ADMIN: 'Administrador',
 }
 

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { frequenciasApi, matriculasApi } from '@/api/endpoints'
+import { cursosApi, turmasApi, usuariosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
@@ -54,6 +55,12 @@ export default function FrequenciaPage() {
   const [presencaFiltro, setPresencaFiltro] = useState('')
   const [editingFrequenciaId, setEditingFrequenciaId] = useState(null)
   const [matriculaSearch, setMatriculaSearch] = useState('')
+  const [cursoFilter, setCursoFilter] = useState('')
+  const [turmaFilter, setTurmaFilter] = useState('')
+  const [professorFilter, setProfessorFilter] = useState('')
+  const [cursoSearch, setCursoSearch] = useState('')
+  const [turmaSearch, setTurmaSearch] = useState('')
+  const [professorSearch, setProfessorSearch] = useState('')
   const isCreatePage = location.pathname.endsWith('/frequencia/nova')
   const [formData, setFormData] = useState({
     matricula: '',
@@ -71,9 +78,27 @@ export default function FrequenciaPage() {
   }
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['frequencias', { search, page, presente: presencaFiltro }],
-    queryFn: () => frequenciasApi.list({ search, page, presente: presencaFiltro || undefined }).then((response) => response.data),
+    queryKey: ['frequencias', { search, page, presente: presencaFiltro, curso: cursoFilter, turma: turmaFilter, professor: professorFilter }],
+    queryFn: () => frequenciasApi.list({ search, page, presente: presencaFiltro || undefined, curso: cursoFilter || undefined, turma: turmaFilter || undefined, professor: professorFilter || undefined }).then((response) => response.data),
     staleTime: 30_000,
+  })
+
+  const { data: cursosData } = useQuery({
+    queryKey: ['cursos', 'frequencias-filters', cursoSearch],
+    queryFn: () => cursosApi.list({ page_size: 10, search: cursoSearch || undefined }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: turmasData } = useQuery({
+    queryKey: ['turmas', 'frequencias-filters', turmaSearch, cursoFilter, professorFilter],
+    queryFn: () => turmasApi.list({ page_size: 10, search: turmaSearch || undefined, curso: cursoFilter || undefined }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
+  const { data: professoresData } = useQuery({
+    queryKey: ['usuarios', 'frequencias-professores', professorSearch],
+    queryFn: () => usuariosApi.list({ tipo: 'PROFESSOR', page_size: 10, search: professorSearch || undefined }).then((response) => response.data),
+    staleTime: 60_000,
   })
 
   const { data: matriculasData } = useQuery({
@@ -106,6 +131,10 @@ export default function FrequenciaPage() {
     })
   }, [editingFrequencia])
 
+  useEffect(() => {
+    setTurmaFilter('')
+  }, [cursoFilter, professorFilter])
+
   const saveMutation = useMutation({
     mutationFn: ({ id, payload }) => (id ? frequenciasApi.update(id, payload) : frequenciasApi.create(payload)),
     onSuccess: (_response, variables) => {
@@ -136,6 +165,9 @@ export default function FrequenciaPage() {
   })
 
   const matriculas = matriculasData?.results || []
+  const cursos = cursosData?.results || []
+  const turmas = turmasData?.results || []
+  const professores = professoresData?.results || []
   const selectedMatriculaOption = formData.matricula && editingFrequencia ? {
     id: editingFrequencia.matricula,
     numero_matricula: editingFrequencia.numero_matricula,
@@ -229,6 +261,57 @@ export default function FrequenciaPage() {
             <Plus size={16} /> Nova Frequencia
           </button>
         </div>
+      </div>
+
+      <div className="page-section-grid">
+        <SearchableRemoteSelect
+          id="frequencia-curso-filtro"
+          label="Filtrar por curso"
+          searchLabel="Buscar curso"
+          searchPlaceholder="Digite o nome do curso"
+          searchValue={cursoSearch}
+          onSearchChange={setCursoSearch}
+          value={cursoFilter}
+          onChange={(nextValue) => {
+            setCursoFilter(nextValue)
+            setPage(1)
+          }}
+          options={cursos}
+          emptyOptionLabel="Todos os cursos"
+          getOptionLabel={(item) => item.nome}
+        />
+        <SearchableRemoteSelect
+          id="frequencia-professor-filtro"
+          label="Filtrar por professor"
+          searchLabel="Buscar professor"
+          searchPlaceholder="Digite o nome do professor"
+          searchValue={professorSearch}
+          onSearchChange={setProfessorSearch}
+          value={professorFilter}
+          onChange={(nextValue) => {
+            setProfessorFilter(nextValue)
+            setPage(1)
+          }}
+          options={professores}
+          emptyOptionLabel="Todos os professores"
+          getOptionLabel={(item) => item.nome_completo || item.username}
+        />
+        <SearchableRemoteSelect
+          id="frequencia-turma-filtro"
+          label="Filtrar por turma"
+          searchLabel="Buscar turma"
+          searchPlaceholder="Digite a turma"
+          searchValue={turmaSearch}
+          onSearchChange={setTurmaSearch}
+          value={turmaFilter}
+          onChange={(nextValue) => {
+            setTurmaFilter(nextValue)
+            setPage(1)
+          }}
+          options={turmas}
+          emptyOptionLabel="Todas as turmas"
+          getOptionLabel={(item) => `${item.nome} - ${item.curso_nome || 'Sem curso'}`}
+        />
       </div>
 
       {isError ? (

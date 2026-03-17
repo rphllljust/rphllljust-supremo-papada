@@ -4,8 +4,11 @@ from apps.turmas.models import Turma
 
 class TurmaSerializer(serializers.ModelSerializer):
     curso_nome = serializers.CharField(source="curso.nome", read_only=True)
+    curso_sigla = serializers.CharField(source="curso.sigla", read_only=True)
     professor_nome = serializers.SerializerMethodField(read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    total_alunos = serializers.IntegerField(read_only=True)
+    total_diarios = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Turma
@@ -17,8 +20,11 @@ class TurmaSerializer(serializers.ModelSerializer):
             "status_display",
             "curso",
             "curso_nome",
+            "curso_sigla",
             "professor_responsavel",
             "professor_nome",
+            "total_alunos",
+            "total_diarios",
         ]
 
     def get_professor_nome(self, obj):

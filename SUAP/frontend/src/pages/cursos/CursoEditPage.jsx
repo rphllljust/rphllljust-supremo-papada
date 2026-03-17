@@ -43,7 +43,34 @@ export default function CursoEditPage() {
   const { cursoId } = useParams()
   const isCreateMode = !cursoId
   const isTechnicalCatalog = location.pathname.includes('/ensino/cursotecnico')
-  const listPath = isTechnicalCatalog ? '/ensino/cursotecnico/' : '/ensino/cursoitinerante/'
+  const isInitialCatalog = location.pathname.includes('/ensino/cursoinicial')
+  const catalogMeta = isTechnicalCatalog
+    ? {
+        listPath: '/ensino/cursotecnico/',
+        createPath: '/ensino/cursotecnico/novo',
+        editPathBuilder: (savedId) => `/ensino/cursotecnico/${savedId}/editar`,
+        titleCreate: 'Novo curso técnico',
+        titleList: 'Catálogo de cursos técnicos',
+        optionsScope: 'tecnico',
+      }
+    : isInitialCatalog
+      ? {
+          listPath: '/ensino/cursoinicial/',
+          createPath: '/ensino/cursoinicial/novo',
+          editPathBuilder: (savedId) => `/ensino/cursoinicial/${savedId}/editar`,
+          titleCreate: 'Novo curso inicial',
+          titleList: 'Cursos iniciais',
+          optionsScope: 'inicial',
+        }
+      : {
+          listPath: '/ensino/cursoitinerante/',
+          createPath: '/ensino/cursoitinerante/novo',
+          editPathBuilder: (savedId) => `/ensino/cursoitinerante/${savedId}/editar`,
+          titleCreate: 'Novo curso itinerante',
+          titleList: 'Cursos itinerantes',
+          optionsScope: 'superior',
+        }
+  const listPath = catalogMeta.listPath
 
   const {
     register,
@@ -60,7 +87,7 @@ export default function CursoEditPage() {
   })
 
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
-    queryKey: ['curso', 'edit-options', isTechnicalCatalog ? 'tecnico' : 'superior'],
+    queryKey: ['curso', 'edit-options', catalogMeta.optionsScope],
     queryFn: async () => {
       const [unidades, areas, eixos] = await Promise.all([
         loadAllPaginatedResults((params) => unidadesApi.list(params)),
@@ -106,12 +133,12 @@ export default function CursoEditPage() {
 
       if (submitModeRef.current === 'add') {
         reset(DEFAULT_VALUES)
-        navigate(isTechnicalCatalog ? '/ensino/cursotecnico/novo' : '/ensino/cursoitinerante/novo')
+        navigate(catalogMeta.createPath)
         return
       }
 
       if (submitModeRef.current === 'stay' && savedId) {
-        navigate(isTechnicalCatalog ? `/ensino/cursotecnico/${savedId}/editar` : `/ensino/cursoitinerante/${savedId}/editar`, { replace: true })
+        navigate(catalogMeta.editPathBuilder(savedId), { replace: true })
         return
       }
 
@@ -136,10 +163,10 @@ export default function CursoEditPage() {
 
   const title = useMemo(() => {
     if (isCreateMode) {
-      return isTechnicalCatalog ? 'Novo curso técnico' : 'Novo curso itinerante'
+      return catalogMeta.titleCreate
     }
     return data?.nome || 'Editar curso'
-  }, [data?.nome, isCreateMode, isTechnicalCatalog])
+  }, [catalogMeta.titleCreate, data?.nome, isCreateMode])
 
   if ((!isCreateMode && isLoading) || isLoadingOptions) {
     return (
@@ -193,7 +220,7 @@ export default function CursoEditPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to={listPath}>{isTechnicalCatalog ? 'Catálogo de cursos técnicos' : 'Cursos itinerantes'}</Link>
+        <Link to={listPath}>{catalogMeta.titleList}</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <span>{isCreateMode ? title : `Editar ${title}`}</span>
       </nav>

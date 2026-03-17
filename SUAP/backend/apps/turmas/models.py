@@ -271,3 +271,59 @@ class DiarioAcademico(models.Model):
         ]
 
         return '\n'.join(doc)
+
+
+class DiarioMaterialAula(models.Model):
+    diario = models.ForeignKey(DiarioAcademico, on_delete=models.CASCADE, related_name='materiais_aula')
+    titulo = models.CharField(max_length=160, verbose_name='Título')
+    descricao = models.TextField(blank=True, default='', verbose_name='Descrição')
+    url_material = models.URLField(blank=True, default='', verbose_name='URL do material')
+    data_referencia = models.DateField(null=True, blank=True, verbose_name='Data de referência')
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='diarios_materiais_criados',
+        verbose_name='Criado por',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Material de Aula do Diário'
+        verbose_name_plural = 'Materiais de Aula dos Diários'
+        ordering = ['-data_referencia', '-created_at']
+
+    def __str__(self):
+        return f'{self.titulo} - {self.diario}'
+
+
+class DiarioOcorrencia(models.Model):
+    TIPO_CHOICES = (
+        ('OCORRENCIA', 'Ocorrência'),
+        ('SUSPENSAO', 'Suspensão'),
+    )
+
+    diario = models.ForeignKey(DiarioAcademico, on_delete=models.CASCADE, related_name='ocorrencias')
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='OCORRENCIA', verbose_name='Tipo')
+    titulo = models.CharField(max_length=160, verbose_name='Título')
+    descricao = models.TextField(verbose_name='Descrição')
+    data_ocorrencia = models.DateField(verbose_name='Data da ocorrência')
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='diarios_ocorrencias_registradas',
+        verbose_name='Registrado por',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Ocorrência do Diário'
+        verbose_name_plural = 'Ocorrências dos Diários'
+        ordering = ['-data_ocorrencia', '-created_at']
+
+    def __str__(self):
+        return f'{self.get_tipo_display()} - {self.titulo}'

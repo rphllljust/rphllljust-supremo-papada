@@ -99,14 +99,20 @@ py manage.py migrate
 
 Esse comando cria usuários, cursos, turmas, matrículas, notas, frequências, edital e processo de exemplo no banco atualmente configurado. Em `development`, isso significa o Postgres de desenvolvimento.
 
+Agora o seed também cria uma base acadêmica mais completa para desenvolvimento, sem depender do AVA/Moodle, incluindo diários, materiais de aula e ocorrências para duas turmas de exemplo.
+
 Usuários padrão do seed:
 
 ```text
 admin.dev / admin123
 secretaria.dev / secretaria123
+coordenacao.dev / coordenacao123
 professor.dev / professor123
+professor.dev.2 / professor123
 aluno.dev.1 / aluno123
 aluno.dev.2 / aluno123
+aluno.dev.3 / aluno123
+aluno.dev.4 / aluno123
 ```
 
 ### 4.2. Migrar um SQLite existente para o Postgres
@@ -131,11 +137,65 @@ py manage.py bootstrap_initial_admin
 
 O comando acima cria o administrador inicial usando os valores de `INITIAL_ADMIN_CPF`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_ADMIN_FIRST_NAME` e `INITIAL_ADMIN_LAST_NAME` definidos no `.env` do ambiente. Se o usuario ja existir, ele e preservado. Para recriar explicitamente o administrador inicial, use `py manage.py bootstrap_initial_admin --force`. Por padrao ele marca o usuario com troca obrigatoria de senha no primeiro acesso.
 
+O CPF do administrador inicial agora precisa estar configurado explicitamente em `INITIAL_ADMIN_CPF` ou ser informado via `--cpf`; o comando nao usa mais fallback hardcoded.
+
 Politica de primeiro acesso:
 
 * contas com `must_change_password=True` sao redirecionadas para a troca de senha no login web do Django
 * a API JWT tambem expõe `must_change_password` no payload do usuario e em `/api/v1/auth/me`
 * o frontend React bloqueia a navegacao comum ate a senha ser alterada em `/comum/alterar-senha`
+
+### 5.2. Preparacao para integracao com Moodle
+
+O backend agora traz uma base organizada para consumo da API externa do Moodle no app `apps.integracao_moodle`.
+
+Configuracoes disponiveis no `.env`:
+
+```text
+MOODLE_API_BASE_URL=
+MOODLE_API_REST_PATH=webservice/rest/server.php
+MOODLE_API_TOKEN=
+MOODLE_API_TIMEOUT=30
+MOODLE_API_VERIFY_SSL=False
+MOODLE_API_WS_FORMAT=json
+```
+
+Organizacao inicial:
+
+* `apps.integracao_moodle.schemas.MoodleApiSettings` centraliza a configuracao
+* `apps.integracao_moodle.client.MoodleApiClient` concentra as chamadas REST
+* `apps.integracao_moodle.services.get_moodle_api_client()` vira o ponto de entrada para os futuros casos de uso
+* `apps.integracao_moodle.exceptions` isola os erros especificos da integracao
+
+Escopo atual aprovado de funcoes Moodle:
+
+* `core_course_get_categories`
+* `core_course_get_courses`
+* `core_grades_get_grade_tree`
+* `core_grades_get_gradeitems`
+* `core_grades_update_grades`
+* `gradereport_user_get_grade_items`
+* `gradereport_user_get_grades_table`
+* `mod_assign_save_grade`
+* `mod_assign_save_grades`
+
+Qualquer `wsfunction` fora dessa lista passa a ser bloqueada pelo client ate nova revisao do escopo.
+
+Persistencia local ja preparada:
+
+* espelho de categorias em `MoodleCategory`
+* espelho de cursos em `MoodleCourse`, com vinculo para categoria Moodle e para `Curso` quando existir correspondencia
+* snapshots de consultas de notas em `MoodleGradeSnapshot`
+* logs de escrita em `MoodleWritebackLog`
+
+Comandos administrativos disponiveis:
+
+* `python manage.py testar_integracao_moodle`
+* `python manage.py sincronizar_categorias_moodle`
+* `python manage.py sincronizar_catalogo_moodle`
+* `python manage.py importar_cursos_moodle --unidade-codigo sede`
+
+Guia rapido: `docs/integracao-moodle-api.md`
 
 ### 6. Rodar o servidor local
 

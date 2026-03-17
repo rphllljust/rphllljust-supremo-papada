@@ -7,11 +7,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { servidoresApi, setoresApi } from '@/api/endpoints'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
+import { normalizeCpf } from '@/utils/cpf'
 
 const PERFIL_OPTIONS = [
   { value: 'PROFESSOR', label: 'Professor' },
   { value: 'SECRETARIA', label: 'Secretaria' },
-  { value: 'COORDENACAO', label: 'Coordenacao/Consulta' },
+  { value: 'COORDENACAO', label: 'Coordenador de Curso' },
   { value: 'ADMIN', label: 'Administrador' },
 ]
 
@@ -228,7 +229,7 @@ export default function ServidorEditPage() {
     const payload = {
       username: formData.username.trim(),
       nome_completo: formData.nome_completo.trim(),
-      cpf: formData.cpf.trim(),
+      cpf: normalizeCpf(formData.cpf),
       email: formData.email.trim(),
       tipo: formData.tipo,
       setor: formData.setor ? Number(formData.setor) : null,

@@ -80,9 +80,14 @@ function Invoke-InitialAdminBootstrap {
     Write-Host "Verificando bootstrap automatico do administrador inicial..." -ForegroundColor Cyan
 
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-        & docker @ComposeArgs exec -T backend python manage.py bootstrap_initial_admin
+        $bootstrapOutput = & docker @ComposeArgs exec -T backend python manage.py bootstrap_initial_admin 2>&1
         if ($LASTEXITCODE -eq 0) {
             return
+        }
+
+        $bootstrapMessage = ($bootstrapOutput | Out-String)
+        if ($bootstrapMessage -match "Informe o CPF do administrador inicial" -or $bootstrapMessage -match "INITIAL_ADMIN_CPF") {
+            throw "Falha de configuracao no bootstrap automatico do administrador inicial no container backend.`n$bootstrapMessage"
         }
 
         if ($attempt -eq $maxAttempts) {
@@ -91,6 +96,25 @@ function Invoke-InitialAdminBootstrap {
 
         Write-Host "Backend ainda nao esta pronto para o bootstrap. Nova tentativa em $delaySeconds segundos... ($attempt/$maxAttempts)" -ForegroundColor DarkYellow
         Start-Sleep -Seconds $delaySeconds
+    }
+}
+
+function Invoke-DevelopmentSeed {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ComposeArgs,
+        [Parameter(Mandatory = $true)]
+        [string]$SelectedEnvironment
+    )
+
+    if ($SelectedEnvironment -ne "development") {
+        return
+    }
+
+    Write-Host "Executando seed academico de desenvolvimento..." -ForegroundColor Cyan
+    & docker @ComposeArgs exec -T backend python manage.py seed_development_data --reset
+    if ($LASTEXITCODE -ne 0) {
+        throw "Falha ao executar o seed academico de desenvolvimento no container backend."
     }
 }
 
@@ -162,6 +186,7 @@ try {
             }
 
             Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs
+            Invoke-DevelopmentSeed -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
         }
         "up" {
             Write-Host "Subindo ambiente com Docker Compose..." -ForegroundColor Green
@@ -176,6 +201,7 @@ try {
             }
 
             Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs
+            Invoke-DevelopmentSeed -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
         }
         "down" {
             Write-Host "Derrubando ambiente..." -ForegroundColor Cyan

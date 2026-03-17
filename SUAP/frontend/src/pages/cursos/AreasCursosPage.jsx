@@ -41,28 +41,28 @@ export default function AreasCursosPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <span>Cursos iniciais</span>
+        <span>Áreas de cursos</span>
       </nav>
 
       <div className="page-header area-cursos-page__header">
         <div>
-          <h1 className="page-title">Cursos iniciais</h1>
+          <h1 className="page-title">Áreas de cursos</h1>
         </div>
         <div className="page-header__actions">
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => navigate('/ensino/cursoinicial/nova')}
+            onClick={() => navigate('/ensino/areacurso/nova')}
           >
-            <Plus size={16} /> Adicionar Curso inicial
+            <Plus size={16} /> Adicionar Área de curso
           </button>
           <button type="button" className="btn btn--dark" onClick={() => exportRowsToExcel(rows)}>
             <FileSpreadsheet size={16} /> Exportar para XLS
           </button>
           <Link
-            to="/indisponivel/ajuda-cursos-iniciais"
+            to="/indisponivel/ajuda-areas-de-cursos"
             state={{
-              title: 'Ajuda de Cursos iniciais',
+              title: 'Ajuda de Áreas de cursos',
               description: 'A ajuda detalhada desta funcionalidade ainda será portada para o frontend React.',
             }}
             className="btn btn--outline"
@@ -93,10 +93,10 @@ export default function AreasCursosPage() {
       </section>
 
       {isError ? (
-        <div className="alert alert--error">Não foi possível carregar os cursos iniciais com as permissões atuais.</div>
+        <div className="alert alert--error">Não foi possível carregar as áreas de cursos com as permissões atuais.</div>
       ) : null}
 
-      <div className="area-cursos-page__summary">Mostrando {rows.length} curso inicial{rows.length !== 1 ? 's' : ''}</div>
+      <div className="area-cursos-page__summary">Mostrando {rows.length} área{rows.length !== 1 ? 's' : ''} de curso</div>
 
       <section className="dashboard-card area-cursos-table-card">
         <div className="area-cursos-table-wrapper">
@@ -110,23 +110,23 @@ export default function AreasCursosPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={2} className="area-cursos-table__empty">Carregando cursos iniciais...</td>
+                  <td colSpan={2} className="area-cursos-table__empty">Carregando áreas de cursos...</td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={2} className="area-cursos-table__empty">Nenhum curso inicial encontrado.</td>
+                  <td colSpan={2} className="area-cursos-table__empty">Nenhuma área de curso encontrada.</td>
                 </tr>
               ) : rows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <div className="area-cursos-table__actions">
-                      <button type="button" className="btn btn--outline btn--icon" onClick={() => navigate(`/ensino/cursoinicial/${row.id}`)} aria-label={`Ver área ${row.descricao}`}>
+                      <button type="button" className="btn btn--outline btn--icon" onClick={() => navigate(`/ensino/areacurso/${row.id}`)} aria-label={`Ver área ${row.descricao}`}>
                         <Eye size={14} />
                       </button>
                       <button
                         type="button"
                         className="btn btn--outline btn--icon"
-                        onClick={() => navigate(`/ensino/cursoinicial/${row.id}/editar`)}
+                        onClick={() => navigate(`/ensino/areacurso/${row.id}/editar`)}
                         aria-label={`Editar área ${row.descricao}`}
                       >
                         <Pencil size={14} />
@@ -141,7 +141,7 @@ export default function AreasCursosPage() {
         </div>
       </section>
 
-      <div className="area-cursos-page__summary">Mostrando {rows.length} curso inicial{rows.length !== 1 ? 's' : ''}</div>
+      <div className="area-cursos-page__summary">Mostrando {rows.length} área{rows.length !== 1 ? 's' : ''} de curso</div>
 
       {data ? (
         <div className="estagios-pagination">

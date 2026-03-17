@@ -27,6 +27,7 @@ export default function CursosPage({
   emptyMessage = 'Nenhum curso encontrado.',
   createPath = null,
   editPathBuilder = null,
+  extraHeaderActions = null,
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -103,6 +104,7 @@ export default function CursosPage({
           {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
         </div>
         <div className="page-header__actions">
+          {extraHeaderActions}
           <button
             className="btn btn--primary"
             onClick={() => (createPath ? navigate(createPath) : null)}

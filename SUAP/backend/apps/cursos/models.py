@@ -40,6 +40,8 @@ class Curso(models.Model):
     area_curso = models.ForeignKey('AreaCurso', on_delete=models.SET_NULL, related_name='cursos', null=True, blank=True, verbose_name='Área do Curso')
     nome = models.CharField(max_length=200)
     sigla = models.CharField(max_length=16, blank=True, default='', verbose_name='Sigla')
+    moodle_course_id = models.PositiveIntegerField(null=True, blank=True, unique=True, verbose_name='ID do Curso no Moodle')
+    moodle_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname do Moodle')
     eixo_tecnologico = models.CharField(max_length=200, blank=True, default='', verbose_name='Eixo Tecnológico')
     carga_horaria = models.PositiveIntegerField()
 

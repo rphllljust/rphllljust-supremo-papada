@@ -1,6 +1,5 @@
-import os
-
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 from apps.accounts.services import ensure_initial_admin
 
@@ -9,10 +8,10 @@ class Command(BaseCommand):
     help = "Cria o administrador inicial do ambiente atual quando ele ainda nao existe."
 
     def add_arguments(self, parser):
-        parser.add_argument("--cpf", default=os.getenv("INITIAL_ADMIN_CPF", "12345678909"))
-        parser.add_argument("--password", default=os.getenv("INITIAL_ADMIN_PASSWORD", "admin"))
-        parser.add_argument("--first-name", default=os.getenv("INITIAL_ADMIN_FIRST_NAME", "Administrador"))
-        parser.add_argument("--last-name", default=os.getenv("INITIAL_ADMIN_LAST_NAME", "Inicial"))
+        parser.add_argument("--cpf", default=settings.INITIAL_ADMIN_CPF)
+        parser.add_argument("--password", default=settings.INITIAL_ADMIN_PASSWORD)
+        parser.add_argument("--first-name", default=settings.INITIAL_ADMIN_FIRST_NAME)
+        parser.add_argument("--last-name", default=settings.INITIAL_ADMIN_LAST_NAME)
         parser.add_argument(
             "--force",
             action="store_true",
@@ -25,6 +24,11 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        if not options["cpf"]:
+            raise CommandError(
+                "Informe o CPF do administrador inicial via --cpf ou pela variavel de ambiente INITIAL_ADMIN_CPF."
+            )
+
         usuario, created = ensure_initial_admin(
             cpf=options["cpf"],
             password=options["password"],

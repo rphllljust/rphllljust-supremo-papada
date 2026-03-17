@@ -7,6 +7,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { inscricoesApi, publicacoesApi } from '@/api/endpoints'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
+import { normalizeCpf } from '@/utils/cpf'
 
 const INSCRICAO_STATUS_OPTIONS = [
   { value: 'PENDENTE', label: 'Pendente de validação' },
@@ -116,7 +117,7 @@ export default function InscricaoCreatePage() {
           saveMutation.mutate({
             publicacao: Number(formData.publicacao),
             nome_candidato: formData.nome_candidato.trim(),
-            cpf: formData.cpf.trim(),
+            cpf: normalizeCpf(formData.cpf),
             email: formData.email.trim(),
             telefone: formData.telefone.trim(),
             data_nascimento: formData.data_nascimento || null,

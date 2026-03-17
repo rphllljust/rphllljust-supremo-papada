@@ -254,3 +254,25 @@ SIMPLE_JWT = {
     "SIGNING_KEY": env_str("JWT_SIGNING_KEY", default=SECRET_KEY),
     "AUTH_HEADER_TYPES": tuple(env_csv("JWT_AUTH_HEADER_TYPES", default="Bearer")),
 }
+
+MOODLE_BASE_URL = env_str("MOODLE_BASE_URL", default=env_str("MOODLE_API_BASE_URL", default=""))
+MOODLE_WS_TOKEN = env_str("MOODLE_WS_TOKEN", default=env_str("MOODLE_API_TOKEN", default=""))
+MOODLE_REST_FORMAT = env_str("MOODLE_REST_FORMAT", default=env_str("MOODLE_API_WS_FORMAT", default="json"))
+MOODLE_TIMEOUT = env_int("MOODLE_TIMEOUT", default=env_int("MOODLE_API_TIMEOUT", default=30))
+MOODLE_VERIFY_SSL = env_bool(
+    "MOODLE_VERIFY_SSL",
+    default=env_bool("MOODLE_API_VERIFY_SSL", default=env_default(False, homolog=True, production=True)),
+)
+MOODLE_REST_PATH = env_str("MOODLE_REST_PATH", default=env_str("MOODLE_API_REST_PATH", default="webservice/rest/server.php"))
+
+MOODLE_API_BASE_URL = MOODLE_BASE_URL
+MOODLE_API_REST_PATH = MOODLE_REST_PATH
+MOODLE_API_TOKEN = MOODLE_WS_TOKEN
+MOODLE_API_TIMEOUT = MOODLE_TIMEOUT
+MOODLE_API_VERIFY_SSL = MOODLE_VERIFY_SSL
+MOODLE_API_WS_FORMAT = MOODLE_REST_FORMAT
+
+INITIAL_ADMIN_CPF = env_str("INITIAL_ADMIN_CPF", default="")
+INITIAL_ADMIN_PASSWORD = env_str("INITIAL_ADMIN_PASSWORD", default="admin")
+INITIAL_ADMIN_FIRST_NAME = env_str("INITIAL_ADMIN_FIRST_NAME", default="Administrador")
+INITIAL_ADMIN_LAST_NAME = env_str("INITIAL_ADMIN_LAST_NAME", default="Inicial")
