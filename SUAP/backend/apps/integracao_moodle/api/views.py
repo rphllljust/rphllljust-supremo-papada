@@ -29,6 +29,11 @@ from apps.integracao_moodle.services import (
     view_moodle_course,
     sync_and_create_moodle_structured_categories,
 )
+from django.conf import settings
+
+# Allow ad-hoc test of Moodle connection using core_webservice_get_site_info.
+from ..client import MoodleApiClient, MoodleApiSettings
+from ..models import MoodleIntegrationConfig
 
 
 def _as_bool(value, default: bool = False) -> bool:
@@ -109,6 +114,42 @@ class MoodleCategoriesIntegrationAPIView(MoodleBaseIntegrationAPIView):
                 },
             }
         )
+
+    def delete(self, request):
+        """Support HTTP DELETE to remove categories using `categoryids`.
+
+        Accepts either JSON body like `{ "categoryids": [1,2] }` or
+        query string `?categoryids=1,2` for convenience.
+        """
+        # prefer JSON body when provided
+        params = {}
+        if isinstance(request.data, dict) and request.data:
+            params = dict(request.data)
+        else:
+            # Try to read list-based query params (categoryids or categoryids[])
+            query = request.query_params
+            ids = []
+            # QueryDict provides getlist
+            try:
+                ids = query.getlist('categoryids') or query.getlist('categoryids[]')
+            except Exception:
+                # fallback to parsing comma-separated single param
+                raw = query.get('categoryids')
+                if raw:
+                    ids = [x.strip() for x in raw.split(',') if x.strip()]
+
+            if ids:
+                try:
+                    params['categoryids'] = [int(x) for x in ids]
+                except Exception:
+                    return Response({"detail": "Param categoryids invalido."}, status=400)
+
+        try:
+            payload = delete_moodle_categories(params)
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError, ValueError) as exc:
+            return self.handle_moodle_error(exc)
+
+        return Response({"detail": "Categorias excluidas no Moodle.", "moodle_response": payload})
 
 
 class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
@@ -451,3 +492,84 @@ class MoodleCategoriesResetAndSyncAPIView(APIView):
                 "deletion_results": deletion_results,
             }
         )
+
+
+class MoodleTestConnectionAPIView(MoodleBaseIntegrationAPIView):
+    """Protected endpoint to test Moodle connectivity using core_webservice_get_site_info.
+
+    Accepts optional `wstoken` and `moodlewsrestformat` in request data to override
+    configured settings for ad-hoc testing.
+    """
+
+    def post(self, request):
+        wstoken = (request.data.get("wstoken") or request.query_params.get("wstoken"))
+        rest_format = (request.data.get("moodlewsrestformat") or request.query_params.get("moodlewsrestformat"))
+
+        # Build a client using provided overrides or Django settings
+        config = MoodleApiSettings(
+            base_url=settings.MOODLE_BASE_URL,
+            token=wstoken or settings.MOODLE_WS_TOKEN,
+            rest_format=rest_format or settings.MOODLE_REST_FORMAT,
+            timeout=getattr(settings, "MOODLE_TIMEOUT", None),
+            rest_path=getattr(settings, "MOODLE_REST_PATH", "/webservice/rest/server.php"),
+            verify_ssl=getattr(settings, "MOODLE_VERIFY_SSL", True),
+        )
+
+        client = MoodleApiClient(config=config)
+
+        try:
+            payload = client.call("core_webservice_get_site_info")
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+            return self.handle_moodle_error(exc)
+
+        return Response({"detail": "Conexao OK.", "site_info": payload})
+
+
+class MoodleIntegrationConfigAPIView(MoodleBaseIntegrationAPIView):
+    """GET/POST to read/update persisted Moodle integration settings."""
+
+    def get(self, request):
+        try:
+            cfg = MoodleIntegrationConfig.objects.first()
+        except Exception:
+            cfg = None
+
+        if not cfg:
+            return Response(
+                {
+                    "base_url": settings.MOODLE_BASE_URL,
+                    "wstoken": settings.MOODLE_WS_TOKEN,
+                    "moodlewsrestformat": settings.MOODLE_REST_FORMAT,
+                    "rest_path": settings.MOODLE_REST_PATH,
+                    "timeout": getattr(settings, "MOODLE_TIMEOUT", None),
+                    "verify_ssl": getattr(settings, "MOODLE_VERIFY_SSL", True),
+                }
+            )
+
+        return Response(
+            {
+                "base_url": cfg.base_url,
+                "wstoken": cfg.token,
+                "moodlewsrestformat": cfg.rest_format,
+                "rest_path": cfg.rest_path,
+                "timeout": cfg.timeout,
+                "verify_ssl": cfg.verify_ssl,
+            }
+        )
+
+    def post(self, request):
+        data = request.data or {}
+        try:
+            cfg, created = MoodleIntegrationConfig.objects.get_or_create(pk=1)
+            cfg.base_url = data.get("base_url") or cfg.base_url
+            cfg.token = data.get("wstoken") or cfg.token
+            cfg.rest_format = data.get("moodlewsrestformat") or cfg.rest_format
+            cfg.rest_path = data.get("rest_path") or cfg.rest_path
+            cfg.timeout = data.get("timeout") if data.get("timeout") is not None else cfg.timeout
+            cfg.verify_ssl = data.get("verify_ssl") if data.get("verify_ssl") is not None else cfg.verify_ssl
+            cfg.save()
+        except Exception as exc:
+            logger.exception("Failed saving Moodle integration config: %s", exc)
+            return Response({"detail": "Falha ao salvar configuracao."}, status=500)
+
+        return Response({"detail": "Configuracao salva com sucesso."})

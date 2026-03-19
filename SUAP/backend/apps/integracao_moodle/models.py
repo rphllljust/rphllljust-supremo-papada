@@ -133,3 +133,27 @@ class MoodleWritebackLog(models.Model):
 		verbose_name = "Log de Escrita no Moodle"
 		verbose_name_plural = "Logs de Escrita no Moodle"
 		ordering = ["-created_at"]
+
+
+class MoodleIntegrationConfig(models.Model):
+	"""Singleton-like model to store Moodle integration settings editable via API.
+
+	Only a single row is expected; the service layer will prefer values from this
+	model over environment-based Django settings when present.
+	"""
+
+	base_url = models.CharField(max_length=1024, blank=True, default="", verbose_name="Moodle Base URL")
+	token = models.CharField(max_length=255, blank=True, default="", verbose_name="WS Token")
+	rest_format = models.CharField(max_length=50, blank=True, default="json", verbose_name="REST Format")
+	rest_path = models.CharField(max_length=255, blank=True, default="/webservice/rest/server.php", verbose_name="REST Path")
+	timeout = models.PositiveIntegerField(null=True, blank=True, verbose_name="Timeout (s)")
+	verify_ssl = models.BooleanField(default=True, verbose_name="Verify SSL")
+
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		verbose_name = "Configuração da Integração com Moodle"
+		verbose_name_plural = "Configurações da Integração com Moodle"
+
+	def __str__(self):
+		return "Moodle Integration Config"

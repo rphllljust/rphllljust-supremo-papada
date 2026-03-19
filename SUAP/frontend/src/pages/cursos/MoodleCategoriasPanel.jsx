@@ -82,12 +82,53 @@ export default function MoodleCategoriasPanel() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (payload) => moodleIntegrationApi.deleteCategorias(payload),
-    onSuccess: () => {
-      toast.success('Categoria excluída no Moodle!')
+    mutationFn: (payload) => {
+      // prefer HTTP DELETE when we have a params object (sends as query params)
+      try {
+        if (payload && payload.params && payload.params.categoryids) {
+          return moodleIntegrationApi.deleteCategoriasDelete(payload.params)
+        }
+      } catch (err) {
+        // fallback to post-based delete
+      }
+      return moodleIntegrationApi.deleteCategorias(payload)
+    },
+    onSuccess: (res) => {
+      // res is the axios response; try to summarize backend result to help debugging
+      try {
+        const body = res?.data
+        if (body && body.moodle_response) {
+          const mr = body.moodle_response
+          if (mr.deleted && Array.isArray(mr.deleted)) {
+            toast.success(`Excluídas: ${mr.deleted.length}`)
+          } else if (mr.deleted && typeof mr.deleted === 'number') {
+            toast.success(`Excluídas: ${mr.deleted}`)
+          } else if (mr.failed && Array.isArray(mr.failed) && mr.failed.length) {
+            toast.error(`Falhas: ${mr.failed.length}`)
+          } else {
+            toast.success('Categoria excluída no Moodle!')
+          }
+        } else if (body && body.detail) {
+          toast.success(body.detail)
+        } else {
+          toast.success('Categoria excluída no Moodle!')
+        }
+      } catch (err) {
+        toast.success('Categoria excluída no Moodle!')
+      }
+
+      console.info('Delete response:', res)
       queryClient.invalidateQueries({ queryKey: ['moodle-categorias'] })
     },
-    onError: () => toast.error('Erro ao excluir categoria no Moodle.'),
+    onError: (err) => {
+      console.error('Delete error:', err)
+      try {
+        const detail = err?.response?.data?.detail || err?.response?.data || err?.message
+        toast.error(String(detail))
+      } catch (e) {
+        toast.error('Erro ao excluir categoria no Moodle.')
+      }
+    },
   })
 
   const resetSyncMutation = useMutation({

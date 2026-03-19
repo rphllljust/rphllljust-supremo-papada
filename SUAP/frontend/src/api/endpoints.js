@@ -89,6 +89,8 @@ export const moodleIntegrationApi = {
   createCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_create_categories' }),
   updateCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_update_categories' }),
   deleteCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_delete_categories' }),
+  // Alternative using HTTP DELETE (sends categoryids as query params)
+  deleteCategoriasDelete: (params) => client.delete('/integracoes/moodle/categorias/', { params }),
 }
 export const areasCursoApi = {
   list: (params) => client.get('/cursos/areas/', { params }),

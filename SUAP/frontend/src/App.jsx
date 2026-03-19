@@ -56,6 +56,7 @@ const ComponenteDetailPage = lazy(() => import('@/pages/cursos/ComponenteDetailP
 const ComponenteEditPage = lazy(() => import('@/pages/cursos/ComponenteEditPage'))
 const ComponenteVinculacaoPage = lazy(() => import('@/pages/cursos/ComponenteVinculacaoPage'))
 const MoodleCategoriasPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasPanel'))
+const MoodleSettingsPage = lazy(() => import('@/pages/cursos/MoodleSettingsPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
@@ -292,6 +293,8 @@ export default function App() {
                   <Route path="/componentes/" element={<RouteShell><ComponentesPage /></RouteShell>} />
                   <Route path="/ensino/moodle-categorias" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />
                   <Route path="/ensino/moodle-categorias/" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />
+                  <Route path="/ensino/moodle-config" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
+                  <Route path="/ensino/moodle-config/" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />

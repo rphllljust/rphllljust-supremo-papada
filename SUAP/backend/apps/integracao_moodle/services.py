@@ -14,8 +14,15 @@ def delete_moodle_categories(params: dict) -> dict | list:
     # collect successes/failures.
     client = get_moodle_api_client()
     category_ids = []
-    if isinstance(params, dict) and isinstance(params.get("categoryids"), (list, tuple)):
-        category_ids = list(params.get("categoryids"))
+    # Accept either `categoryids` (convenience) or a properly formatted
+    # `categories` list of objects as expected by Moodle.
+    if isinstance(params, dict):
+        if isinstance(params.get("categories"), (list, tuple)) and params.get("categories"):
+            # already in expected format, forward directly
+            return client.delete_categories(params)
+
+        if isinstance(params.get("categoryids"), (list, tuple)):
+            category_ids = list(params.get("categoryids"))
 
     if not category_ids:
         # fallback to direct call when no explicit ids provided
@@ -25,7 +32,10 @@ def delete_moodle_categories(params: dict) -> dict | list:
     results = {"deleted": [], "failed": []}
     for cid in category_ids:
         try:
-            payload = client.delete_categories({"categoryids": [cid]})
+            params_to_send = {"categories": [{"id": cid}]}
+            logger.debug("Deleting Moodle category with params=%s", params_to_send)
+            payload = client.delete_categories(params_to_send)
+            logger.debug("Moodle delete response for category %s: %s", cid, payload)
             results["deleted"].append({"id": cid, "response": payload})
         except Exception as exc:  # keep going on individual failures
             logger.exception("Failed deleting Moodle category %s: %s", cid, exc)
@@ -76,6 +86,27 @@ class MoodleCourseDeletionSummary:
 
 
 def get_moodle_api_client() -> MoodleApiClient:
+    # Prefer persisted integration config in DB when available, falling back
+    # to Django settings/env variables.
+    try:
+        from .models import MoodleIntegrationConfig
+
+        config_obj = MoodleIntegrationConfig.objects.first()
+    except Exception:
+        config_obj = None
+
+    if config_obj:
+        return MoodleApiClient(
+            config=MoodleApiSettings(
+                base_url=config_obj.base_url or settings.MOODLE_BASE_URL,
+                token=config_obj.token or settings.MOODLE_WS_TOKEN,
+                rest_format=config_obj.rest_format or settings.MOODLE_REST_FORMAT,
+                timeout=config_obj.timeout or settings.MOODLE_TIMEOUT,
+                rest_path=config_obj.rest_path or settings.MOODLE_REST_PATH,
+                verify_ssl=config_obj.verify_ssl if config_obj.verify_ssl is not None else settings.MOODLE_VERIFY_SSL,
+            )
+        )
+
     return MoodleApiClient.from_django_settings()
 
 

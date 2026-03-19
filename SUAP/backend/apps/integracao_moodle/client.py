@@ -38,6 +38,7 @@ SUPPORTED_MOODLE_WS_FUNCTIONS = (
     "gradereport_user_get_grades_table",
     "mod_assign_save_grade",
     "mod_assign_save_grades",
+    "core_webservice_get_site_info",
 )
 
 

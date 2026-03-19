@@ -181,6 +181,13 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/moodle-categorias'],
           },
           {
+            id: 'moodle-config',
+            type: 'link',
+            label: 'Configurações Moodle',
+            to: '/ensino/moodle-config/',
+            activePrefixes: ['/ensino/moodle-config'],
+          },
+          {
             id: 'catalogo-cursos-tecnicos',
             type: 'link',
             label: 'Catálogo de cursos técnicos',

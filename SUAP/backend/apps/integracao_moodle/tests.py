@@ -694,6 +694,8 @@ class MoodlePersistenceServiceTests(TestCase):
 		self.assertFalse(MoodleCourse.objects.filter(moodle_course_id=44).exists())
 
 
+
+
 class MoodleIntegrationManagementCommandTests(SimpleTestCase):
 	@patch("apps.integracao_moodle.management.commands.testar_integracao_moodle.get_moodle_courses")
 	def test_management_command_lists_returned_courses(self, get_moodle_courses_mock):
@@ -708,6 +710,22 @@ class MoodleIntegrationManagementCommandTests(SimpleTestCase):
 		output = stdout.getvalue()
 		self.assertIn("2 cursos retornados pelo Moodle.", output)
 		self.assertIn("[1] CURSO-1 :: Curso 1", output)
+
+
+class DeleteCategoriesServiceTests(SimpleTestCase):
+	@patch("apps.integracao_moodle.services.get_moodle_api_client")
+	def test_delete_moodle_categories_converts_categoryids_to_categories(self, get_moodle_api_client_mock):
+		client = Mock()
+		client.delete_categories.return_value = []
+		get_moodle_api_client_mock.return_value = client
+
+		import apps.integracao_moodle.services as services
+
+		result = services.delete_moodle_categories({"categoryids": [99]})
+
+		client.delete_categories.assert_called_with({"categories": [{"id": 99}]})
+		self.assertIn("deleted", result)
+		self.assertEqual(result["deleted"][0]["id"], 99)
 
 	@patch("apps.integracao_moodle.management.commands.importar_cursos_moodle.import_moodle_courses_to_formacao_inicial")
 	def test_import_command_reports_summary(self, import_moodle_courses_mock):
