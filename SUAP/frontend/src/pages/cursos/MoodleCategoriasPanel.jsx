@@ -83,14 +83,7 @@ export default function MoodleCategoriasPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (payload) => {
-      // prefer HTTP DELETE when we have a params object (sends as query params)
-      try {
-        if (payload && payload.params && payload.params.categoryids) {
-          return moodleIntegrationApi.deleteCategoriasDelete(payload.params)
-        }
-      } catch (err) {
-        // fallback to post-based delete
-      }
+      // Always use POST to backend; backend will call Moodle REST POST.
       return moodleIntegrationApi.deleteCategorias(payload)
     },
     onSuccess: (res) => {
@@ -177,6 +170,22 @@ export default function MoodleCategoriasPanel() {
         <div style={{display: 'flex', gap: 8}}>
           <button className="btn btn--secondary" onClick={() => queryClient.invalidateQueries(['moodle-categorias'])} disabled={isFetching} title="Atualizar lista"><RefreshCw size={16} />&nbsp;Atualizar</button>
           <button className="btn btn--outline" onClick={() => resetSyncMutation.mutate()} disabled={resetSyncMutation.isPending}><RefreshCw size={14} />&nbsp;Resetar & Sincronizar</button>
+          <button
+            className="btn btn--danger"
+            onClick={() => {
+              if (!categorias || categorias.length === 0) {
+                toast.error('Nenhuma categoria para excluir.')
+                return
+              }
+              if (!window.confirm(`Confirma exclusão de TODAS as categorias (${categorias.length}) do Moodle? Esta operação é irreversível.`)) return
+              const ids = categorias.map(c => c.id)
+              deleteMutation.mutate({ params: { categoryids: ids } })
+            }}
+            disabled={deleteMutation.isPending}
+            title="Apagar todas as categorias do Moodle"
+          >
+            <Trash2 size={14} />&nbsp;Apagar todas
+          </button>
         </div>
       </div>
 

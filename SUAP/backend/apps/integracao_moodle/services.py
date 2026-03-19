@@ -1,5 +1,48 @@
 def create_moodle_categories(params: dict) -> dict | list:
-    response_payload = get_moodle_api_client().create_categories(params)
+    client = get_moodle_api_client()
+
+    # Accept convenience shapes from frontend: a plain list of category objects
+    # (params = [ {...} ]) or a wrapper { 'params': [ ... ] } and normalize to
+    # the Moodle-expected { 'categories': [ {...} ] } with sensible defaults.
+    normalized_params = None
+
+    if isinstance(params, (list, tuple)):
+        normalized_params = {"categories": list(params)}
+    elif isinstance(params, dict) and isinstance(params.get("params"), (list, tuple)):
+        normalized_params = {"categories": list(params.get("params"))}
+    elif isinstance(params, dict) and isinstance(params.get("categories"), (list, tuple)):
+        normalized_params = {"categories": list(params.get("categories"))}
+    else:
+        normalized_params = dict(params or {})
+
+    # Ensure defaults for each category object
+    cats = []
+    for item in normalized_params.get("categories") or []:
+        obj = dict(item) if isinstance(item, dict) else {"name": str(item)}
+        # skip categories without a name to avoid creating anonymous/default ones
+        name_val = (obj.get("name") or "").strip()
+        if not name_val:
+            logger.warning("Skipping category creation for item without name: %s", obj)
+            continue
+        obj["name"] = name_val
+        if "parent" not in obj:
+            obj["parent"] = 0
+        if "descriptionformat" not in obj:
+            obj["descriptionformat"] = 1
+        if "idnumber" not in obj:
+            obj["idnumber"] = ""
+        if "description" not in obj:
+            obj["description"] = ""
+        if "theme" not in obj:
+            obj["theme"] = ""
+        cats.append(obj)
+    if not cats:
+        raise ValueError("Nenhuma categoria valida fornecida para criacao.")
+
+    payload = {"categories": cats}
+    logger.debug("Creating Moodle categories with payload=%s", payload)
+    response_payload = client.create_categories(payload)
+    logger.debug("Moodle create categories response: %s", response_payload)
     # TODO: armazenar localmente se necessário
     return response_payload
 
@@ -18,8 +61,18 @@ def delete_moodle_categories(params: dict) -> dict | list:
     # `categories` list of objects as expected by Moodle.
     if isinstance(params, dict):
         if isinstance(params.get("categories"), (list, tuple)) and params.get("categories"):
-            # already in expected format, forward directly
-            return client.delete_categories(params)
+            # normalize categories list: ensure each item has `recursive` (default to 1)
+            normalized = []
+            for item in params.get("categories"):
+                obj = dict(item) if isinstance(item, dict) else {"id": item}
+                if "recursive" not in obj:
+                    obj["recursive"] = 1
+                normalized.append(obj)
+            try:
+                return client.delete_categories({"categories": normalized})
+            except Exception:
+                # fallback to per-item deletion below
+                category_ids = [c.get("id") for c in normalized if c.get("id")]
 
         if isinstance(params.get("categoryids"), (list, tuple)):
             category_ids = list(params.get("categoryids"))
@@ -32,7 +85,7 @@ def delete_moodle_categories(params: dict) -> dict | list:
     results = {"deleted": [], "failed": []}
     for cid in category_ids:
         try:
-            params_to_send = {"categories": [{"id": cid}]}
+            params_to_send = {"categories": [{"id": cid, "recursive": 1}]}
             logger.debug("Deleting Moodle category with params=%s", params_to_send)
             payload = client.delete_categories(params_to_send)
             logger.debug("Moodle delete response for category %s: %s", cid, payload)
