@@ -29,6 +29,7 @@ from apps.integracao_moodle.services import (
 	MoodleCourseImportSummary,
 	_build_new_course_data,
 	_should_skip_course,
+	delete_moodle_courses,
 	save_moodle_assignment_grade,
 	store_moodle_grade_tree,
 	sync_moodle_catalog_data,
@@ -339,6 +340,60 @@ class MoodleApiClientTests(SimpleTestCase):
 			}
 		])
 
+	def test_get_courses_by_field_returns_normalized_courses_from_courses_key(self):
+		session = Mock(spec=requests.Session)
+		response = Mock()
+		response.status_code = 200
+		response.ok = True
+		response.json.return_value = {
+			"courses": [
+				{
+					"id": 9,
+					"shortname": "CURSO-9",
+					"fullname": "Curso 9",
+					"visible": 1,
+				}
+			]
+		}
+		session.get.return_value = response
+		client = MoodleApiClient(
+			config=MoodleApiSettings(base_url="https://moodle.exemplo.local", token="token-seguro"),
+			session=session,
+		)
+
+		courses = client.get_courses_by_field({"field": "id", "value": 9})
+
+		self.assertEqual(courses[0]["id"], 9)
+		self.assertEqual(courses[0]["fullname"], "Curso 9")
+
+	def test_search_courses_returns_metadata_and_normalized_results(self):
+		session = Mock(spec=requests.Session)
+		response = Mock()
+		response.status_code = 200
+		response.ok = True
+		response.json.return_value = {
+			"total": 1,
+			"courses": [
+				{
+					"id": 12,
+					"shortname": "BUSCA-12",
+					"fullname": "Curso Encontrado",
+					"visible": 1,
+				}
+			],
+			"warnings": [],
+		}
+		session.get.return_value = response
+		client = MoodleApiClient(
+			config=MoodleApiSettings(base_url="https://moodle.exemplo.local", token="token-seguro"),
+			session=session,
+		)
+
+		result = client.search_courses({"criterianame": "search", "criteriavalue": "Curso"})
+
+		self.assertEqual(result["total"], 1)
+		self.assertEqual(result["results"][0]["id"], 12)
+
 
 class MoodleIntegrationApiTests(SimpleTestCase):
 	def setUp(self):
@@ -394,6 +449,54 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 		self.assertEqual(response.data["summary"]["created"], 3)
 		self.assertEqual(response.data["summary"]["linked_existing"], 1)
 		self.assertEqual(response.data["catalog_storage"]["categories_received"], 2)
+
+	@patch("apps.integracao_moodle.api.views.search_moodle_courses")
+	def test_courses_endpoint_supports_search_action(self, search_moodle_courses_mock):
+		search_moodle_courses_mock.return_value = {
+			"total": 1,
+			"warnings": [],
+			"results": [{"id": 5, "shortname": "CUR-5", "fullname": "Curso 5"}],
+		}
+		request = self.factory.get(
+			"/api/v1/integracoes/moodle/cursos/",
+			{"action": "core_course_search_courses", "criterianame": "search", "criteriavalue": "Curso"},
+		)
+		force_authenticate(request, user=self.user)
+
+		response = self.courses_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["action"], "core_course_search_courses")
+		self.assertEqual(response.data["total"], 1)
+		self.assertEqual(response.data["results"][0]["id"], 5)
+
+	@patch("apps.integracao_moodle.api.views.create_moodle_courses")
+	def test_courses_endpoint_supports_create_action(self, create_moodle_courses_mock):
+		create_moodle_courses_mock.return_value = {
+			"response_payload": [{"id": 71}],
+			"log": Mock(id=18),
+			"course_ids": [71],
+			"catalog_storage": MoodleCatalogStorageSummary(categories_received=1, courses_received=1, courses_created=1),
+			"import_summary": MoodleCourseImportSummary(unidade_codigo="sede", total_received=1, created=1),
+			"synced_courses": [{"id": 71, "shortname": "CUR-71", "fullname": "Curso 71"}],
+		}
+		request = self.factory.post(
+			"/api/v1/integracoes/moodle/cursos/",
+			{
+				"action": "core_course_create_courses",
+				"params": {"courses": [{"fullname": "Curso 71", "shortname": "CUR-71", "categoryid": 3}]},
+				"integrar_catalogo_interno": True,
+			},
+			format="json",
+		)
+		force_authenticate(request, user=self.user)
+
+		response = self.courses_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["action"], "core_course_create_courses")
+		self.assertEqual(response.data["log_id"], 18)
+		self.assertEqual(response.data["course_ids"], [71])
 
 	@patch("apps.integracao_moodle.api.views.get_moodle_categories")
 	def test_categories_endpoint_returns_categories(self, get_moodle_categories_mock):
@@ -562,6 +665,33 @@ class MoodlePersistenceServiceTests(TestCase):
 		self.assertEqual(log.wsfunction, "mod_assign_save_grade")
 		self.assertEqual(log.moodle_assignment_id, 9)
 		self.assertEqual(log.moodle_user_id, 7)
+
+	@patch("apps.integracao_moodle.services.get_moodle_api_client")
+	def test_delete_moodle_courses_unlinks_internal_course_and_removes_local_record(self, get_moodle_api_client_mock):
+		linked_course = Curso.objects.create(
+			unidade=self.unidade,
+			area_curso=None,
+			nome="Curso Moodle",
+			sigla="CURMOODLE",
+			moodle_course_id=44,
+			moodle_shortname="CUR-44",
+			eixo_tecnologico="",
+			carga_horaria=40,
+		)
+		MoodleCourse.objects.create(moodle_course_id=44, shortname="CUR-44", fullname="Curso Moodle", curso=linked_course)
+		client = Mock()
+		client.delete_courses.return_value = []
+		get_moodle_api_client_mock.return_value = client
+
+		result = delete_moodle_courses({"courseids": [44]})
+
+		linked_course.refresh_from_db()
+		self.assertEqual(result["deletion_summary"].requested_ids, [44])
+		self.assertEqual(result["deletion_summary"].removed_local_records, 1)
+		self.assertEqual(result["deletion_summary"].unlinked_internal_courses, 1)
+		self.assertIsNone(linked_course.moodle_course_id)
+		self.assertEqual(linked_course.moodle_shortname, "")
+		self.assertFalse(MoodleCourse.objects.filter(moodle_course_id=44).exists())
 
 
 class MoodleIntegrationManagementCommandTests(SimpleTestCase):

@@ -2,8 +2,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
+from django.core.management import call_command
 from django.db import transaction
 from django.utils import timezone
+from django.db import connection
+from django.db.utils import ProgrammingError
 
 
 SEED_USER_DEFINITIONS = [
@@ -161,6 +164,22 @@ class Command(BaseCommand):
             "ServidorPerfil": ServidorPerfil,
             "Usuario": Usuario,
         }
+
+        # Ensure required migrations are applied before seeding data.
+        try:
+            curso_table = Curso._meta.db_table
+            with connection.cursor() as cursor:
+                cols = [col.name for col in connection.introspection.get_table_description(cursor, curso_table)]
+        except (ProgrammingError, Exception):
+            cols = []
+
+        if "tipo_curso" not in cols:
+            self.stdout.write(self.style.WARNING("Coluna 'tipo_curso' ausente na tabela 'Curso'. Executando 'migrate' antes do seed."))
+            try:
+                call_command("migrate", "--noinput")
+            except Exception as exc:
+                self.stderr.write(self.style.ERROR(f"Falha ao executar migrate: {exc}"))
+                raise
 
         with transaction.atomic():
             if options["reset"]:

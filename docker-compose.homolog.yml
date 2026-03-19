@@ -10,6 +10,9 @@ services:
   backend:
     ports:
       - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       APP_ENV: homolog
       SECRET_KEY: troque-por-uma-chave-segura-de-homolog
@@ -41,3 +44,5 @@ services:
       - -c
       - |
         npm run dev:homolog -- --host 0.0.0.0 --port 5174
+    depends_on:
+      - backend

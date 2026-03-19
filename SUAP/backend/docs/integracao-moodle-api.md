@@ -51,7 +51,14 @@ O client do SUAP agora bloqueia qualquer `wsfunction` fora da lista abaixo. Isso
 | Funcao | Uso previsto |
 | --- | --- |
 | `core_course_get_categories` | Consultar detalhes de categorias |
+| `core_course_create_courses` | Criar cursos no Moodle |
+| `core_course_delete_courses` | Excluir cursos no Moodle |
 | `core_course_get_courses` | Consultar detalhes de cursos |
+| `core_course_get_courses_by_field` | Consultar cursos por um campo especifico |
+| `core_course_get_recent_courses` | Listar cursos recentes de um usuario |
+| `core_course_search_courses` | Pesquisar cursos por criterio |
+| `core_course_update_courses` | Atualizar cursos no Moodle |
+| `core_course_view_course` | Registrar visualizacao de curso |
 | `core_grades_get_grade_tree` | Consultar a estrutura de notas de um curso |
 | `core_grades_get_gradeitems` | Consultar itens de nota |
 | `core_grades_update_grades` | Atualizar item de nota e notas associadas |
@@ -209,6 +216,16 @@ Payload opcional:
 
 ### Cursos
 
+Consultas administrativas adicionais tambem podem ser feitas no mesmo endpoint com `action` na query string:
+
+```text
+GET /api/v1/integracoes/moodle/cursos/?action=core_course_get_courses_by_field&field=id&value=12
+GET /api/v1/integracoes/moodle/cursos/?action=core_course_get_recent_courses&userid=42
+GET /api/v1/integracoes/moodle/cursos/?action=core_course_search_courses&criterianame=search&criteriavalue=tecnico
+```
+
+O `GET` sem `action` continua usando `core_course_get_courses`.
+
 Para armazenar cursos do Moodle localmente e opcionalmente integrá-los ao catálogo interno já existente no SUAP, o endpoint de cursos aceita `POST`:
 
 ```text
@@ -229,6 +246,40 @@ Comportamento atual:
 - sempre consulta `core_course_get_categories` e `core_course_get_courses` para garantir o vinculo curso → categoria Moodle
 - persiste categorias e cursos em tabelas locais dedicadas antes de tocar no catalogo interno
 - quando `integrar_catalogo_interno=true`, continua gravando os cursos no modelo `Curso` sem `eixo_tecnologico`, o que os coloca provisoriamente no agrupamento atual de formacao inicial
+
+Operacoes de escrita de cursos tambem podem ser enviadas no mesmo endpoint via `POST` com `action`:
+
+```json
+{
+    "action": "core_course_create_courses",
+    "params": {
+        "courses": [
+            {
+                "fullname": "Curso Novo",
+                "shortname": "CURSO-NOVO",
+                "categoryid": 3
+            }
+        ]
+    },
+    "persistir_espelho_local": true,
+    "integrar_catalogo_interno": true,
+    "unidade_codigo": "sede"
+}
+```
+
+Accoes suportadas no `POST /api/v1/integracoes/moodle/cursos/`:
+
+- `core_course_create_courses`
+- `core_course_update_courses`
+- `core_course_delete_courses`
+- `core_course_view_course`
+
+Regras aplicadas pelo SUAP nessas operacoes:
+
+- criacao e atualizacao podem sincronizar o espelho local de `MoodleCourse` automaticamente quando `persistir_espelho_local=true`
+- criacao e atualizacao podem refletir os cursos no modelo interno `Curso` quando `integrar_catalogo_interno=true`
+- exclusao remove o espelho local do curso Moodle e, por padrao, limpa `moodle_course_id` e `moodle_shortname` do `Curso` interno vinculado
+- visualizacao do curso registra a chamada no Moodle e gera auditoria local em `MoodleWritebackLog`
 
 ### Notas
 

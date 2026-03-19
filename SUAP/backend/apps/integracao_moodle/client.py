@@ -12,15 +12,25 @@ from .exceptions import (
     MoodleUnsupportedFunctionError,
     MoodleUnexpectedResponseError,
 )
-from .normalizers import normalize_categories_payload, normalize_courses_payload
+from .normalizers import extract_courses_payload, normalize_categories_payload, normalize_course_search_payload, normalize_courses_payload
 from .schemas import MoodleApiSettings
 
 logger = logging.getLogger(__name__)
 
 
 SUPPORTED_MOODLE_WS_FUNCTIONS = (
+    "core_course_create_categories",
+    "core_course_update_categories",
+    "core_course_delete_categories",
+    "core_course_create_courses",
+    "core_course_delete_courses",
     "core_course_get_categories",
     "core_course_get_courses",
+    "core_course_get_courses_by_field",
+    "core_course_get_recent_courses",
+    "core_course_search_courses",
+    "core_course_update_courses",
+    "core_course_view_course",
     "core_grades_get_grade_tree",
     "core_grades_get_gradeitems",
     "core_grades_update_grades",
@@ -129,6 +139,39 @@ class MoodleApiClient:
     def get_categories(self, criteria: dict | None = None) -> list[dict]:
         payload = self.call("core_course_get_categories", params=criteria or {})
         return normalize_categories_payload(payload)
+
+    def create_categories(self, params: dict) -> dict | list:
+        return self.call("core_course_create_categories", params=params, method="post")
+
+    def update_categories(self, params: dict) -> dict | list:
+        return self.call("core_course_update_categories", params=params, method="post")
+
+    def delete_categories(self, params: dict) -> dict | list:
+        return self.call("core_course_delete_categories", params=params, method="post")
+
+    def get_courses_by_field(self, params: dict) -> list[dict]:
+        payload = self.call("core_course_get_courses_by_field", params=params)
+        return extract_courses_payload(payload, "core_course_get_courses_by_field")
+
+    def get_recent_courses(self, params: dict) -> list[dict]:
+        payload = self.call("core_course_get_recent_courses", params=params)
+        return extract_courses_payload(payload, "core_course_get_recent_courses")
+
+    def search_courses(self, params: dict) -> dict:
+        payload = self.call("core_course_search_courses", params=params)
+        return normalize_course_search_payload(payload)
+
+    def create_courses(self, params: dict) -> dict | list:
+        return self.call("core_course_create_courses", params=params, method="post")
+
+    def update_courses(self, params: dict) -> dict | list:
+        return self.call("core_course_update_courses", params=params, method="post")
+
+    def delete_courses(self, params: dict) -> dict | list:
+        return self.call("core_course_delete_courses", params=params, method="post")
+
+    def view_course(self, params: dict) -> dict | list:
+        return self.call("core_course_view_course", params=params, method="post")
 
     def get_grade_tree(self, params: dict) -> dict | list:
         return self.call("core_grades_get_grade_tree", params=params)

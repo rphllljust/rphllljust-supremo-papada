@@ -174,6 +174,13 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/cursoinicial', '/ensino/areacurso'],
           },
           {
+            id: 'moodle-categorias',
+            type: 'link',
+            label: 'Categorias Moodle',
+            to: '/ensino/moodle-categorias/',
+            activePrefixes: ['/ensino/moodle-categorias'],
+          },
+          {
             id: 'catalogo-cursos-tecnicos',
             type: 'link',
             label: 'Catálogo de cursos técnicos',

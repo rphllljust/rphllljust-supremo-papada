@@ -69,8 +69,26 @@ export const cursosApi = {
   calendarios: (id) => client.get(`/cursos/${id}/calendarios/`),
 }
 export const moodleIntegrationApi = {
+  listCursos: (params) => client.get('/integracoes/moodle/cursos/', { params }),
   importCursos: (data) => client.post('/integracoes/moodle/cursos/', data),
+  getCursosByField: (field, value, params = {}) => client.get('/integracoes/moodle/cursos/', {
+    params: { ...params, action: 'core_course_get_courses_by_field', field, value },
+  }),
+  getRecentCursos: (userid, params = {}) => client.get('/integracoes/moodle/cursos/', {
+    params: { ...params, action: 'core_course_get_recent_courses', userid },
+  }),
+  searchCursos: (criteriavalue, params = {}) => client.get('/integracoes/moodle/cursos/', {
+    params: { ...params, action: 'core_course_search_courses', criterianame: 'search', criteriavalue },
+  }),
+  createCursos: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_create_courses' }),
+  updateCursos: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_update_courses' }),
+  deleteCursos: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_delete_courses' }),
+  viewCurso: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_view_course' }),
   syncCategorias: (data) => client.post('/integracoes/moodle/categorias/', data),
+  getCategorias: (params = {}) => client.get('/integracoes/moodle/categorias/', { params }),
+  createCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_create_categories' }),
+  updateCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_update_categories' }),
+  deleteCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_delete_categories' }),
 }
 export const areasCursoApi = {
   list: (params) => client.get('/cursos/areas/', { params }),
@@ -136,3 +154,6 @@ export const publicacoesApi = crud('publicacoes')
 export const inscricoesApi = crud('inscricoes')
 export const conveniosApi = crud('convenios')
 export const estagiosApi = crud('estagios')
+export const moodleCategoriesApi = {
+  resetAndSync: () => client.post('/integracoes/moodle/reset-sync-categorias/'),
+}

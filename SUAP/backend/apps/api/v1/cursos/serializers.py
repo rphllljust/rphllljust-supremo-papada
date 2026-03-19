@@ -33,7 +33,7 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
     nome = serializers.CharField(read_only=True)
     descricao = serializers.CharField(source='nome')
     matriz_curricular = serializers.CharField(source='curso.nome', read_only=True)
-    curso_id = serializers.IntegerField(source='curso_id', read_only=True)
+    curso_id = serializers.IntegerField(read_only=True)
     esta_ativo = serializers.BooleanField(source='ativo', required=False)
     utilizado = serializers.SerializerMethodField(read_only=True)
 

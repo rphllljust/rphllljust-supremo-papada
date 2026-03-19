@@ -36,6 +36,17 @@ class AreaCurso(models.Model):
 
 
 class Curso(models.Model):
+    TIPO_CURSO_CHOICES = [
+        ("tecnico", "Educação Profissional Técnica"),
+        ("formacao_inicial", "Formação Inicial e Continuada"),
+        ("itinerante", "Qualificação Profissional Itinerante"),
+    ]
+    tipo_curso = models.CharField(
+        max_length=32,
+        choices=TIPO_CURSO_CHOICES,
+        default="formacao_inicial",
+        verbose_name="Tipo de Curso"
+    )
     unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name='cursos')
     area_curso = models.ForeignKey('AreaCurso', on_delete=models.SET_NULL, related_name='cursos', null=True, blank=True, verbose_name='Área do Curso')
     nome = models.CharField(max_length=200)

@@ -44,6 +44,16 @@ def normalize_course_payload(course: dict) -> dict:
         "showactivitydates": bool(course.get("showactivitydates", False)),
         "showcompletionconditions": bool(course.get("showcompletionconditions", False)),
         "courseformatoptions": course.get("courseformatoptions") or [],
+        # Additional fields commonly returned by core_course_search_courses
+        "courseimage": course.get("courseimage") or course.get("courseimageurl"),
+        "categoryname": course.get("categoryname") or course.get("categoryname"),
+        "sortorder": course.get("sortorder"),
+        "summaryfiles": course.get("summaryfiles") or [],
+        "overviewfiles": course.get("overviewfiles") or [],
+        "contacts": course.get("contacts") or [],
+        "enrollmentmethods": course.get("enrollmentmethods") or [],
+        "customfields": course.get("customfields") or [],
+        "showshortname": bool(course.get("showshortname", False)),
     }
 
 
@@ -52,6 +62,36 @@ def normalize_courses_payload(payload) -> list[dict]:
         raise MoodleUnexpectedResponseError("A funcao core_course_get_courses deveria retornar uma lista de cursos.")
 
     return [normalize_course_payload(course) for course in payload]
+
+
+def extract_courses_payload(payload, wsfunction: str) -> list[dict]:
+    if isinstance(payload, list):
+        return [normalize_course_payload(course) for course in payload]
+
+    if isinstance(payload, dict) and isinstance(payload.get("courses"), list):
+        return [normalize_course_payload(course) for course in payload["courses"]]
+
+    raise MoodleUnexpectedResponseError(
+        f"A funcao {wsfunction} deveria retornar uma lista de cursos ou um objeto com a chave 'courses'."
+    )
+
+
+def normalize_course_search_payload(payload) -> dict:
+    if not isinstance(payload, dict):
+        raise MoodleUnexpectedResponseError("A funcao core_course_search_courses deveria retornar um objeto.")
+
+    results = extract_courses_payload(payload, "core_course_search_courses")
+    total = payload.get("total")
+    if total is None:
+        total = payload.get("totalcount")
+    if total is None:
+        total = len(results)
+
+    return {
+        "total": total,
+        "warnings": payload.get("warnings") or [],
+        "courses": results,
+    }
 
 
 def normalize_categories_payload(payload) -> list[dict]:

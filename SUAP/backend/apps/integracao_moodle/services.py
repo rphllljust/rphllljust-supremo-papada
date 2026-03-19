@@ -1,3 +1,37 @@
+def create_moodle_categories(params: dict) -> dict | list:
+    response_payload = get_moodle_api_client().create_categories(params)
+    # TODO: armazenar localmente se necessário
+    return response_payload
+
+def update_moodle_categories(params: dict) -> dict | list:
+    response_payload = get_moodle_api_client().update_categories(params)
+    # TODO: atualizar localmente se necessário
+    return response_payload
+
+def delete_moodle_categories(params: dict) -> dict | list:
+    # The Moodle API may reject bulk deletion for system or protected categories.
+    # Handle deletion per-category id to be resilient: try deleting each id and
+    # collect successes/failures.
+    client = get_moodle_api_client()
+    category_ids = []
+    if isinstance(params, dict) and isinstance(params.get("categoryids"), (list, tuple)):
+        category_ids = list(params.get("categoryids"))
+
+    if not category_ids:
+        # fallback to direct call when no explicit ids provided
+        response_payload = client.delete_categories(params)
+        return response_payload
+
+    results = {"deleted": [], "failed": []}
+    for cid in category_ids:
+        try:
+            payload = client.delete_categories({"categoryids": [cid]})
+            results["deleted"].append({"id": cid, "response": payload})
+        except Exception as exc:  # keep going on individual failures
+            logger.exception("Failed deleting Moodle category %s: %s", cid, exc)
+            results["failed"].append({"id": cid, "error": str(exc)})
+
+    return results
 import logging
 from dataclasses import dataclass
 
@@ -34,6 +68,13 @@ class MoodleCourseImportSummary:
     catalog_storage: MoodleCatalogStorageSummary | None = None
 
 
+@dataclass(slots=True)
+class MoodleCourseDeletionSummary:
+    requested_ids: list[int]
+    removed_local_records: int = 0
+    unlinked_internal_courses: int = 0
+
+
 def get_moodle_api_client() -> MoodleApiClient:
     return MoodleApiClient.from_django_settings()
 
@@ -46,61 +87,22 @@ def get_moodle_categories(criteria: dict | None = None) -> list[dict]:
     return get_moodle_api_client().get_categories(criteria=criteria)
 
 
+def get_moodle_courses_by_field(field: str, value) -> list[dict]:
+    return get_moodle_api_client().get_courses_by_field({"field": field, "value": value})
+
+
+def get_moodle_recent_courses(params: dict) -> list[dict]:
+    return get_moodle_api_client().get_recent_courses(params)
+
+
+def search_moodle_courses(params: dict) -> dict:
+    return get_moodle_api_client().search_courses(params)
+
+
 def import_moodle_courses_to_formacao_inicial(unidade_codigo: str = "sede") -> MoodleCourseImportSummary:
-    normalized_unidade_codigo = (unidade_codigo or "sede").strip().lower()
-
-    try:
-        unidade = Unidade.objects.get(codigo=normalized_unidade_codigo)
-    except Unidade.DoesNotExist as exc:
-        raise ValueError(f"Unidade '{normalized_unidade_codigo}' nao encontrada.") from exc
-
+    unidade = _get_unidade(unidade_codigo)
     storage_summary, courses = sync_moodle_catalog_data()
-    summary = MoodleCourseImportSummary(
-        unidade_codigo=unidade.codigo,
-        total_received=len(courses),
-        catalog_storage=storage_summary,
-    )
-
-    with transaction.atomic():
-        for course_payload in courses:
-            if _should_skip_course(course_payload):
-                summary.skipped += 1
-                continue
-
-            moodle_course_id = course_payload["id"]
-            target_course = Curso.objects.filter(moodle_course_id=moodle_course_id).first()
-            linked_existing = False
-
-            if target_course is None:
-                target_course = Curso.objects.filter(
-                    unidade=unidade,
-                    nome__iexact=(course_payload.get("fullname") or "").strip(),
-                    moodle_course_id__isnull=True,
-                ).first()
-                linked_existing = target_course is not None
-
-            if target_course is None:
-                target_course = Curso.objects.create(**_build_new_course_data(course_payload, unidade))
-                summary.created += 1
-            else:
-                _update_existing_course_from_moodle(target_course, course_payload, unidade=unidade, linked_existing=linked_existing)
-
-                if linked_existing:
-                    summary.linked_existing += 1
-                else:
-                    summary.updated += 1
-
-            MoodleCourse.objects.filter(moodle_course_id=moodle_course_id).update(curso=target_course)
-
-    logger.info(
-        "Imported Moodle courses into Curso catalog unidade=%s created=%s updated=%s linked_existing=%s skipped=%s",
-        summary.unidade_codigo,
-        summary.created,
-        summary.updated,
-        summary.linked_existing,
-        summary.skipped,
-    )
-    return summary
+    return _import_moodle_course_payloads(courses, unidade=unidade, catalog_storage=storage_summary)
 
 
 def sync_moodle_catalog_data(category_criteria: dict | None = None) -> tuple[MoodleCatalogStorageSummary, list[dict]]:
@@ -126,6 +128,84 @@ def sync_moodle_categories_data(category_criteria: dict | None = None) -> Moodle
         _store_moodle_categories(categories, summary)
 
     return summary
+
+
+def create_moodle_courses(
+    params: dict,
+    *,
+    unidade_codigo: str = "sede",
+    persistir_espelho_local: bool = True,
+    integrar_catalogo_interno: bool = False,
+) -> dict:
+    return _execute_course_write_operation(
+        wsfunction="core_course_create_courses",
+        params=params,
+        executor=get_moodle_api_client().create_courses,
+        unidade_codigo=unidade_codigo,
+        persistir_espelho_local=persistir_espelho_local,
+        integrar_catalogo_interno=integrar_catalogo_interno,
+    )
+
+
+def update_moodle_courses(
+    params: dict,
+    *,
+    unidade_codigo: str = "sede",
+    persistir_espelho_local: bool = True,
+    integrar_catalogo_interno: bool = False,
+) -> dict:
+    return _execute_course_write_operation(
+        wsfunction="core_course_update_courses",
+        params=params,
+        executor=get_moodle_api_client().update_courses,
+        unidade_codigo=unidade_codigo,
+        persistir_espelho_local=persistir_espelho_local,
+        integrar_catalogo_interno=integrar_catalogo_interno,
+    )
+
+
+def delete_moodle_courses(
+    params: dict,
+    *,
+    persistir_espelho_local: bool = True,
+    desvincular_catalogo_interno: bool = True,
+) -> dict:
+    response_payload = get_moodle_api_client().delete_courses(params)
+    course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)
+    log = _store_writeback_log(
+        wsfunction="core_course_delete_courses",
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=course_ids[0] if len(course_ids) == 1 else None,
+    )
+    deletion_summary = None
+
+    if persistir_espelho_local and course_ids:
+        deletion_summary = _remove_deleted_courses_from_local_catalog(
+            course_ids,
+            desvincular_catalogo_interno=desvincular_catalogo_interno,
+        )
+
+    return {
+        "response_payload": response_payload,
+        "log": log,
+        "deletion_summary": deletion_summary,
+    }
+
+
+def view_moodle_course(params: dict) -> dict:
+    response_payload = get_moodle_api_client().view_course(params)
+    course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)
+    log = _store_writeback_log(
+        wsfunction="core_course_view_course",
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=course_ids[0] if len(course_ids) == 1 else None,
+    )
+    return {
+        "response_payload": response_payload,
+        "log": log,
+    }
 
 
 def store_moodle_grade_tree(params: dict):
@@ -195,6 +275,69 @@ def _should_skip_course(course_payload: dict) -> bool:
     if course_payload.get("format") == "site":
         return True
     return not (course_payload.get("fullname") or "").strip()
+
+
+def _get_unidade(unidade_codigo: str) -> Unidade:
+    normalized_unidade_codigo = (unidade_codigo or "sede").strip().lower()
+
+    try:
+        return Unidade.objects.get(codigo=normalized_unidade_codigo)
+    except Unidade.DoesNotExist as exc:
+        raise ValueError(f"Unidade '{normalized_unidade_codigo}' nao encontrada.") from exc
+
+
+def _import_moodle_course_payloads(
+    courses: list[dict],
+    *,
+    unidade: Unidade,
+    catalog_storage: MoodleCatalogStorageSummary | None = None,
+) -> MoodleCourseImportSummary:
+    summary = MoodleCourseImportSummary(
+        unidade_codigo=unidade.codigo,
+        total_received=len(courses),
+        catalog_storage=catalog_storage,
+    )
+
+    with transaction.atomic():
+        for course_payload in courses:
+            if _should_skip_course(course_payload):
+                summary.skipped += 1
+                continue
+
+            moodle_course_id = course_payload["id"]
+            target_course = Curso.objects.filter(moodle_course_id=moodle_course_id).first()
+            linked_existing = False
+
+            if target_course is None:
+                target_course = Curso.objects.filter(
+                    unidade=unidade,
+                    nome__iexact=(course_payload.get("fullname") or "").strip(),
+                    moodle_course_id__isnull=True,
+                ).first()
+                linked_existing = target_course is not None
+
+            if target_course is None:
+                target_course = Curso.objects.create(**_build_new_course_data(course_payload, unidade))
+                summary.created += 1
+            else:
+                _update_existing_course_from_moodle(target_course, course_payload, unidade=unidade, linked_existing=linked_existing)
+
+                if linked_existing:
+                    summary.linked_existing += 1
+                else:
+                    summary.updated += 1
+
+            MoodleCourse.objects.filter(moodle_course_id=moodle_course_id).update(curso=target_course)
+
+    logger.info(
+        "Imported Moodle courses into Curso catalog unidade=%s created=%s updated=%s linked_existing=%s skipped=%s",
+        summary.unidade_codigo,
+        summary.created,
+        summary.updated,
+        summary.linked_existing,
+        summary.skipped,
+    )
+    return summary
 
 
 def _resolve_sigla(course_payload: dict) -> str:
@@ -311,6 +454,99 @@ def _store_moodle_courses(courses: list[dict], category_map: dict[int, MoodleCat
             summary.courses_linked_internal += 1
 
 
+def _execute_course_write_operation(
+    *,
+    wsfunction: str,
+    params: dict,
+    executor,
+    unidade_codigo: str,
+    persistir_espelho_local: bool,
+    integrar_catalogo_interno: bool,
+) -> dict:
+    response_payload = executor(params)
+    course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)
+    log = _store_writeback_log(
+        wsfunction=wsfunction,
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=course_ids[0] if len(course_ids) == 1 else None,
+    )
+
+    catalog_storage = None
+    import_summary = None
+    synced_courses: list[dict] = []
+
+    if persistir_espelho_local and course_ids:
+        catalog_storage, import_summary, synced_courses = _sync_moodle_courses_by_ids(
+            course_ids,
+            unidade_codigo=unidade_codigo,
+            integrar_catalogo_interno=integrar_catalogo_interno,
+        )
+
+    return {
+        "response_payload": response_payload,
+        "log": log,
+        "course_ids": course_ids,
+        "catalog_storage": catalog_storage,
+        "import_summary": import_summary,
+        "synced_courses": synced_courses,
+    }
+
+
+def _sync_moodle_courses_by_ids(
+    course_ids: list[int],
+    *,
+    unidade_codigo: str,
+    integrar_catalogo_interno: bool,
+) -> tuple[MoodleCatalogStorageSummary | None, MoodleCourseImportSummary | None, list[dict]]:
+    normalized_course_ids = sorted(set(course_ids))
+    if not normalized_course_ids:
+        return None, None, []
+
+    courses = [course for course in get_moodle_courses() if course.get("id") in normalized_course_ids]
+    if not courses:
+        return None, None, []
+
+    categories = get_moodle_categories()
+    summary = MoodleCatalogStorageSummary(
+        categories_received=len(categories),
+        courses_received=len(courses),
+    )
+
+    with transaction.atomic():
+        category_map = _store_moodle_categories(categories, summary)
+        _store_moodle_courses(courses, category_map, summary)
+
+    import_summary = None
+    if integrar_catalogo_interno:
+        unidade = _get_unidade(unidade_codigo)
+        import_summary = _import_moodle_course_payloads(courses, unidade=unidade, catalog_storage=summary)
+
+    return summary, import_summary, courses
+
+
+def _remove_deleted_courses_from_local_catalog(
+    course_ids: list[int],
+    *,
+    desvincular_catalogo_interno: bool,
+) -> MoodleCourseDeletionSummary:
+    summary = MoodleCourseDeletionSummary(requested_ids=sorted(set(course_ids)))
+    if not summary.requested_ids:
+        return summary
+
+    with transaction.atomic():
+        if desvincular_catalogo_interno:
+            summary.unlinked_internal_courses = Curso.objects.filter(
+                moodle_course_id__in=summary.requested_ids
+            ).update(moodle_course_id=None, moodle_shortname="")
+
+        summary.removed_local_records = MoodleCourse.objects.filter(
+            moodle_course_id__in=summary.requested_ids
+        ).delete()[0]
+
+    return summary
+
+
 def _store_grade_snapshot(*, snapshot_type: str, wsfunction: str, request_params: dict, response_payload):
     course_id = _extract_int(request_params, "courseid")
     user_id = _extract_int(request_params, "userid")
@@ -327,11 +563,19 @@ def _store_grade_snapshot(*, snapshot_type: str, wsfunction: str, request_params
     )
 
 
-def _store_writeback_log(*, wsfunction: str, request_payload: dict, response_payload, status: str = "success", error_message: str = ""):
+def _store_writeback_log(
+    *,
+    wsfunction: str,
+    request_payload: dict,
+    response_payload,
+    status: str = "success",
+    error_message: str = "",
+    moodle_course_id: int | None = None,
+):
     return MoodleWritebackLog.objects.create(
         wsfunction=wsfunction,
         status=status,
-        moodle_course_id=_extract_int(request_payload, "courseid"),
+        moodle_course_id=moodle_course_id if moodle_course_id is not None else _extract_int(request_payload, "courseid"),
         moodle_assignment_id=_extract_int(request_payload, "assignmentid"),
         moodle_user_id=_extract_int(request_payload, "userid"),
         request_payload=request_payload,
@@ -340,12 +584,175 @@ def _store_writeback_log(*, wsfunction: str, request_payload: dict, response_pay
     )
 
 
+def _extract_course_ids(payload) -> list[int]:
+    course_ids: list[int] = []
+
+    def collect(value):
+        if isinstance(value, list):
+            for item in value:
+                collect(item)
+            return
+
+        if isinstance(value, dict):
+            if value.get("id") not in (None, ""):
+                parsed = _parse_int(value.get("id"))
+                if parsed is not None:
+                    course_ids.append(parsed)
+            if value.get("courseid") not in (None, ""):
+                parsed = _parse_int(value.get("courseid"))
+                if parsed is not None:
+                    course_ids.append(parsed)
+            if isinstance(value.get("courseids"), list):
+                for course_id in value["courseids"]:
+                    parsed = _parse_int(course_id)
+                    if parsed is not None:
+                        course_ids.append(parsed)
+            if isinstance(value.get("courses"), list):
+                collect(value["courses"])
+
+    collect(payload)
+    return sorted(set(course_ids))
+
+
 def _extract_int(payload: dict, key: str) -> int | None:
     value = payload.get(key)
     if value in (None, ""):
         return None
 
+    return _parse_int(value)
+
+
+def _parse_int(value) -> int | None:
     try:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def sync_moodle_structured_categories():
+    """
+    Monta e sincroniza a estrutura de categorias do Moodle conforme o tipo de curso.
+    Hierarquia:
+    - Técnico: componentes curriculares
+    - Formação Inicial: cursos simples
+    - Itinerante: estrutura própria
+    """
+    from apps.cursos.models import Curso, ComponenteCurricular, EixoTecnologico
+    from apps.unidades.models import Unidade
+
+    # Categorias raiz
+    root_categories = {
+        "tecnico": {
+            "name": "EDUCAÇÃO PROFISSIONAL TÉCNICA",
+            "children": []
+        },
+        "formacao_inicial": {
+            "name": "FORMAÇÃO INICIAL E CONTINUADA",
+            "children": []
+        },
+        "itinerante": {
+            "name": "QUALIFICAÇÃO PROFISSIONAL ITINERANTE",
+            "children": []
+        }
+    }
+
+    cursos = Curso.objects.all()
+    for curso in cursos:
+        if curso.tipo_curso == "tecnico":
+            # Estrutura: Ano > Eixo Tecnológico > Polo > Curso > Módulos > Componentes
+            eixo = curso.eixo_tecnologico or "Eixo"
+            unidade = curso.unidade.nome
+            ano = "2026"  # Pode ser dinâmico
+            curso_cat = {
+                "name": curso.nome,
+                "children": []
+            }
+            # Componentes curriculares
+            componentes = ComponenteCurricular.objects.filter(curso=curso)
+            for comp in componentes:
+                curso_cat["children"].append({"name": comp.nome})
+            root_categories["tecnico"]["children"].append({
+                "name": ano,
+                "children": [{
+                    "name": eixo,
+                    "children": [{
+                        "name": unidade,
+                        "children": [curso_cat]
+                    }]
+                }]
+            })
+        elif curso.tipo_curso == "formacao_inicial":
+            # Estrutura: Ano > Modalidade > Eixo Temático > Polo > Curso
+            ano = "2026"
+            modalidade = "Presencial"  # Pode ser dinâmico
+            eixo = curso.eixo_tecnologico or "Eixo Temático"
+            unidade = curso.unidade.nome
+            root_categories["formacao_inicial"]["children"].append({
+                "name": ano,
+                "children": [{
+                    "name": modalidade,
+                    "children": [{
+                        "name": eixo,
+                        "children": [{
+                            "name": unidade,
+                            "children": [{"name": curso.nome}]
+                        }]
+                    }]
+                }]
+            })
+        elif curso.tipo_curso == "itinerante":
+            # Estrutura: Ano > Unidade Móvel > Local de Oferta > Eixo Temático > Curso
+            ano = "2026"
+            unidade_movel = curso.unidade.nome
+            local = "Local de Oferta"  # Pode ser dinâmico
+            eixo = curso.eixo_tecnologico or "Eixo Temático"
+            root_categories["itinerante"]["children"].append({
+                "name": ano,
+                "children": [{
+                    "name": unidade_movel,
+                    "children": [{
+                        "name": local,
+                        "children": [{
+                            "name": eixo,
+                            "children": [{"name": curso.nome}]
+                        }]
+                    }]
+                }]
+            })
+
+    # Aqui você pode converter root_categories para chamadas de criação de categorias no Moodle
+    # Exemplo: percorrer a árvore e chamar create_moodle_categories para cada nível
+    # TODO: Implementar integração real com Moodle
+    return root_categories
+
+
+def sync_and_create_moodle_structured_categories():
+    """
+    Monta e sincroniza a estrutura de categorias do Moodle conforme o tipo de curso,
+    criando as categorias no Moodle.
+    """
+    from apps.cursos.models import Curso, ComponenteCurricular, EixoTecnologico
+    from apps.unidades.models import Unidade
+
+    def create_category_recursive(category, parent_id=None):
+        payload = {
+            "name": category["name"],
+            "parent": parent_id or 0,
+            "description": "",
+            "descriptionformat": 1,
+        }
+        # Cria categoria no Moodle
+        result = create_moodle_categories({"categories": [payload]})
+        moodle_id = result[0]["id"] if isinstance(result, list) and result else None
+        # Cria filhos
+        children = category.get("children", [])
+        for child in children:
+            create_category_recursive(child, moodle_id)
+        return moodle_id
+
+    # Monta estrutura
+    root_categories = sync_moodle_structured_categories()
+    created_ids = {}
+    for tipo, root in root_categories.items():
+        created_ids[tipo] = create_category_recursive(root)
+    return created_ids

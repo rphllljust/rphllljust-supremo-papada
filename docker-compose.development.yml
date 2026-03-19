@@ -1,15 +1,20 @@
 services:
   postgres:
     ports:
-      - "5432:5432"
+      - "5435:5432"
     environment:
       POSTGRES_DB: suap_idep_dev
       POSTGRES_USER: suap_dev
       POSTGRES_PASSWORD: suap_dev
+    volumes:
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
 
   backend:
     ports:
-      - "8000:8000"
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       APP_ENV: development
       SECRET_KEY: django-insecure-dev-troque-isso
@@ -28,7 +33,9 @@ services:
 
   frontend:
     ports:
-      - "5173:5173"
+      - "5175:5173"
+    depends_on:
+      - backend
     environment:
       VITE_APP_ENV: development
       VITE_BACKEND_ORIGIN: http://backend:8000

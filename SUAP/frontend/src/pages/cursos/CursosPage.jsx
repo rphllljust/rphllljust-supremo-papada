@@ -27,7 +27,9 @@ export default function CursosPage({
   emptyMessage = 'Nenhum curso encontrado.',
   createPath = null,
   editPathBuilder = null,
+  detailPathBuilder = null,
   extraHeaderActions = null,
+  beforeTableContent = null,
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -121,7 +123,9 @@ export default function CursosPage({
         </div>
       ) : null}
 
-      <DataTable
+      {beforeTableContent}
+
+        <DataTable
         columns={COLUMNS}
         data={data}
         isLoading={isLoading}
@@ -130,9 +134,15 @@ export default function CursosPage({
         emptyMessage={emptyMessage}
         rowActions={(row) => (
           <div className="table-actions">
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedCourseId(row.id)}>
-              <Eye size={14} /> Detalhes
-            </button>
+            {detailPathBuilder ? (
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => navigate(detailPathBuilder(row.id))}>
+                <Eye size={14} /> Detalhes
+              </button>
+            ) : (
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedCourseId(row.id)}>
+                <Eye size={14} /> Detalhes
+              </button>
+            )}
             <button
               type="button"
               className="btn btn--secondary btn--sm"
@@ -153,7 +163,7 @@ export default function CursosPage({
         )}
       />
 
-      {selectedCourseId ? (
+      {selectedCourseId && !detailPathBuilder ? (
         <EntityDetailsPanel
           title="Detalhes do curso"
           subtitle={selectedCourse?.nome || 'Consultando curso selecionado'}
