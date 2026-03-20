@@ -18,6 +18,7 @@ export default function MoodleCategoriasPanel() {
   })
 
   const categorias = (data?.data?.results) || []
+  const [query, setQuery] = useState('')
 
   // Constrói uma árvore de categorias a partir da lista plana
   const buildTree = (items) => {
@@ -58,8 +59,32 @@ export default function MoodleCategoriasPanel() {
   }
   const flatCategories = flattenWithDepth(tree)
 
+  // Filter tree by search query (keep nodes that match or have matching descendants)
+  const filterTree = (nodes, q) => {
+    if (!q) return nodes
+    const norm = q.trim().toLowerCase()
+    const matches = (n) => (n.name || '').toLowerCase().includes(norm)
+    const rez = []
+    nodes.forEach(n => {
+      const cloned = { ...n }
+      cloned.children = filterTree(cloned.children || [], q)
+      if (matches(cloned) || (cloned.children && cloned.children.length)) rez.push(cloned)
+    })
+    return rez
+  }
+
+  const visibleTree = filterTree(tree, query)
+
   const [form, setForm] = useState({ name: '', description: '', parent: 0 })
   const [editing, setEditing] = useState(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [modalParent, setModalParent] = useState(0)
+
+  const openCreateModal = (parentId = 0) => {
+    setForm(f => ({ ...f, parent: Number(parentId || 0) }))
+    setModalParent(Number(parentId || 0))
+    setShowCreateModal(true)
+  }
 
   const createMutation = useMutation({
     mutationFn: (payload) => moodleIntegrationApi.createCategorias(payload),
@@ -142,6 +167,16 @@ export default function MoodleCategoriasPanel() {
     createMutation.mutate({ params: [form] })
   }
 
+  const submitCreate = () => {
+    if (!form.name.trim()) {
+      toast.error('Informe o nome da categoria.')
+      return
+    }
+    createMutation.mutate({ params: [form] })
+    setShowCreateModal(false)
+    setForm({ name: '', description: '', parent: 0 })
+  }
+
   const handleStartEdit = (cat) => {
     setEditing({ id: cat.id, name: cat.name || '', description: cat.description || '', parent: cat.parent || 0 })
   }
@@ -166,8 +201,12 @@ export default function MoodleCategoriasPanel() {
   return (
     <section className="dashboard-card moodle-categorias-panel">
       <div className="moodle-categorias-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <h2 className="dashboard-card__title">Categorias Moodle</h2>
+        <div>
+          <h2 className="dashboard-card__title">Categorias Moodle</h2>
+          <div style={{fontSize: 13, color: '#666'}}>{categorias.length} categorias</div>
+        </div>
         <div style={{display: 'flex', gap: 8}}>
+          <input placeholder="Buscar categorias..." value={query} onChange={e => setQuery(e.target.value)} style={{padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd'}} />
           <button className="btn btn--secondary" onClick={() => queryClient.invalidateQueries(['moodle-categorias'])} disabled={isFetching} title="Atualizar lista"><RefreshCw size={16} />&nbsp;Atualizar</button>
           <button className="btn btn--outline" onClick={() => resetSyncMutation.mutate()} disabled={resetSyncMutation.isPending}><RefreshCw size={14} />&nbsp;Resetar & Sincronizar</button>
           <button
@@ -190,26 +229,12 @@ export default function MoodleCategoriasPanel() {
       </div>
 
       <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
-        <form className="moodle-categorias-form" onSubmit={handleCreate} style={{flex: '1 1 320px', minWidth: 280}}>
-          <label style={{display: 'block', marginBottom: 8}}>
-            <div>Nome</div>
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-          </label>
-          <label style={{display: 'block', marginBottom: 8}}>
-            <div>Descrição</div>
-            <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-          </label>
-          <label style={{display: 'block', marginBottom: 8}}>
-            <div>Parent (ID)</div>
-            <select value={form.parent} onChange={e => setForm(f => ({ ...f, parent: Number(e.target.value) }))}>
-              <option value={0}>— Nenhum —</option>
-              {categorias.map(c => (<option key={c.id} value={c.id}>{c.name} (ID: {c.id})</option>))}
-            </select>
-          </label>
-          <div style={{marginTop: 8}}>
-            <button type="submit" className="btn btn--primary" disabled={createMutation.isPending}><PlusCircle size={14} />&nbsp;Criar Categoria</button>
+        {categorias.length === 0 ? (
+          <div style={{flex: '1 1 320px', minWidth: 280}}>
+            <div style={{marginBottom: 8}}>Nenhuma categoria encontrada. Crie a primeira categoria:</div>
+            <button className="btn btn--primary" onClick={() => openCreateModal(0)}><PlusCircle size={14} />&nbsp;Criar primeira categoria</button>
           </div>
-        </form>
+        ) : null}
 
         <div style={{flex: '2 1 520px', minWidth: 320}}>
           <div style={{marginBottom: 8}}>
@@ -220,7 +245,7 @@ export default function MoodleCategoriasPanel() {
             {categorias.length === 0 && <div>Nenhuma categoria encontrada.</div>}
 
             <ul style={{listStyle: 'none', paddingLeft: 0}}>
-              {tree.map(node => (
+              {visibleTree.map(node => (
                 <TreeNode
                   key={node.id}
                   node={node}
@@ -235,18 +260,65 @@ export default function MoodleCategoriasPanel() {
                   handleDelete={handleDelete}
                   updatePending={updateMutation.isPending}
                   deletePending={deleteMutation.isPending}
+                  createMutation={createMutation}
+                  openCreateModal={openCreateModal}
                 />
               ))}
             </ul>
           </div>
         </div>
       </div>
+      {showCreateModal && (
+        <div style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}}>
+          <div style={{background: '#fff', padding: 20, borderRadius: 8, width: 600, maxWidth: '95%'}}>
+            <h3 style={{marginTop: 0}}>Criar categoria</h3>
+            <form onSubmit={(e) => { e.preventDefault(); submitCreate() }}>
+              <label style={{display: 'block', marginBottom: 8}}>
+                <div>Nome</div>
+                <input autoFocus value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              </label>
+              <label style={{display: 'block', marginBottom: 8}}>
+                <div>Descrição</div>
+                <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              </label>
+              <label style={{display: 'block', marginBottom: 8}}>
+                <div>Parent (ID)</div>
+                <select value={form.parent} onChange={e => setForm(f => ({ ...f, parent: Number(e.target.value) }))}>
+                  <option value={0}>— Nenhum —</option>
+                  {flatCategories.map(c => (
+                    <option key={c.id} value={c.id}>{'\u00A0'.repeat(c.depth * 2)}{c.name} (ID: {c.id})</option>
+                  ))}
+                </select>
+              </label>
+              <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12}}>
+                <button type="button" className="btn" onClick={() => { setShowCreateModal(false); setForm({ name: '', description: '', parent: 0 }) }}>Cancelar</button>
+                <button type="submit" className="btn btn--primary" disabled={createMutation.isPending}>Criar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
 
-function TreeNode({ node, depth, expanded, toggle, editing, setEditing, handleSaveEdit, handleCancelEdit, handleStartEdit, handleDelete, updatePending, deletePending }) {
+function TreeNode({ node, depth, expanded, toggle, editing, setEditing, handleSaveEdit, handleCancelEdit, handleStartEdit, handleDelete, updatePending, deletePending, createMutation, openCreateModal }) {
   const isExpanded = expanded.has(node.id)
+  const [showChildForm, setShowChildForm] = useState(false)
+  const [childName, setChildName] = useState('')
+  const [childDesc, setChildDesc] = useState('')
+
+  const handleCreateChild = () => {
+    if (!childName.trim()) {
+      toast.error('Informe o nome da subcategoria.')
+      return
+    }
+    createMutation.mutate({ params: [{ name: childName.trim(), description: childDesc || '', parent: Number(node.id || 0) }] })
+    setChildName('')
+    setChildDesc('')
+    setShowChildForm(false)
+    if (!isExpanded) toggle(node.id)
+  }
   return (
     <li style={{paddingLeft: depth * 16, marginBottom: 6}}>
       <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
@@ -261,7 +333,7 @@ function TreeNode({ node, depth, expanded, toggle, editing, setEditing, handleSa
           )}
           {node.description ? <div style={{fontSize: 12, color: '#666'}}>{node.description}</div> : null}
         </div>
-        <div style={{display: 'flex', gap: 6}}>
+        <div style={{display: 'flex', gap: 6, alignItems: 'center'}}>
           {editing && editing.id === node.id ? (
             <>
               <button className="btn btn--primary" onClick={handleSaveEdit} disabled={updatePending}>Salvar</button>
@@ -271,10 +343,21 @@ function TreeNode({ node, depth, expanded, toggle, editing, setEditing, handleSa
             <>
               <button className="btn btn--outline" onClick={() => handleStartEdit(node)}><Edit2 size={14} /></button>
               <button className="btn btn--danger" onClick={() => handleDelete(node.id)} disabled={deletePending}><Trash2 size={14} /></button>
+              <button className="btn btn--outline" onClick={() => openCreateModal(node.parent)} title="Criar na mesma raiz">Criar irmão</button>
+              <button className="btn btn--outline" onClick={() => setShowChildForm(s => !s)} title="Adicionar categoria filha"><PlusCircle size={14} /></button>
             </>
           )}
         </div>
       </div>
+
+      {showChildForm && (
+        <div style={{marginTop: 6, marginLeft: Math.max(8, depth * 16), display: 'flex', gap: 8, alignItems: 'center'}}>
+          <input placeholder="Nome da subcategoria" value={childName} onChange={e => setChildName(e.target.value)} style={{padding: 6, flex: '1 1 220px'}} />
+          <input placeholder="Descrição (opcional)" value={childDesc} onChange={e => setChildDesc(e.target.value)} style={{padding: 6, flex: '1 1 220px'}} />
+          <button className="btn btn--primary" onClick={() => handleCreateChild()} disabled={createMutation?.isPending || !childName.trim()}>Criar</button>
+          <button className="btn" onClick={() => { setShowChildForm(false); setChildName(''); setChildDesc('') }}>Cancelar</button>
+        </div>
+      )}
 
       {isExpanded && node.children && node.children.length > 0 && (
         <ul style={{listStyle: 'none', paddingLeft: 0, marginTop: 6}}>
@@ -293,6 +376,8 @@ function TreeNode({ node, depth, expanded, toggle, editing, setEditing, handleSa
               handleDelete={handleDelete}
               updatePending={updatePending}
               deletePending={deletePending}
+              createMutation={createMutation}
+              openCreateModal={openCreateModal}
             />
           ))}
         </ul>
