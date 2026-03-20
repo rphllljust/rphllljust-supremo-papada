@@ -149,13 +149,26 @@ export default function MoodleCategoriasPanel() {
     },
   })
 
-  const resetSyncMutation = useMutation({
-    mutationFn: () => moodleCategoriesApi.resetAndSync(),
-    onSuccess: () => {
-      toast.success('Categorias resetadas e sincronizadas!')
+  const compareMutation = useMutation({
+    mutationFn: () => moodleCategoriesApi.diffAndSync.diff(),
+    onSuccess: (res) => {
+      const data = res?.data || res
+      const msg = `Moodle: ${data.count_live} categorias\nSUAP (espelho): ${data.count_local} categorias\nSomente no Moodle: ${data.only_in_live_count}\nSomente no SUAP: ${data.only_in_local_count}`
+      // Ask user confirmation before syncing
+      if (window.confirm(`${msg}\n\nDeseja sincronizar (resetar Moodle e recriar a estrutura do SUAP)?`)) {
+        syncMutation.mutate()
+      }
+    },
+    onError: () => toast.error('Erro ao comparar categorias com o Moodle.'),
+  })
+
+  const syncMutation = useMutation({
+    mutationFn: () => moodleCategoriesApi.diffAndSync.sync(),
+    onSuccess: (res) => {
+      toast.success('Sincronizacao executada com sucesso.')
       queryClient.invalidateQueries({ queryKey: ['moodle-categorias'] })
     },
-    onError: () => toast.error('Erro ao resetar/sincronizar categorias do Moodle.'),
+    onError: () => toast.error('Erro ao executar sincronizacao.'),
   })
 
   const handleCreate = (e) => {
@@ -208,7 +221,7 @@ export default function MoodleCategoriasPanel() {
         <div style={{display: 'flex', gap: 8}}>
           <input placeholder="Buscar categorias..." value={query} onChange={e => setQuery(e.target.value)} style={{padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd'}} />
           <button className="btn btn--secondary" onClick={() => queryClient.invalidateQueries(['moodle-categorias'])} disabled={isFetching} title="Atualizar lista"><RefreshCw size={16} />&nbsp;Atualizar</button>
-          <button className="btn btn--outline" onClick={() => resetSyncMutation.mutate()} disabled={resetSyncMutation.isPending}><RefreshCw size={14} />&nbsp;Resetar & Sincronizar</button>
+          <button className="btn btn--outline" onClick={() => compareMutation.mutate()} disabled={compareMutation.isPending || syncMutation.isPending}><RefreshCw size={14} />&nbsp;Comparar & Sincronizar</button>
           <button
             className="btn btn--danger"
             onClick={() => {

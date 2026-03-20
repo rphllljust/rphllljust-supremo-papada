@@ -494,6 +494,63 @@ class MoodleCategoriesResetAndSyncAPIView(APIView):
         )
 
 
+class MoodleCategoriesDiffAndSyncAPIView(APIView):
+    """GET: retorna um resumo das diferenças entre categorias do Moodle (live)
+    e o espelho local (`MoodleCategory`).
+
+    POST: executa a mesma operação de reset+sync — apaga categorias no Moodle
+    e cria a estrutura gerada por `sync_and_create_moodle_structured_categories()`.
+    """
+    permission_classes = [IsAuthenticated, CanExportToAva]
+
+    def get(self, request):
+        try:
+            live = get_moodle_categories()
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+            return self.handle_moodle_error(exc)
+
+        from apps.integracao_moodle.models import MoodleCategory
+
+        local = list(MoodleCategory.objects.all().values_list('moodle_category_id', flat=True))
+
+        live_ids = {c.get('id') for c in live if c.get('id') is not None}
+        local_ids = set(int(x) for x in local if x is not None)
+
+        only_in_live = sorted(list(live_ids - local_ids))
+        only_in_local = sorted(list(local_ids - live_ids))
+
+        return Response(
+            {
+                'count_live': len(live_ids),
+                'count_local': len(local_ids),
+                'only_in_live_count': len(only_in_live),
+                'only_in_local_count': len(only_in_local),
+                'only_in_live_preview': only_in_live[:100],
+                'only_in_local_preview': only_in_local[:100],
+            }
+        )
+
+    def post(self, request):
+        # Perform reset & sync (same behaviour as MoodleCategoriesResetAndSyncAPIView)
+        try:
+            categories = get_moodle_categories()
+            ids = [cat['id'] for cat in categories if 'id' in cat]
+            deletion_results = None
+            if ids:
+                deletion_results = delete_moodle_categories({'categoryids': ids})
+            created_ids = sync_and_create_moodle_structured_categories()
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+            return self.handle_moodle_error(exc)
+
+        return Response(
+            {
+                'detail': 'Sincronizacao executada: Moodle resetado e sincronizado com SUAP.',
+                'created_ids': created_ids,
+                'deletion_results': deletion_results,
+            }
+        )
+
+
 class MoodleTestConnectionAPIView(MoodleBaseIntegrationAPIView):
     """Protected endpoint to test Moodle connectivity using core_webservice_get_site_info.
 

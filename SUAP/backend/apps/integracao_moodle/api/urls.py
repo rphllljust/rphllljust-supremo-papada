@@ -6,6 +6,7 @@ from .views import (
     MoodleCoursesIntegrationAPIView,
     MoodleGradesIntegrationAPIView,
     MoodleCategoriesResetAndSyncAPIView,
+    MoodleCategoriesDiffAndSyncAPIView,
     MoodleTestConnectionAPIView,
     MoodleIntegrationConfigAPIView,
 )
@@ -18,6 +19,7 @@ urlpatterns = [
     path("notas/", MoodleGradesIntegrationAPIView.as_view(), name="grades-actions"),
     path("assignments/", MoodleAssignmentsIntegrationAPIView.as_view(), name="assignments-actions"),
     path('reset-sync-categorias/', MoodleCategoriesResetAndSyncAPIView.as_view(), name='moodle-reset-sync-categorias'),
+    path('diff-sync-categorias/', MoodleCategoriesDiffAndSyncAPIView.as_view(), name='moodle-diff-sync-categorias'),
     path('test-connection/', MoodleTestConnectionAPIView.as_view(), name='moodle-test-connection'),
     path('config/', MoodleIntegrationConfigAPIView.as_view(), name='moodle-config'),
 ]

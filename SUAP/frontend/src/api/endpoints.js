@@ -158,4 +158,8 @@ export const conveniosApi = crud('convenios')
 export const estagiosApi = crud('estagios')
 export const moodleCategoriesApi = {
   resetAndSync: () => client.post('/integracoes/moodle/reset-sync-categorias/'),
+  diffAndSync: {
+    diff: () => client.get('/integracoes/moodle/diff-sync-categorias/'),
+    sync: () => client.post('/integracoes/moodle/diff-sync-categorias/'),
+  },
 }
