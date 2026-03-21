@@ -35,6 +35,7 @@ const COLUMNS = [
 const DEFAULT_VALUES = {
   username: '',
   nome_completo: '',
+  matricula_servidor: '',
   cpf: '',
   email: '',
   tipo: 'PROFESSOR',
@@ -151,6 +152,10 @@ export default function ServidoresPage() {
       is_active: Boolean(formData.is_active),
     }
 
+    if (formData.matricula_servidor) {
+      payload.matricula_servidor = formData.matricula_servidor.trim()
+    }
+
     if (formData.password) {
       payload.password = formData.password
     }
@@ -200,6 +205,7 @@ export default function ServidoresPage() {
           <div className="form-field"><label htmlFor="servidor-username">Usuario</label><input id="servidor-username" type="text" {...register('username', { required: 'Informe o usuario' })} />{errors.username ? <span className="field-error">{errors.username.message}</span> : null}</div>
           <div className="form-field"><label htmlFor="servidor-nome">Nome completo</label><input id="servidor-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />{errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}</div>
           <div className="form-field"><label htmlFor="servidor-cpf">CPF</label><input id="servidor-cpf" type="text" {...register('cpf', { required: 'Informe o CPF' })} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
+          <div className="form-field"><label htmlFor="servidor-matricula">Matricula</label><input id="servidor-matricula" type="text" {...register('matricula_servidor')} /></div>
           <div className="form-field"><label htmlFor="servidor-email">E-mail</label><input id="servidor-email" type="email" {...register('email')} /></div>
           <div className="form-field"><label htmlFor="servidor-tipo">Perfil</label><select id="servidor-tipo" className="select" {...register('tipo', { required: 'Selecione o perfil' })}>{PERFIL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.tipo ? <span className="field-error">{errors.tipo.message}</span> : null}</div>
           <SearchableRemoteSelect id="servidor-setor" label="Setor" searchLabel="Buscar setor" searchPlaceholder="Digite nome, sigla ou codigo" searchValue={setorSearch} onSearchChange={setSetorSearch} value={setorValue || ''} onChange={(nextValue) => setValue('setor', nextValue)} options={setorOptions} emptyOptionLabel="Sem setor" getOptionLabel={(setor) => setor.nome} />
