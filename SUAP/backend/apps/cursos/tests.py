@@ -300,12 +300,15 @@ class OfertaCursoServiceTests(TestCase):
         self.assertEqual(oferta.vagas_disponiveis, 30)
         self.assertTrue(oferta.logs.filter(evento='criacao_oferta').exists())
 
+    @patch('apps.cursos.services.update_moodle_inplace_editable')
+    @patch('apps.cursos.services.get_moodle_course_contents')
     @patch('apps.cursos.services.duplicate_moodle_course')
     @patch('apps.cursos.services.create_moodle_categories')
     @patch('apps.cursos.services.get_moodle_categories')
-    def test_sync_oferta_curso_to_moodle_creates_course_and_updates_sync_fields(self, mock_get_categories, mock_create_categories, mock_duplicate_course):
+    def test_sync_oferta_curso_to_moodle_creates_course_and_updates_sync_fields(self, mock_get_categories, mock_create_categories, mock_duplicate_course, mock_get_contents, mock_update_inplace):
         self.matriz.moodle_template_course_id = 555
-        self.matriz.save(update_fields=['moodle_template_course_id'])
+        self.matriz.moodle_template_shortname = 'TPL-INF-2026'
+        self.matriz.save(update_fields=['moodle_template_course_id', 'moodle_template_shortname'])
         oferta = create_oferta_curso(
             curso_base=self.curso,
             calendario_letivo=self.calendario,
@@ -329,6 +332,10 @@ class OfertaCursoServiceTests(TestCase):
             [{'id': 902}],
         ]
         mock_duplicate_course.return_value = {'course_ids': [777], 'response_payload': {'id': 777}}
+        mock_get_contents.return_value = [
+            {'id': 1001, 'section': 1, 'name': 'Topic 1', 'modules': []},
+            {'id': 1002, 'section': 2, 'name': 'Topic 2', 'modules': []},
+        ]
 
         result = sync_oferta_curso_to_moodle(oferta)
 
@@ -337,4 +344,111 @@ class OfertaCursoServiceTests(TestCase):
         self.assertEqual(oferta.moodle_course_id, 777)
         self.assertEqual(oferta.moodle_category_id, 902)
         self.assertEqual(oferta.last_sync_status, 'success')
+        self.assertEqual(oferta.moodle_sync_mode, 'duplicate_template')
+        self.assertTrue(oferta.moodle_template_applied)
+        self.assertEqual(oferta.moodle_template_source_course_id, 555)
         self.assertTrue(oferta.logs.filter(evento='sincronizacao_moodle').exists())
+        self.assertTrue(oferta.logs.filter(evento='importacao_conteudo').exists())
+        self.assertEqual(mock_update_inplace.call_count, 2)
+
+    @patch('apps.cursos.services.update_moodle_inplace_editable')
+    @patch('apps.cursos.services.get_moodle_course_contents')
+    @patch('apps.cursos.services.import_moodle_course')
+    @patch('apps.cursos.services.update_moodle_courses')
+    @patch('apps.cursos.services.create_moodle_categories')
+    @patch('apps.cursos.services.get_moodle_categories')
+    def test_sync_oferta_curso_to_moodle_imports_template_into_existing_empty_course(self, mock_get_categories, mock_create_categories, mock_update_moodle_courses, mock_import_moodle_course, mock_get_contents, mock_update_inplace):
+        self.matriz.moodle_template_course_id = 555
+        self.matriz.moodle_template_shortname = 'TPL-INF-2026'
+        self.matriz.save(update_fields=['moodle_template_course_id', 'moodle_template_shortname'])
+        oferta = create_oferta_curso(
+            curso_base=self.curso,
+            calendario_letivo=self.calendario,
+            polo=self.polo,
+            codigo_turma='C',
+            periodo_letivo='2',
+            turno='NOITE',
+            vagas_totais=20,
+        )
+        oferta.moodle_course_id = 888
+        oferta.moodle_shortname = 'OF-EXISTENTE'
+        oferta.save(update_fields=['moodle_course_id', 'moodle_shortname'])
+
+        mock_get_categories.side_effect = [
+            [],
+            [{'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387}],
+            [
+                {'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387},
+                {'id': 901, 'name': 'Rio Branco', 'idnumber': 'suap-ofertas-polo-rio_branco', 'parent': 900},
+            ],
+        ]
+        mock_create_categories.side_effect = [
+            [{'id': 900}],
+            [{'id': 901}],
+            [{'id': 902}],
+        ]
+        mock_update_moodle_courses.return_value = {'response_payload': {'warnings': []}, 'course_ids': [888]}
+        mock_import_moodle_course.return_value = {'response_payload': None}
+        mock_get_contents.side_effect = [
+            [
+                {'id': 2001, 'section': 1, 'name': 'Topic 1', 'modules': []},
+                {'id': 2002, 'section': 2, 'name': 'Topic 2', 'modules': []},
+            ],
+            [
+                {'id': 2001, 'section': 1, 'name': 'Fundamentos', 'modules': []},
+                {'id': 2002, 'section': 2, 'name': 'Dados', 'modules': []},
+            ],
+        ]
+
+        sync_oferta_curso_to_moodle(oferta)
+
+        oferta.refresh_from_db()
+        self.assertEqual(oferta.moodle_sync_mode, 'import_template')
+        self.assertTrue(oferta.moodle_template_applied)
+        self.assertEqual(oferta.moodle_template_source_course_id, 555)
+        self.assertEqual(oferta.moodle_template_source_shortname, 'TPL-INF-2026')
+        self.assertEqual(oferta.moodle_sync_fallback_reason, '')
+        self.assertTrue(oferta.logs.filter(evento='sincronizacao_template').exists())
+        mock_import_moodle_course.assert_called_once()
+
+    @patch('apps.cursos.services.update_moodle_inplace_editable')
+    @patch('apps.cursos.services.get_moodle_course_contents')
+    @patch('apps.cursos.services.create_moodle_courses')
+    @patch('apps.cursos.services.create_moodle_categories')
+    @patch('apps.cursos.services.get_moodle_categories')
+    def test_sync_oferta_curso_to_moodle_uses_fallback_without_template(self, mock_get_categories, mock_create_categories, mock_create_moodle_courses, mock_get_contents, mock_update_inplace):
+        oferta = create_oferta_curso(
+            curso_base=self.curso,
+            calendario_letivo=self.calendario,
+            polo=self.polo,
+            codigo_turma='D',
+            periodo_letivo='1',
+            turno='MANHA',
+            vagas_totais=20,
+        )
+
+        mock_get_categories.side_effect = [
+            [],
+            [{'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387}],
+            [
+                {'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387},
+                {'id': 901, 'name': 'Rio Branco', 'idnumber': 'suap-ofertas-polo-rio_branco', 'parent': 900},
+            ],
+        ]
+        mock_create_categories.side_effect = [
+            [{'id': 900}],
+            [{'id': 901}],
+            [{'id': 902}],
+        ]
+        mock_create_moodle_courses.return_value = {'course_ids': [999], 'response_payload': {'id': 999}}
+        mock_get_contents.return_value = [
+            {'id': 3001, 'section': 1, 'name': 'Topic 1', 'modules': []},
+            {'id': 3002, 'section': 2, 'name': 'Topic 2', 'modules': []},
+        ]
+
+        sync_oferta_curso_to_moodle(oferta)
+
+        oferta.refresh_from_db()
+        self.assertEqual(oferta.moodle_sync_mode, 'create_fallback')
+        self.assertFalse(oferta.moodle_template_applied)
+        self.assertIn('sem curso modelo Moodle', oferta.moodle_sync_fallback_reason)

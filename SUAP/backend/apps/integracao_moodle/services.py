@@ -336,6 +336,38 @@ def duplicate_moodle_course(
     }
 
 
+def import_moodle_course(params: dict) -> dict:
+    response_payload = get_moodle_api_client().import_course(params)
+    log = _store_writeback_log(
+        wsfunction="core_course_import_course",
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=_extract_int(params, "importto"),
+    )
+    return {
+        "response_payload": response_payload,
+        "log": log,
+    }
+
+
+def get_moodle_course_contents(params: dict) -> dict | list:
+    return get_moodle_api_client().get_course_contents(params)
+
+
+def update_moodle_inplace_editable(params: dict) -> dict | list:
+    response_payload = get_moodle_api_client().update_inplace_editable(params)
+    log = _store_writeback_log(
+        wsfunction="core_update_inplace_editable",
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=_extract_int(params, "courseid"),
+    )
+    return {
+        "response_payload": response_payload,
+        "log": log,
+    }
+
+
 def view_moodle_course(params: dict) -> dict:
     response_payload = get_moodle_api_client().view_course(params)
     course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)

@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.integracao_moodle.models import MoodleCategory, MoodleCourse
-from apps.integracao_moodle.services import MOODLE_COURSE_ROOT_CATEGORY_IDS, create_moodle_categories, create_moodle_courses, duplicate_moodle_course, get_moodle_categories, update_moodle_courses
+from apps.integracao_moodle.services import MOODLE_COURSE_ROOT_CATEGORY_IDS, create_moodle_categories, create_moodle_courses, duplicate_moodle_course, get_moodle_categories, get_moodle_course_contents, import_moodle_course, update_moodle_courses, update_moodle_inplace_editable
 from apps.unidades.models import Unidade
 
 from .models import CalendarioLetivo, ComponenteCurricular, Curso, MatrizCurricular, MatrizCurricularLog, OfertaCurso, OfertaCursoLog
@@ -404,6 +404,8 @@ def ensure_moodle_template_category() -> int:
 def sync_matriz_curricular_template_to_moodle(matriz: MatrizCurricular, *, unidade_codigo: str = 'sede') -> dict:
     category_id = matriz.moodle_template_category_id or ensure_moodle_template_category()
     shortname = matriz.moodle_template_shortname or _build_moodle_template_shortname(matriz)
+    expected_sections = max(matriz.total_modulos, 1)
+    section_name_result = None
     params = {
         'courses': [
             {
@@ -415,7 +417,7 @@ def sync_matriz_curricular_template_to_moodle(matriz: MatrizCurricular, *, unida
                 'visible': 0,
                 'format': 'topics',
                 'courseformatoptions': [
-                    {'name': 'numsections', 'value': max(matriz.total_modulos, 1)},
+                    {'name': 'numsections', 'value': expected_sections},
                 ],
             }
         ]
@@ -443,6 +445,8 @@ def sync_matriz_curricular_template_to_moodle(matriz: MatrizCurricular, *, unida
             mensagem = 'Curso modelo Moodle criado a partir da matriz curricular.'
 
         course_id = _resolve_course_id_from_result(moodle_result)
+        if course_id:
+            section_name_result = _sync_course_section_names(course_id=course_id, section_names=_build_section_names_from_matriz(matriz))
         matriz.moodle_template_course_id = course_id
         matriz.moodle_template_shortname = shortname
         matriz.moodle_template_category_id = category_id
@@ -464,13 +468,21 @@ def sync_matriz_curricular_template_to_moodle(matriz: MatrizCurricular, *, unida
             evento=evento,
             status='success',
             mensagem=mensagem,
-            payload={'moodle_result': moodle_result},
+            payload={
+                'moodle_result': moodle_result,
+                'numsections': expected_sections,
+                'section_name_result': section_name_result,
+            },
         )
 
         if course_id:
             MoodleCourse.objects.filter(moodle_course_id=course_id).update(curso=None)
 
-        return {'matriz': matriz, 'moodle': moodle_result}
+        return {
+            'matriz': matriz,
+            'moodle': moodle_result,
+            'section_name_result': section_name_result,
+        }
     except Exception as exc:
         matriz.last_sync_at = timezone.now()
         matriz.last_sync_status = 'error'
@@ -548,35 +560,52 @@ def sync_oferta_curso_to_moodle(oferta: OfertaCurso, *, unidade_codigo: str | No
     moodle_result = None
     expected_sections = max(oferta.matriz_curricular.total_modulos, 1)
     module_names = oferta.modulo_nomes
+    sync_mode = ''
+    template_applied = False
+    template_course_id = oferta.matriz_curricular.moodle_template_course_id
+    template_shortname = oferta.matriz_curricular.moodle_template_shortname
+    fallback_reason = ''
+    import_result = None
+    section_name_result = None
 
     try:
         if oferta.moodle_course_id:
-            moodle_result = update_moodle_courses(
-                {
-                    'courses': [
-                        {
-                            'id': oferta.moodle_course_id,
-                            'fullname': oferta.nome,
-                            'shortname': shortname,
-                            'categoryid': category_id,
-                            'idnumber': f'oferta-curso-{oferta.id}',
-                            'summary': oferta.observacao or oferta.nome,
-                            'visible': 1,
-                            'format': 'topics',
-                            'courseformatoptions': [
-                                {'name': 'numsections', 'value': expected_sections},
-                            ],
-                        }
-                    ]
-                },
+            moodle_result = _update_existing_oferta_course(
+                oferta=oferta,
+                shortname=shortname,
+                category_id=category_id,
+                expected_sections=expected_sections,
                 unidade_codigo=resolved_unidade_codigo,
-                persistir_espelho_local=True,
-                integrar_catalogo_interno=False,
             )
-        elif oferta.matriz_curricular.moodle_template_course_id:
+            sync_mode = 'update_existing'
+            if template_course_id:
+                safe_to_import, safe_reason = _is_safe_to_import_template(oferta.moodle_course_id)
+                if safe_to_import:
+                    import_result = import_moodle_course(
+                        {
+                            'importfrom': template_course_id,
+                            'importto': oferta.moodle_course_id,
+                            'deletecontent': 1,
+                        }
+                    )
+                    sync_mode = 'import_template'
+                    template_applied = True
+                    fallback_reason = ''
+                    log_oferta_event(
+                        oferta=oferta,
+                        evento='sincronizacao_template',
+                        status='success',
+                        mensagem='Template da matriz importado para o curso da oferta já existente no Moodle.',
+                        payload={'template_course_id': template_course_id, 'safe_reason': safe_reason, 'import_result': import_result},
+                    )
+                else:
+                    fallback_reason = safe_reason
+            else:
+                fallback_reason = 'Matriz curricular sem curso modelo Moodle sincronizado.'
+        elif template_course_id:
             moodle_result = duplicate_moodle_course(
                 {
-                    'courseid': oferta.matriz_curricular.moodle_template_course_id,
+                    'courseid': template_course_id,
                     'fullname': oferta.nome,
                     'shortname': shortname,
                     'categoryid': category_id,
@@ -584,12 +613,14 @@ def sync_oferta_curso_to_moodle(oferta: OfertaCurso, *, unidade_codigo: str | No
                 },
                 persistir_espelho_local=True,
             )
+            sync_mode = 'duplicate_template'
+            template_applied = True
             log_oferta_event(
                 oferta=oferta,
                 evento='importacao_conteudo',
                 status='success',
                 mensagem='Oferta criada no Moodle a partir do curso modelo da matriz curricular.',
-                payload={'template_course_id': oferta.matriz_curricular.moodle_template_course_id},
+                payload={'template_course_id': template_course_id},
             )
         else:
             moodle_result = create_moodle_courses(
@@ -613,18 +644,32 @@ def sync_oferta_curso_to_moodle(oferta: OfertaCurso, *, unidade_codigo: str | No
                 persistir_espelho_local=True,
                 integrar_catalogo_interno=False,
             )
+            sync_mode = 'create_fallback'
+            fallback_reason = 'Matriz curricular sem curso modelo Moodle sincronizado.'
 
         course_id = _resolve_course_id_from_result(moodle_result)
+        if course_id:
+            section_name_result = _sync_course_section_names(course_id=course_id, section_names=module_names)
         oferta.moodle_course_id = course_id
         oferta.moodle_shortname = shortname
         oferta.moodle_category_id = category_id
+        oferta.moodle_sync_mode = sync_mode
+        oferta.moodle_template_applied = template_applied
+        oferta.moodle_template_source_course_id = template_course_id if template_applied else None
+        oferta.moodle_template_source_shortname = template_shortname if template_applied else ''
+        oferta.moodle_sync_fallback_reason = fallback_reason
         oferta.last_sync_at = timezone.now()
         oferta.last_sync_status = 'success'
-        oferta.last_sync_message = 'Oferta sincronizada com o Moodle.'
+        oferta.last_sync_message = _build_oferta_sync_message(sync_mode=sync_mode, fallback_reason=fallback_reason)
         oferta.save(update_fields=[
             'moodle_course_id',
             'moodle_shortname',
             'moodle_category_id',
+            'moodle_sync_mode',
+            'moodle_template_applied',
+            'moodle_template_source_course_id',
+            'moodle_template_source_shortname',
+            'moodle_sync_fallback_reason',
             'last_sync_at',
             'last_sync_status',
             'last_sync_message',
@@ -640,12 +685,22 @@ def sync_oferta_curso_to_moodle(oferta: OfertaCurso, *, unidade_codigo: str | No
             mensagem='Oferta sincronizada com o Moodle com sucesso.',
             payload={
                 'moodle_result': moodle_result,
+                'import_result': import_result,
                 'numsections': expected_sections,
                 'module_names': module_names,
-                'section_sync_mode': 'numsections_only',
+                'section_name_result': section_name_result,
+                'moodle_sync_mode': sync_mode,
+                'template_applied': template_applied,
+                'template_course_id': template_course_id,
+                'fallback_reason': fallback_reason,
             },
         )
-        return {'oferta': oferta, 'moodle': moodle_result}
+        return {
+            'oferta': oferta,
+            'moodle': moodle_result,
+            'import_result': import_result,
+            'section_name_result': section_name_result,
+        }
     except Exception as exc:
         oferta.last_sync_at = timezone.now()
         oferta.last_sync_status = 'error'
@@ -697,6 +752,138 @@ def create_course_offer_from_matriz(
         moodle_result = _replicate_matrix_to_offer_in_moodle(matriz, oferta, unidade_codigo=unidade_codigo)
 
     return {'curso': oferta, 'moodle': moodle_result}
+
+
+def _update_existing_oferta_course(
+    *,
+    oferta: OfertaCurso,
+    shortname: str,
+    category_id: int,
+    expected_sections: int,
+    unidade_codigo: str,
+) -> dict:
+    return update_moodle_courses(
+        {
+            'courses': [
+                {
+                    'id': oferta.moodle_course_id,
+                    'fullname': oferta.nome,
+                    'shortname': shortname,
+                    'categoryid': category_id,
+                    'idnumber': f'oferta-curso-{oferta.id}',
+                    'summary': oferta.observacao or oferta.nome,
+                    'visible': 1,
+                    'format': 'topics',
+                    'courseformatoptions': [
+                        {'name': 'numsections', 'value': expected_sections},
+                    ],
+                }
+            ]
+        },
+        unidade_codigo=unidade_codigo,
+        persistir_espelho_local=True,
+        integrar_catalogo_interno=False,
+    )
+
+
+def _build_oferta_sync_message(*, sync_mode: str, fallback_reason: str = '') -> str:
+    if sync_mode == 'duplicate_template':
+        return 'Oferta sincronizada com o Moodle por duplicação do curso modelo da matriz.'
+    if sync_mode == 'import_template':
+        return 'Oferta sincronizada com o Moodle com importação do template da matriz para o curso existente.'
+    if sync_mode == 'update_existing':
+        return 'Oferta sincronizada com o Moodle pela atualização do curso existente.'
+    if sync_mode == 'create_fallback':
+        if fallback_reason:
+            return f'Oferta sincronizada com o Moodle sem template da matriz. {fallback_reason}'
+        return 'Oferta sincronizada com o Moodle sem template da matriz.'
+    return 'Oferta sincronizada com o Moodle.'
+
+
+def _build_section_names_from_matriz(matriz: MatrizCurricular) -> list[str]:
+    return [modulo['modulo_nome'] for modulo in matriz.componentes_por_modulo()]
+
+
+def _is_safe_to_import_template(moodle_course_id: int | None) -> tuple[bool, str]:
+    if not moodle_course_id:
+        return False, 'Curso da oferta ainda não existe no Moodle.'
+
+    try:
+        contents = get_moodle_course_contents(
+            {
+                'courseid': moodle_course_id,
+                'options': [
+                    {'name': 'excludecontents', 'value': 1},
+                ],
+            }
+        )
+    except Exception as exc:
+        return False, f'Não foi possível inspecionar o curso existente no Moodle antes da importação: {exc}'
+
+    for section in contents or []:
+        if int(section.get('section') or 0) == 0:
+            continue
+        if section.get('modules'):
+            return False, 'O curso existente no Moodle já possui atividades ou recursos e não será sobrescrito automaticamente.'
+
+    return True, 'Curso existente sem atividades; importação do template permitida.'
+
+
+def _sync_course_section_names(*, course_id: int | None, section_names: list[str]) -> dict:
+    if not course_id or not section_names:
+        return {'attempted': 0, 'updated': 0, 'skipped': 0, 'errors': []}
+
+    try:
+        contents = get_moodle_course_contents(
+            {
+                'courseid': course_id,
+                'options': [
+                    {'name': 'excludecontents', 'value': 1},
+                ],
+            }
+        )
+    except Exception as exc:
+        return {'attempted': 0, 'updated': 0, 'skipped': 0, 'errors': [str(exc)]}
+
+    sections_by_number = {
+        int(section.get('section') or 0): section
+        for section in contents or []
+        if int(section.get('section') or 0) > 0
+    }
+    result = {'attempted': 0, 'updated': 0, 'skipped': 0, 'errors': []}
+
+    for index, section_name in enumerate(section_names, start=1):
+        normalized_name = (section_name or '').strip()
+        if not normalized_name:
+            result['skipped'] += 1
+            continue
+
+        section = sections_by_number.get(index)
+        if not section:
+            result['skipped'] += 1
+            continue
+
+        result['attempted'] += 1
+        current_name = (section.get('name') or '').strip()
+        if current_name == normalized_name:
+            result['skipped'] += 1
+            continue
+
+        try:
+            update_moodle_inplace_editable(
+                {
+                    'component': 'format_topics',
+                    'itemtype': 'sectionname',
+                    'itemid': int(section['id']),
+                    'value': normalized_name,
+                    'courseid': course_id,
+                }
+            )
+            result['updated'] += 1
+        except Exception as exc:
+            result['errors'].append(f'Seção {index}: {exc}')
+
+    return result
 
 
 def _resolve_offer_year(calendario_letivo: CalendarioLetivo) -> int:

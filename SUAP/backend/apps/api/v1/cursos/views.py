@@ -506,6 +506,18 @@ class MatrizCurricularLogsApiView(APIView):
         return Response(serializer.data)
 
 
+class MatrizCurricularTemplateStatusApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, pk):
+        matriz = MatrizCurricular.objects.select_related("curso_base").get(pk=pk)
+        serializer = MatrizCurricularSerializer(matriz, context={"request": request})
+        return Response(serializer.data.get("template_status", {}))
+
+
 class MatrizCurricularSyncTemplateApiView(APIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"

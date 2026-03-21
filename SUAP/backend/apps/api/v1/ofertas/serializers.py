@@ -23,6 +23,9 @@ class OfertaCursoSerializer(serializers.ModelSerializer):
     vagas_disponiveis = serializers.IntegerField(read_only=True)
     pode_sincronizar_moodle = serializers.BooleanField(read_only=True)
     modulos_previstos = serializers.IntegerField(source='matriz_curricular.total_modulos', read_only=True)
+    usou_template_moodle = serializers.BooleanField(read_only=True)
+    template_moodle_disponivel = serializers.BooleanField(read_only=True)
+    moodle_sync_mode_label = serializers.SerializerMethodField(read_only=True)
     logs_recentes = OfertaCursoLogSerializer(source='logs.all', many=True, read_only=True)
 
     class Meta:
@@ -50,11 +53,19 @@ class OfertaCursoSerializer(serializers.ModelSerializer):
             'moodle_course_id',
             'moodle_shortname',
             'moodle_category_id',
+            'moodle_sync_mode',
+            'moodle_sync_mode_label',
+            'moodle_template_applied',
+            'moodle_template_source_course_id',
+            'moodle_template_source_shortname',
+            'moodle_sync_fallback_reason',
             'last_sync_at',
             'last_sync_status',
             'last_sync_message',
             'pode_sincronizar_moodle',
             'modulos_previstos',
+            'usou_template_moodle',
+            'template_moodle_disponivel',
             'logs_recentes',
             'created_at',
             'updated_at',
@@ -63,12 +74,20 @@ class OfertaCursoSerializer(serializers.ModelSerializer):
             'moodle_course_id',
             'moodle_shortname',
             'moodle_category_id',
+            'moodle_sync_mode',
+            'moodle_template_applied',
+            'moodle_template_source_course_id',
+            'moodle_template_source_shortname',
+            'moodle_sync_fallback_reason',
             'last_sync_at',
             'last_sync_status',
             'last_sync_message',
             'vagas_disponiveis',
             'pode_sincronizar_moodle',
             'modulos_previstos',
+            'usou_template_moodle',
+            'template_moodle_disponivel',
+            'moodle_sync_mode_label',
             'logs_recentes',
             'created_at',
             'updated_at',
@@ -76,6 +95,9 @@ class OfertaCursoSerializer(serializers.ModelSerializer):
 
     def get_calendario_letivo_nome(self, obj):
         return f'{obj.calendario_letivo.ano_letivo} [{obj.calendario_letivo.status}]'
+
+    def get_moodle_sync_mode_label(self, obj):
+        return obj.get_moodle_sync_mode_display() if obj.moodle_sync_mode else ''
 
     def validate(self, attrs):
         curso_base = attrs.get('curso_base', getattr(self.instance, 'curso_base', None))

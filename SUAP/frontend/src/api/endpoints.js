@@ -142,6 +142,7 @@ export const matrizesCurricularesApi = {
   componentes: (id, params) => client.get(`/cursos/matrizes-curriculares/${id}/componentes/`, { params }),
   createComponente: (id, data) => client.post(`/cursos/matrizes-curriculares/${id}/componentes/`, data),
   logs: (id) => client.get(`/cursos/matrizes-curriculares/${id}/logs/`),
+  templateStatus: (id) => client.get(`/cursos/matrizes-curriculares/${id}/template-status/`),
   clonar: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/clonar/`, data),
   publicar: (id) => client.post(`/cursos/matrizes-curriculares/${id}/publicar/`),
   encerrar: (id) => client.post(`/cursos/matrizes-curriculares/${id}/encerrar/`),

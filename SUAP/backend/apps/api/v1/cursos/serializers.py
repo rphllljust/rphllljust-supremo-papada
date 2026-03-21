@@ -283,6 +283,9 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
     pode_encerrar = serializers.BooleanField(read_only=True)
     pode_definir_vigente = serializers.BooleanField(read_only=True)
     pode_clonar = serializers.SerializerMethodField(read_only=True)
+    possui_template_moodle = serializers.BooleanField(read_only=True)
+    pode_sincronizar_template = serializers.BooleanField(read_only=True)
+    template_status = serializers.SerializerMethodField(read_only=True)
     componentes_por_modulo = serializers.SerializerMethodField(read_only=True)
     logs_recentes = MatrizCurricularLogSerializer(source='logs.all', many=True, read_only=True)
 
@@ -315,6 +318,9 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
             'pode_encerrar',
             'pode_definir_vigente',
             'pode_clonar',
+            'possui_template_moodle',
+            'pode_sincronizar_template',
+            'template_status',
             'componentes_por_modulo',
             'logs_recentes',
         ]
@@ -334,6 +340,9 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
             'pode_encerrar',
             'pode_definir_vigente',
             'pode_clonar',
+            'possui_template_moodle',
+            'pode_sincronizar_template',
+            'template_status',
             'componentes_por_modulo',
             'logs_recentes',
         ]
@@ -373,3 +382,15 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
                 }
             )
         return grupos
+
+    def get_template_status(self, obj):
+        return {
+            'possui_template_moodle': obj.possui_template_moodle,
+            'pode_sincronizar_template': obj.pode_sincronizar_template,
+            'moodle_template_course_id': obj.moodle_template_course_id,
+            'moodle_template_shortname': obj.moodle_template_shortname,
+            'moodle_template_category_id': obj.moodle_template_category_id,
+            'last_sync_at': obj.last_sync_at,
+            'last_sync_status': obj.last_sync_status,
+            'last_sync_message': obj.last_sync_message,
+        }

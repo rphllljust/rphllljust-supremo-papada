@@ -25,9 +25,11 @@ SUPPORTED_MOODLE_WS_FUNCTIONS = (
     "core_course_create_courses",
     "core_course_delete_courses",
     "core_course_duplicate_course",
+    "core_course_get_contents",
     "core_course_get_categories",
     "core_course_get_courses",
     "core_course_get_courses_by_field",
+    "core_course_import_course",
     "core_course_get_recent_courses",
     "core_course_search_courses",
     "core_course_update_courses",
@@ -39,6 +41,7 @@ SUPPORTED_MOODLE_WS_FUNCTIONS = (
     "gradereport_user_get_grades_table",
     "mod_assign_save_grade",
     "mod_assign_save_grades",
+    "core_update_inplace_editable",
     "core_webservice_get_site_info",
 )
 
@@ -174,6 +177,15 @@ class MoodleApiClient:
 
     def duplicate_course(self, params: dict) -> dict | list:
         return self.call("core_course_duplicate_course", params=params, method="post")
+
+    def import_course(self, params: dict) -> dict | list:
+        return self.call("core_course_import_course", params=params, method="post")
+
+    def get_course_contents(self, params: dict) -> dict | list:
+        return self.call("core_course_get_contents", params=params)
+
+    def update_inplace_editable(self, params: dict) -> dict | list:
+        return self.call("core_update_inplace_editable", params=params, method="post")
 
     def view_course(self, params: dict) -> dict | list:
         return self.call("core_course_view_course", params=params, method="post")

@@ -14,6 +14,13 @@ function SummaryCard({ label, value }) {
   )
 }
 
+function resolveTemplateSyncLabel(matriz) {
+  if (matriz.possui_template_moodle) {
+    return matriz.moodle_template_shortname || `ID ${matriz.moodle_template_course_id}`
+  }
+  return 'Não sincronizado'
+}
+
 export default function MatrizCurricularDetailPage() {
   const { matrizId } = useParams()
   const navigate = useNavigate()
@@ -166,7 +173,9 @@ export default function MatrizCurricularDetailPage() {
           <SummaryCard label="Ativa" value={data.ativa ? 'Sim' : 'Não'} />
           <SummaryCard label="Módulos" value={data.total_modulos} />
           <SummaryCard label="Componentes" value={data.total_componentes} />
-          <SummaryCard label="Curso modelo Moodle" value={data.moodle_template_shortname || 'Não sincronizado'} />
+          <SummaryCard label="Curso modelo Moodle" value={resolveTemplateSyncLabel(data)} />
+          <SummaryCard label="Template habilitado" value={data.pode_sincronizar_template ? 'Sim' : 'Não'} />
+          <SummaryCard label="Sync template" value={data.last_sync_status || 'pendente'} />
           <SummaryCard label="Última sincronização" value={data.last_sync_at || 'Nunca sincronizada'} />
         </div>
       </section>
@@ -178,6 +187,8 @@ export default function MatrizCurricularDetailPage() {
           <div className="matrix-field"><span>Sigla do curso base</span><strong>{data.curso_base_sigla || '—'}</strong></div>
           <div className="matrix-field"><span>Status</span><strong>{data.status}</strong></div>
           <div className="matrix-field"><span>Versão</span><strong>{data.versao}</strong></div>
+          <div className="matrix-field"><span>ID do template Moodle</span><strong>{data.moodle_template_course_id || '—'}</strong></div>
+          <div className="matrix-field"><span>Categoria do template</span><strong>{data.moodle_template_category_id || '—'}</strong></div>
           <div className="matrix-field matrix-field--full"><span>Descrição</span><strong>{data.descricao || 'Sem descrição cadastrada.'}</strong></div>
           <div className="matrix-field matrix-field--full"><span>Última mensagem de sincronização</span><strong>{data.last_sync_message || 'Sem mensagens registradas.'}</strong></div>
         </div>

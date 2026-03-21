@@ -93,6 +93,8 @@ export default function OfertaCursoDetailPage() {
           <SummaryCard label="Status" value={data.status} />
           <SummaryCard label="Vagas" value={`${data.vagas_ocupadas}/${data.vagas_totais}`} />
           <SummaryCard label="Sync Moodle" value={data.last_sync_status || 'pendente'} />
+          <SummaryCard label="Modo da sync" value={data.moodle_sync_mode_label || 'Ainda não sincronizada'} />
+          <SummaryCard label="Template aplicado" value={data.usou_template_moodle ? 'Sim' : 'Não'} />
         </div>
       </section>
 
@@ -105,7 +107,10 @@ export default function OfertaCursoDetailPage() {
           <div className="matrix-field"><span>Calendário letivo</span><strong>{data.calendario_letivo_nome}</strong></div>
           <div className="matrix-field"><span>Módulos previstos</span><strong>{data.modulos_previstos}</strong></div>
           <div className="matrix-field"><span>Curso Moodle</span><strong>{data.moodle_shortname || 'Ainda não sincronizado'}</strong></div>
+          <div className="matrix-field"><span>Template da matriz disponível</span><strong>{data.template_moodle_disponivel ? 'Sim' : 'Não'}</strong></div>
+          <div className="matrix-field"><span>Template usado</span><strong>{data.moodle_template_source_shortname || (data.moodle_template_source_course_id ? `ID ${data.moodle_template_source_course_id}` : 'Nenhum')}</strong></div>
           <div className="matrix-field matrix-field--full"><span>Observações</span><strong>{data.observacao || 'Sem observações cadastradas.'}</strong></div>
+          <div className="matrix-field matrix-field--full"><span>Fallback aplicado</span><strong>{data.moodle_sync_fallback_reason || 'Nenhum fallback registrado.'}</strong></div>
           <div className="matrix-field matrix-field--full"><span>Última mensagem de sincronização</span><strong>{data.last_sync_message || 'Sem mensagens registradas.'}</strong></div>
         </div>
       </section>

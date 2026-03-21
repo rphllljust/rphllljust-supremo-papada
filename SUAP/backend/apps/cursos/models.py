@@ -181,6 +181,14 @@ class MatrizCurricular(models.Model):
         return self.status != 'ENCERRADA'
 
     @property
+    def possui_template_moodle(self):
+        return bool(self.moodle_template_course_id)
+
+    @property
+    def pode_sincronizar_template(self):
+        return self.status != 'ENCERRADA'
+
+    @property
     def total_modulos(self):
         return (
             self.componentes.exclude(modulo_numero__isnull=True)
@@ -442,6 +450,13 @@ class CalendarioLetivo(models.Model):
 
 
 class OfertaCurso(models.Model):
+    MOODLE_SYNC_MODE_CHOICES = [
+        ('duplicate_template', 'Duplicação do Template'),
+        ('import_template', 'Importação para Curso Existente'),
+        ('update_existing', 'Atualização de Curso Existente'),
+        ('create_fallback', 'Criação Sem Template'),
+    ]
+
     STATUS_CHOICES = [
         ('PLANEJADA', 'Planejada'),
         ('ATIVA', 'Ativa'),
@@ -491,6 +506,11 @@ class OfertaCurso(models.Model):
     moodle_course_id = models.PositiveIntegerField(null=True, blank=True, unique=True, verbose_name='ID do Curso da Oferta no Moodle')
     moodle_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname da Oferta no Moodle')
     moodle_category_id = models.PositiveIntegerField(null=True, blank=True, verbose_name='ID da Categoria da Oferta no Moodle')
+    moodle_sync_mode = models.CharField(max_length=40, choices=MOODLE_SYNC_MODE_CHOICES, blank=True, default='', verbose_name='Modo da Última Sincronização com Moodle')
+    moodle_template_applied = models.BooleanField(default=False, verbose_name='Última Sincronização Usou Template Moodle')
+    moodle_template_source_course_id = models.PositiveIntegerField(null=True, blank=True, verbose_name='ID do Template Usado na Última Sincronização')
+    moodle_template_source_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname do Template Usado na Última Sincronização')
+    moodle_sync_fallback_reason = models.TextField(blank=True, default='', verbose_name='Motivo do Fallback da Sincronização Moodle')
     last_sync_at = models.DateTimeField(null=True, blank=True, verbose_name='Última Sincronização')
     last_sync_status = models.CharField(max_length=20, blank=True, default='', verbose_name='Status da Última Sincronização')
     last_sync_message = models.TextField(blank=True, default='', verbose_name='Mensagem da Última Sincronização')
@@ -516,6 +536,9 @@ class OfertaCurso(models.Model):
         self.periodo_letivo = (self.periodo_letivo or '').strip()
         self.observacao = (self.observacao or '').strip()
         self.moodle_shortname = (self.moodle_shortname or '').strip()
+        self.moodle_sync_mode = (self.moodle_sync_mode or '').strip()
+        self.moodle_template_source_shortname = (self.moodle_template_source_shortname or '').strip()
+        self.moodle_sync_fallback_reason = (self.moodle_sync_fallback_reason or '').strip()
         self.last_sync_status = (self.last_sync_status or '').strip()
 
         if self.curso_base_id and self.curso_base.tipo_curso != 'tecnico':
@@ -558,6 +581,14 @@ class OfertaCurso(models.Model):
         return self.status in {'PLANEJADA', 'ATIVA'}
 
     @property
+    def usou_template_moodle(self):
+        return self.moodle_template_applied
+
+    @property
+    def template_moodle_disponivel(self):
+        return bool(self.matriz_curricular.moodle_template_course_id)
+
+    @property
     def modulo_nomes(self):
         modulos = []
         for modulo in self.matriz_curricular.componentes_por_modulo():
@@ -574,6 +605,7 @@ class OfertaCursoLog(models.Model):
         ('atualizacao_oferta', 'Atualização de Oferta'),
         ('sincronizacao_moodle', 'Sincronização com Moodle'),
         ('importacao_conteudo', 'Importação/Cópia de Conteúdo'),
+        ('sincronizacao_template', 'Aplicação de Template da Matriz'),
         ('falha_sincronizacao', 'Falha de Sincronização'),
     ]
     STATUS_CHOICES = [

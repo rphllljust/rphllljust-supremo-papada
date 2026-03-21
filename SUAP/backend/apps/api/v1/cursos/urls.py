@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import AreaCursoDetailApiView, AreaCursoListApiView, ComponenteCurricularDetailApiView, ComponenteCurricularListApiView, CursoCalendariosApiView, CursoDetailApiView, CursoListApiView, EixoTecnologicoDetailApiView, EixoTecnologicoListApiView, MatrizCurricularCloneApiView, MatrizCurricularCloseApiView, MatrizCurricularComponentesApiView, MatrizCurricularDetailApiView, MatrizCurricularGerarOfertaApiView, MatrizCurricularListApiView, MatrizCurricularLogsApiView, MatrizCurricularPublishApiView, MatrizCurricularSetCurrentApiView, MatrizCurricularSyncTemplateApiView, NivelEnsinoDetailApiView, NivelEnsinoListApiView, TipoComponenteDetailApiView, TipoComponenteListApiView
+from .views import AreaCursoDetailApiView, AreaCursoListApiView, ComponenteCurricularDetailApiView, ComponenteCurricularListApiView, CursoCalendariosApiView, CursoDetailApiView, CursoListApiView, EixoTecnologicoDetailApiView, EixoTecnologicoListApiView, MatrizCurricularCloneApiView, MatrizCurricularCloseApiView, MatrizCurricularComponentesApiView, MatrizCurricularDetailApiView, MatrizCurricularGerarOfertaApiView, MatrizCurricularListApiView, MatrizCurricularLogsApiView, MatrizCurricularPublishApiView, MatrizCurricularSetCurrentApiView, MatrizCurricularSyncTemplateApiView, MatrizCurricularTemplateStatusApiView, NivelEnsinoDetailApiView, NivelEnsinoListApiView, TipoComponenteDetailApiView, TipoComponenteListApiView
 
 app_name = "api_v1_cursos"
 
@@ -11,6 +11,7 @@ urlpatterns = [
     path("matrizes-curriculares/<int:pk>/", MatrizCurricularDetailApiView.as_view(), name="matrizes-detail"),
     path("matrizes-curriculares/<int:pk>/componentes/", MatrizCurricularComponentesApiView.as_view(), name="matrizes-componentes"),
     path("matrizes-curriculares/<int:pk>/logs/", MatrizCurricularLogsApiView.as_view(), name="matrizes-logs"),
+    path("matrizes-curriculares/<int:pk>/template-status/", MatrizCurricularTemplateStatusApiView.as_view(), name="matrizes-template-status"),
     path("matrizes-curriculares/<int:pk>/clonar/", MatrizCurricularCloneApiView.as_view(), name="matrizes-clonar"),
     path("matrizes-curriculares/<int:pk>/publicar/", MatrizCurricularPublishApiView.as_view(), name="matrizes-publicar"),
     path("matrizes-curriculares/<int:pk>/encerrar/", MatrizCurricularCloseApiView.as_view(), name="matrizes-encerrar"),

@@ -22,6 +22,16 @@ const COLUMNS = [
     label: 'Ativa',
     render: (row) => (row.ativa ? 'Sim' : 'Não'),
   },
+  {
+    key: 'possui_template_moodle',
+    label: 'Template Moodle',
+    render: (row) => (row.possui_template_moodle ? (row.moodle_template_shortname || `ID ${row.moodle_template_course_id}`) : 'Pendente'),
+  },
+  {
+    key: 'last_sync_status',
+    label: 'Sync template',
+    render: (row) => row.last_sync_status || 'pendente',
+  },
   { key: 'total_componentes', label: 'Componentes' },
 ]
 
