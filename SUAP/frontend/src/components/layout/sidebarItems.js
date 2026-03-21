@@ -196,6 +196,20 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/eixotecnologico'],
           },
           {
+            id: 'tipos-componente',
+            type: 'link',
+            label: 'Tipos do Componente',
+            to: '/ensino/tipos-componente/',
+            activePrefixes: ['/ensino/tipos-componente'],
+          },
+          {
+            id: 'niveis-ensino',
+            type: 'link',
+            label: 'Níveis de Ensino',
+            to: '/ensino/niveis-ensino/',
+            activePrefixes: ['/ensino/niveis-ensino'],
+          },
+          {
             id: 'cursos-formacao-superior',
             type: 'link',
             label: 'Cursos itinerantes',
@@ -223,6 +237,13 @@ export const sidebarItems = [
         type: 'group',
         label: 'Cursos, Matrizes e Componentes',
         items: [
+          {
+            id: 'matrizes-curriculares',
+            type: 'link',
+            label: 'Matrizes Curriculares',
+            to: '/ensino/matrizes-curriculares/',
+            activePrefixes: ['/ensino/matrizes-curriculares'],
+          },
           {
             id: 'componentes',
             type: 'link',

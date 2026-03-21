@@ -5,7 +5,8 @@ import toast from 'react-hot-toast'
 import { ArrowLeft, CircleHelp, Save, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { componentesApi } from '@/api/endpoints'
+import { componentesApi, cursosApi, matrizesCurricularesApi } from '@/api/endpoints'
+import { loadAllPaginatedResults } from '@/utils/loadAllPaginatedResults'
 import './suap-componentes.css'
 
 const DEFAULT_VALUES = {
@@ -21,6 +22,14 @@ const DEFAULT_VALUES = {
   grupo_atuacao: '',
   sigla_qacademico: '',
   observacao: '',
+  curso: '',
+  matriz_curricular_id: '',
+  carga_horaria: 0,
+  hora_aula: 0,
+  qtd_creditos: 0,
+  modulo_numero: '',
+  modulo_nome: '',
+  ordem_no_modulo: '',
 }
 
 function getErrorMessage(error, fallback) {
@@ -57,6 +66,14 @@ function buildFormValues(component) {
     grupo_atuacao: component?.grupo_atuacao || '',
     sigla_qacademico: component?.sigla_qacademico || '',
     observacao: component?.observacao || '',
+    curso: component?.curso_id ? String(component.curso_id) : '',
+    matriz_curricular_id: component?.matriz_curricular_id ? String(component.matriz_curricular_id) : '',
+    carga_horaria: component?.carga_horaria ?? 0,
+    hora_aula: component?.hora_aula ?? 0,
+    qtd_creditos: component?.qtd_creditos ?? 0,
+    modulo_numero: component?.modulo_numero ?? '',
+    modulo_nome: component?.modulo_nome ?? '',
+    ordem_no_modulo: component?.ordem_no_modulo ?? '',
   }
 }
 
@@ -137,7 +154,18 @@ export default function ComponenteEditPage() {
 
   const { data: opcoes } = useQuery({
     queryKey: ['componentes', 'form-options'],
-    queryFn: () => componentesApi.list({}).then((response) => response.data?.summary?.filter_options || {}),
+    queryFn: async () => {
+      const [summary, cursos, matrizes] = await Promise.all([
+        componentesApi.list({}).then((response) => response.data?.summary?.filter_options || {}),
+        loadAllPaginatedResults((params) => cursosApi.list({ ...params, tipo_curso: 'tecnico' })),
+        loadAllPaginatedResults((params) => matrizesCurricularesApi.list(params)),
+      ])
+      return {
+        ...summary,
+        cursos,
+        matrizes,
+      }
+    },
     staleTime: 60_000,
   })
 
@@ -234,22 +262,18 @@ export default function ComponenteEditPage() {
       grupo_atuacao: formData.grupo_atuacao.trim(),
       sigla_qacademico: formData.sigla_qacademico.trim(),
       observacao: formData.observacao.trim(),
+      curso: formData.curso ? Number(formData.curso) : undefined,
+      matriz_curricular_id: formData.matriz_curricular_id ? Number(formData.matriz_curricular_id) : null,
+      carga_horaria: Number(formData.carga_horaria) || 0,
+      hora_aula: Number(formData.hora_aula) || 0,
+      qtd_creditos: Number(formData.qtd_creditos) || 0,
+      modulo_numero: formData.modulo_numero ? Number(formData.modulo_numero) : null,
+      modulo_nome: formData.modulo_nome.trim(),
+      ordem_no_modulo: formData.ordem_no_modulo ? Number(formData.ordem_no_modulo) : null,
     }
 
-    if (!isCreateMode && data?.curso_id) {
+    if (!isCreateMode && data?.curso_id && !payload.curso) {
       payload.curso = data.curso_id
-    }
-
-    if (!isCreateMode && typeof data?.carga_horaria !== 'undefined') {
-      payload.carga_horaria = data.carga_horaria
-    }
-
-    if (!isCreateMode && typeof data?.hora_aula !== 'undefined') {
-      payload.hora_aula = data.hora_aula
-    }
-
-    if (!isCreateMode && typeof data?.qtd_creditos !== 'undefined') {
-      payload.qtd_creditos = data.qtd_creditos
     }
 
     await saveMutation.mutateAsync({
@@ -352,6 +376,48 @@ export default function ComponenteEditPage() {
                 <option value="">Escolha uma opção</option>
                 {renderSelectOptions(opcoes?.grupos_atuacao)}
               </select>
+            </FormRow>
+
+            <FormRow label="Curso legado / oferta" error={errors.curso?.message} hint="Mantido por compatibilidade durante a transição para matrizes explícitas.">
+              <select {...register('curso')}>
+                <option value="">Selecione um curso técnico</option>
+                {(opcoes?.cursos || []).map((curso) => (
+                  <option key={curso.id} value={curso.id}>{curso.nome}</option>
+                ))}
+              </select>
+            </FormRow>
+
+            <FormRow label="Matriz curricular explícita" error={errors.matriz_curricular_id?.message} hint="Quando preenchida, passa a ser o vínculo principal do componente na nova modelagem.">
+              <select {...register('matriz_curricular_id')}>
+                <option value="">Selecione uma matriz curricular</option>
+                {(opcoes?.matrizes || []).map((matriz) => (
+                  <option key={matriz.id} value={matriz.id}>{matriz.nome}</option>
+                ))}
+              </select>
+            </FormRow>
+
+            <FormRow label="Carga horária" required error={errors.carga_horaria?.message}>
+              <input type="number" min="0" {...register('carga_horaria', { valueAsNumber: true })} />
+            </FormRow>
+
+            <FormRow label="Hora/aula">
+              <input type="number" min="0" {...register('hora_aula', { valueAsNumber: true })} />
+            </FormRow>
+
+            <FormRow label="Qtd. créditos">
+              <input type="number" min="0" {...register('qtd_creditos', { valueAsNumber: true })} />
+            </FormRow>
+
+            <FormRow label="Módulo">
+              <input type="number" min="1" {...register('modulo_numero', { valueAsNumber: true })} placeholder="Ex.: 1" />
+            </FormRow>
+
+            <FormRow label="Nome do módulo">
+              <input {...register('modulo_nome')} placeholder="Ex.: Fundamentos da formação técnica" />
+            </FormRow>
+
+            <FormRow label="Ordem no módulo">
+              <input type="number" min="1" {...register('ordem_no_modulo', { valueAsNumber: true })} />
             </FormRow>
 
             <FormRow label="Está ativo">

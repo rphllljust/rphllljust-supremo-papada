@@ -1,11 +1,14 @@
 from django.db.models import Q
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
-from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso, EixoTecnologico
+from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso, EixoTecnologico, MatrizCurricular, NivelEnsino, TipoComponente
+from apps.cursos.services import create_course_offer_from_matriz, sync_matriz_curricular_template_to_moodle
 
-from .serializers import AreaCursoSerializer, ComponenteCurricularSerializer, CursoSerializer, EixoTecnologicoManageSerializer, EixoTecnologicoSerializer
+from .serializers import AreaCursoSerializer, ComponenteCurricularSerializer, CursoSerializer, EixoTecnologicoManageSerializer, EixoTecnologicoSerializer, MatrizCurricularLogSerializer, MatrizCurricularSerializer, NivelEnsinoSerializer, TipoComponenteSerializer
 
 
 class EixoTecnologicoListApiView(generics.ListCreateAPIView):
@@ -56,6 +59,86 @@ class EixoTecnologicoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
+class TipoComponenteListApiView(generics.ListCreateAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+    pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def get_serializer_class(self):
+        return TipoComponenteSerializer
+
+    def get_queryset(self):
+        queryset = TipoComponente.objects.order_by("descricao")
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(descricao__icontains=search)
+        return queryset
+
+
+class TipoComponenteDetailApiView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    serializer_class = TipoComponenteSerializer
+    queryset = TipoComponente.objects.order_by("descricao")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+
+class NivelEnsinoListApiView(generics.ListCreateAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+    pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def get_serializer_class(self):
+        return NivelEnsinoSerializer
+
+    def get_queryset(self):
+        queryset = NivelEnsino.objects.order_by("descricao")
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(descricao__icontains=search)
+        return queryset
+
+
+class NivelEnsinoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    serializer_class = NivelEnsinoSerializer
+    queryset = NivelEnsino.objects.order_by("descricao")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+
 class ComponenteCurricularListApiView(generics.ListCreateAPIView):
     permission_classes = [CanAccessModule]
     module_name = "cursos"
@@ -72,7 +155,7 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
         return super().get_permissions()
 
     def get_base_queryset(self):
-        return ComponenteCurricular.objects.select_related("curso").order_by("nome", "id")
+        return ComponenteCurricular.objects.select_related("curso", "matriz_curricular", "matriz_curricular__curso_base").order_by("nome", "id")
 
     def apply_filters(self, queryset, include_tab=True):
         params = self.request.query_params
@@ -105,7 +188,7 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
         if nivel_ensino:
             queryset = queryset.filter(nivel_ensino=nivel_ensino)
         if matriz_curricular:
-            queryset = queryset.filter(curso_id=matriz_curricular)
+            queryset = queryset.filter(Q(matriz_curricular_id=matriz_curricular) | Q(curso_id=matriz_curricular))
         if grupo_atuacao:
             queryset = queryset.filter(grupo_atuacao=grupo_atuacao)
 
@@ -120,10 +203,25 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
         return self.apply_filters(self.get_base_queryset(), include_tab=True)
 
     def build_summary(self, queryset):
-        cursos = queryset.values("curso_id", "curso__nome").distinct().order_by("curso__nome")
-        tipos = queryset.exclude(tipo_componente="").values_list("tipo_componente", flat=True).distinct().order_by("tipo_componente")
-        niveis = queryset.exclude(nivel_ensino="").values_list("nivel_ensino", flat=True).distinct().order_by("nivel_ensino")
+        cursos = queryset.values(
+            "curso_id",
+            "curso__nome",
+            "matriz_curricular_id",
+            "matriz_curricular__nome",
+        ).distinct().order_by("matriz_curricular__nome", "curso__nome")
+        tipos = TipoComponente.objects.order_by("descricao")
+        niveis = NivelEnsino.objects.order_by("descricao")
         grupos = queryset.exclude(grupo_atuacao="").values_list("grupo_atuacao", flat=True).distinct().order_by("grupo_atuacao")
+
+        matrizes = []
+        vistos = set()
+        for item in cursos:
+            key = item["matriz_curricular_id"] or item["curso_id"]
+            label = item["matriz_curricular__nome"] or item["curso__nome"]
+            if not key or not label or key in vistos:
+                continue
+            vistos.add(key)
+            matrizes.append({"value": key, "label": label})
 
         return {
             "tab_counts": {
@@ -132,13 +230,9 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
                 "NAO_UTILIZADOS": 0,
             },
             "filter_options": {
-                "tipos_componente": [{"value": value, "label": value} for value in tipos],
-                "niveis_ensino": [{"value": value, "label": value} for value in niveis],
-                "matrizes_curriculares": [
-                    {"value": item["curso_id"], "label": item["curso__nome"]}
-                    for item in cursos
-                    if item["curso_id"]
-                ],
+                "tipos_componente": [{"value": item.descricao, "label": item.descricao} for item in tipos],
+                "niveis_ensino": [{"value": item.descricao, "label": item.descricao} for item in niveis],
+                "matrizes_curriculares": matrizes,
                 "grupos_atuacao": [{"value": value, "label": value} for value in grupos],
             },
         }
@@ -155,7 +249,7 @@ class ComponenteCurricularDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     module_name = "cursos"
     access_surface = "api"
     serializer_class = ComponenteCurricularSerializer
-    queryset = ComponenteCurricular.objects.select_related("curso")
+    queryset = ComponenteCurricular.objects.select_related("curso", "matriz_curricular", "matriz_curricular__curso_base")
 
     def get_permissions(self):
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
@@ -265,7 +359,7 @@ class CursoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     access_surface = "api"
     access_action = "view"
     serializer_class = CursoSerializer
-    queryset = Curso.objects.select_related("unidade", "area_curso")
+    queryset = Curso.objects.select_related("unidade", "area_curso", "matriz_curricular")
 
     def get_permissions(self):
         if self.request.method in {"PUT", "PATCH", "DELETE"}:
@@ -273,3 +367,149 @@ class CursoDetailApiView(generics.RetrieveUpdateDestroyAPIView):
         else:
             self.access_action = "view"
         return super().get_permissions()
+
+
+class MatrizCurricularListApiView(generics.ListCreateAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+    serializer_class = MatrizCurricularSerializer
+    pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def get_queryset(self):
+        queryset = MatrizCurricular.objects.select_related("curso_base", "curso_base__unidade", "curso_base__area_curso").prefetch_related("componentes", "logs")
+        params = self.request.query_params
+        search = params.get("search", "").strip()
+        curso_base = params.get("curso_base", "").strip()
+        ano_referencia = params.get("ano_referencia", "").strip()
+        status = params.get("status", "").strip().upper()
+        ativa = params.get("ativa", "").strip().lower()
+
+        if curso_base:
+            queryset = queryset.filter(curso_base_id=curso_base)
+        if ano_referencia:
+            queryset = queryset.filter(ano_referencia=ano_referencia)
+        if status:
+            queryset = queryset.filter(status=status)
+        if ativa in {"1", "true", "sim", "yes"}:
+            queryset = queryset.filter(ativa=True)
+        elif ativa in {"0", "false", "nao", "não", "no"}:
+            queryset = queryset.filter(ativa=False)
+        if search:
+            queryset = queryset.filter(
+                Q(nome__icontains=search)
+                | Q(curso_base__nome__icontains=search)
+                | Q(curso_base__sigla__icontains=search)
+                | Q(descricao__icontains=search)
+            )
+
+        return queryset.order_by("-ano_referencia", "nome", "versao")
+
+
+class MatrizCurricularDetailApiView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    serializer_class = MatrizCurricularSerializer
+    queryset = MatrizCurricular.objects.select_related("curso_base", "curso_base__unidade", "curso_base__area_curso").prefetch_related("componentes", "logs")
+
+    def get_permissions(self):
+        if self.request.method in {"PUT", "PATCH", "DELETE"}:
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+
+class MatrizCurricularComponentesApiView(generics.ListCreateAPIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+    serializer_class = ComponenteCurricularSerializer
+    pagination_class = StandardResultsSetPagination
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            self.access_action = "manage"
+        else:
+            self.access_action = "view"
+        return super().get_permissions()
+
+    def get_matriz(self):
+        return MatrizCurricular.objects.select_related("curso_base").get(pk=self.kwargs["pk"])
+
+    def get_queryset(self):
+        matriz = self.get_matriz()
+        return ComponenteCurricular.objects.select_related("curso", "matriz_curricular", "matriz_curricular__curso_base").filter(matriz_curricular=matriz).order_by("modulo_numero", "ordem_no_modulo", "ordem", "nome")
+
+    def perform_create(self, serializer):
+        matriz = self.get_matriz()
+        serializer.save(matriz_curricular=matriz, curso=matriz.curso_base)
+
+
+class MatrizCurricularLogsApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, pk):
+        matriz = MatrizCurricular.objects.prefetch_related("logs").get(pk=pk)
+        serializer = MatrizCurricularLogSerializer(matriz.logs.all(), many=True)
+        return Response(serializer.data)
+
+
+class MatrizCurricularSyncTemplateApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "manage"
+
+    def post(self, request, pk):
+        matriz = MatrizCurricular.objects.select_related("curso_base").get(pk=pk)
+        unidade_codigo = (request.data.get("unidade_codigo") or request.query_params.get("unidade_codigo") or "sede").strip().lower()
+        result = sync_matriz_curricular_template_to_moodle(matriz, unidade_codigo=unidade_codigo)
+        serializer = MatrizCurricularSerializer(result["matriz"], context={"request": request})
+        return Response(
+            {
+                "detail": "Curso modelo da matriz sincronizado com o Moodle.",
+                "matriz": serializer.data,
+                "moodle": result["moodle"],
+            }
+        )
+
+
+class MatrizCurricularGerarOfertaApiView(APIView):
+    permission_classes = [CanAccessModule]
+    module_name = "cursos"
+    access_surface = "api"
+    access_action = "manage"
+
+    def post(self, request, pk):
+        matriz = MatrizCurricular.objects.select_related("curso_base", "curso_base__unidade").get(pk=pk)
+        payload = request.data or {}
+        result = create_course_offer_from_matriz(
+            matriz,
+            nome=payload.get("nome"),
+            sigla=payload.get("sigla"),
+            unidade_id=payload.get("unidade") or matriz.curso_base.unidade_id,
+            unidade_codigo=(payload.get("unidade_codigo") or request.query_params.get("unidade_codigo") or "sede").strip().lower(),
+            copiar_para_moodle=payload.get("copiar_para_moodle", True),
+        )
+        serializer = CursoSerializer(result["curso"], context={"request": request})
+        return Response(
+            {
+                "detail": "Oferta real criada a partir da matriz curricular.",
+                "curso": serializer.data,
+                "moodle": result.get("moodle"),
+            }
+        )

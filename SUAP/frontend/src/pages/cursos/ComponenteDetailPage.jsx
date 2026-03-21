@@ -157,9 +157,13 @@ export default function ComponenteDetailPage() {
             <div className="componente-detail-panel__header">Parâmetros atuais de vinculação</div>
             <div className="componente-detail-grid">
               <DetailField label="Matriz curricular" value={data.matriz_curricular} wide />
+              <DetailField label="Curso legado / oferta" value={data.curso_nome} wide />
               <DetailField label="Hora/relógio" value={data.carga_horaria ? `${data.carga_horaria} h` : '-'} />
               <DetailField label="Hora/aula" value={data.hora_aula ? `${data.hora_aula} h` : '-'} />
               <DetailField label="Quantidade de créditos" value={data.qtd_creditos} />
+              <DetailField label="Módulo" value={data.modulo_numero ? `Módulo ${data.modulo_numero}` : '-'} />
+              <DetailField label="Nome do módulo" value={data.modulo_nome} />
+              <DetailField label="Ordem no módulo" value={data.ordem_no_modulo} />
             </div>
           </section>
 

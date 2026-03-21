@@ -24,6 +24,7 @@ SUPPORTED_MOODLE_WS_FUNCTIONS = (
     "core_course_delete_categories",
     "core_course_create_courses",
     "core_course_delete_courses",
+    "core_course_duplicate_course",
     "core_course_get_categories",
     "core_course_get_courses",
     "core_course_get_courses_by_field",
@@ -170,6 +171,9 @@ class MoodleApiClient:
 
     def delete_courses(self, params: dict) -> dict | list:
         return self.call("core_course_delete_courses", params=params, method="post")
+
+    def duplicate_course(self, params: dict) -> dict | list:
+        return self.call("core_course_duplicate_course", params=params, method="post")
 
     def view_course(self, params: dict) -> dict | list:
         return self.call("core_course_view_course", params=params, method="post")

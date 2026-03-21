@@ -5,14 +5,19 @@ import toast from 'react-hot-toast'
 import { ArrowLeft, Link2, Save } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { componentesApi } from '@/api/endpoints'
+import { componentesApi, cursosApi, matrizesCurricularesApi } from '@/api/endpoints'
+import { loadAllPaginatedResults } from '@/utils/loadAllPaginatedResults'
 import './suap-componentes.css'
 
 const DEFAULT_VALUES = {
   curso: '',
+  matriz_curricular_id: '',
   carga_horaria: '',
   hora_aula: '',
   qtd_creditos: '',
+  modulo_numero: '',
+  modulo_nome: '',
+  ordem_no_modulo: '',
 }
 
 function getErrorMessage(error, fallback) {
@@ -36,9 +41,13 @@ function getErrorMessage(error, fallback) {
 function buildFormValues(component) {
   return {
     curso: component?.curso_id ? String(component.curso_id) : '',
+    matriz_curricular_id: component?.matriz_curricular_id ? String(component.matriz_curricular_id) : '',
     carga_horaria: component?.carga_horaria ?? '',
     hora_aula: component?.hora_aula ?? '',
     qtd_creditos: component?.qtd_creditos ?? '',
+    modulo_numero: component?.modulo_numero ?? '',
+    modulo_nome: component?.modulo_nome ?? '',
+    ordem_no_modulo: component?.ordem_no_modulo ?? '',
   }
 }
 
@@ -86,7 +95,18 @@ export default function ComponenteVinculacaoPage() {
 
   const { data: opcoes } = useQuery({
     queryKey: ['componentes', 'form-options'],
-    queryFn: () => componentesApi.list({}).then((response) => response.data?.summary?.filter_options || {}),
+    queryFn: async () => {
+      const [summary, cursos, matrizes] = await Promise.all([
+        componentesApi.list({}).then((response) => response.data?.summary?.filter_options || {}),
+        loadAllPaginatedResults((params) => cursosApi.list({ ...params, tipo_curso: 'tecnico' })),
+        loadAllPaginatedResults((params) => matrizesCurricularesApi.list(params)),
+      ])
+      return {
+        ...summary,
+        cursos,
+        matrizes,
+      }
+    },
     staleTime: 60_000,
   })
 
@@ -138,10 +158,14 @@ export default function ComponenteVinculacaoPage() {
 
   const onSubmit = handleSubmit(async (formData) => {
     const payload = {
-      curso: Number(formData.curso),
+      curso: formData.curso ? Number(formData.curso) : undefined,
+      matriz_curricular_id: formData.matriz_curricular_id ? Number(formData.matriz_curricular_id) : null,
       carga_horaria: Number(formData.carga_horaria) || 0,
       hora_aula: Number(formData.hora_aula) || 0,
       qtd_creditos: Number(formData.qtd_creditos) || 0,
+      modulo_numero: formData.modulo_numero ? Number(formData.modulo_numero) : null,
+      modulo_nome: formData.modulo_nome.trim(),
+      ordem_no_modulo: formData.ordem_no_modulo ? Number(formData.ordem_no_modulo) : null,
     }
 
     await saveMutation.mutateAsync({ id: data.id, payload })
@@ -186,10 +210,21 @@ export default function ComponenteVinculacaoPage() {
           <section className="componente-edit-theme-section">
             <div className="componente-edit-theme-section__title">Vinculação</div>
             <div className="area-curso-edit-form__rows">
-              <VinculacaoRow label="Matriz curricular" required error={errors.curso?.message}>
-                <select {...register('curso', { required: 'Selecione a matriz curricular.' })}>
+              <VinculacaoRow label="Matriz curricular" error={errors.matriz_curricular_id?.message}>
+                <select {...register('matriz_curricular_id')}>
                   <option value="">Selecione uma matriz curricular</option>
-                  {renderSelectOptions(opcoes?.matrizes_curriculares)}
+                  {(opcoes?.matrizes || []).map((matriz) => (
+                    <option key={matriz.id} value={matriz.id}>{matriz.nome}</option>
+                  ))}
+                </select>
+              </VinculacaoRow>
+
+              <VinculacaoRow label="Curso legado / oferta" required error={errors.curso?.message} hint="Mantido por segurança enquanto a migração para matrizes explícitas não termina.">
+                <select {...register('curso', { required: 'Selecione o curso legado de vínculo.' })}>
+                  <option value="">Selecione um curso técnico</option>
+                  {(opcoes?.cursos || []).map((curso) => (
+                    <option key={curso.id} value={curso.id}>{curso.nome}</option>
+                  ))}
                 </select>
               </VinculacaoRow>
 
@@ -203,6 +238,18 @@ export default function ComponenteVinculacaoPage() {
 
               <VinculacaoRow label="Quantidade de créditos" required error={errors.qtd_creditos?.message} hint="Créditos atribuídos ao componente dentro da estrutura curricular.">
                 <input type="number" min="0" {...register('qtd_creditos', { required: 'Informe a quantidade de créditos.', valueAsNumber: true })} />
+              </VinculacaoRow>
+
+              <VinculacaoRow label="Módulo" required error={errors.modulo_numero?.message} hint="Obrigatório para componentes de matriz técnica explícita.">
+                <input type="number" min="1" {...register('modulo_numero', { valueAsNumber: true })} />
+              </VinculacaoRow>
+
+              <VinculacaoRow label="Nome do módulo" error={errors.modulo_nome?.message}>
+                <input {...register('modulo_nome')} placeholder="Ex.: Módulo Básico" />
+              </VinculacaoRow>
+
+              <VinculacaoRow label="Ordem no módulo" required error={errors.ordem_no_modulo?.message} hint="Usado para ordenar os componentes dentro da matriz.">
+                <input type="number" min="1" {...register('ordem_no_modulo', { valueAsNumber: true })} />
               </VinculacaoRow>
             </div>
           </section>

@@ -306,6 +306,36 @@ def delete_moodle_courses(
     }
 
 
+def duplicate_moodle_course(
+    params: dict,
+    *,
+    persistir_espelho_local: bool = True,
+) -> dict:
+    response_payload = get_moodle_api_client().duplicate_course(params)
+    course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)
+    log = _store_writeback_log(
+        wsfunction="core_course_duplicate_course",
+        request_payload=params,
+        response_payload=response_payload,
+        moodle_course_id=course_ids[0] if len(course_ids) == 1 else None,
+    )
+    catalog_storage = None
+    synced_courses: list[dict] = []
+    if persistir_espelho_local and course_ids:
+        catalog_storage, _import_summary, synced_courses = _sync_moodle_courses_by_ids(
+            course_ids,
+            unidade_codigo='sede',
+            integrar_catalogo_interno=False,
+        )
+    return {
+        "response_payload": response_payload,
+        "log": log,
+        "course_ids": course_ids,
+        "catalog_storage": catalog_storage,
+        "synced_courses": synced_courses,
+    }
+
+
 def view_moodle_course(params: dict) -> dict:
     response_payload = get_moodle_api_client().view_course(params)
     course_ids = _extract_course_ids(response_payload) or _extract_course_ids(params)

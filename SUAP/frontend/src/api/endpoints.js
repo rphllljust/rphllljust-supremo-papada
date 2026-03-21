@@ -108,6 +108,22 @@ export const eixosTecnologicosApi = {
   patch: (id, data) => client.patch(`/cursos/eixos-tecnologicos/${id}/`, data),
   remove: (id) => client.delete(`/cursos/eixos-tecnologicos/${id}/`),
 }
+export const tiposComponentesApi = {
+  list: (params) => client.get('/cursos/tipos-componentes/', { params }),
+  get: (id) => client.get(`/cursos/tipos-componentes/${id}/`),
+  create: (data) => client.post('/cursos/tipos-componentes/', data),
+  update: (id, data) => client.put(`/cursos/tipos-componentes/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/tipos-componentes/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/tipos-componentes/${id}/`),
+}
+export const niveisEnsinoApi = {
+  list: (params) => client.get('/cursos/niveis-ensino/', { params }),
+  get: (id) => client.get(`/cursos/niveis-ensino/${id}/`),
+  create: (data) => client.post('/cursos/niveis-ensino/', data),
+  update: (id, data) => client.put(`/cursos/niveis-ensino/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/niveis-ensino/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/niveis-ensino/${id}/`),
+}
 export const componentesApi = {
   list: (params) => client.get('/cursos/componentes/', { params }),
   get: (id) => client.get(`/cursos/componentes/${id}/`),
@@ -115,6 +131,19 @@ export const componentesApi = {
   update: (id, data) => client.put(`/cursos/componentes/${id}/`, data),
   patch: (id, data) => client.patch(`/cursos/componentes/${id}/`, data),
   remove: (id) => client.delete(`/cursos/componentes/${id}/`),
+}
+export const matrizesCurricularesApi = {
+  list: (params) => client.get('/cursos/matrizes-curriculares/', { params }),
+  get: (id) => client.get(`/cursos/matrizes-curriculares/${id}/`),
+  create: (data) => client.post('/cursos/matrizes-curriculares/', data),
+  update: (id, data) => client.put(`/cursos/matrizes-curriculares/${id}/`, data),
+  patch: (id, data) => client.patch(`/cursos/matrizes-curriculares/${id}/`, data),
+  remove: (id) => client.delete(`/cursos/matrizes-curriculares/${id}/`),
+  componentes: (id, params) => client.get(`/cursos/matrizes-curriculares/${id}/componentes/`, { params }),
+  createComponente: (id, data) => client.post(`/cursos/matrizes-curriculares/${id}/componentes/`, data),
+  logs: (id) => client.get(`/cursos/matrizes-curriculares/${id}/logs/`),
+  syncTemplate: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/sincronizar-template-moodle/`, data),
+  gerarOferta: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/gerar-oferta/`, data),
 }
 export const turmasApi = {
   ...crud('turmas'),

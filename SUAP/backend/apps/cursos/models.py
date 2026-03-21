@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from apps.unidades.models import Unidade
 
 
@@ -8,6 +10,30 @@ class EixoTecnologico(models.Model):
     class Meta:
         verbose_name = 'Eixo Tecnológico'
         verbose_name_plural = 'Eixos Tecnológicos'
+        ordering = ['descricao']
+
+    def __str__(self):
+        return self.descricao
+
+
+class TipoComponente(models.Model):
+    descricao = models.CharField(max_length=200, unique=True, verbose_name='Descrição')
+
+    class Meta:
+        verbose_name = 'Tipo do Componente'
+        verbose_name_plural = 'Tipos do Componente'
+        ordering = ['descricao']
+
+    def __str__(self):
+        return self.descricao
+
+
+class NivelEnsino(models.Model):
+    descricao = models.CharField(max_length=200, unique=True, verbose_name='Descrição')
+
+    class Meta:
+        verbose_name = 'Nível de Ensino'
+        verbose_name_plural = 'Níveis de Ensino'
         ordering = ['descricao']
 
     def __str__(self):
@@ -55,15 +81,132 @@ class Curso(models.Model):
     moodle_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname do Moodle')
     eixo_tecnologico = models.CharField(max_length=200, blank=True, default='', verbose_name='Eixo Tecnológico')
     carga_horaria = models.PositiveIntegerField()
+    matriz_curricular = models.ForeignKey(
+        'MatrizCurricular',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='cursos_ofertados',
+        verbose_name='Matriz Curricular de Referência',
+    )
 
     def __str__(self):
         return self.nome
+
+
+class MatrizCurricular(models.Model):
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('VIGENTE', 'Vigente'),
+        ('ENCERRADA', 'Encerrada'),
+    ]
+
+    curso_base = models.ForeignKey(
+        Curso,
+        on_delete=models.CASCADE,
+        related_name='matrizes_curriculares',
+        verbose_name='Curso Base',
+    )
+    nome = models.CharField(max_length=200, verbose_name='Nome')
+    ano_referencia = models.PositiveIntegerField(verbose_name='Ano de Referência')
+    versao = models.CharField(max_length=40, default='1.0', verbose_name='Versão')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='RASCUNHO', verbose_name='Status')
+    ativa = models.BooleanField(default=True, verbose_name='Ativa')
+    descricao = models.TextField(blank=True, default='', verbose_name='Descrição')
+    moodle_template_course_id = models.PositiveIntegerField(null=True, blank=True, unique=True, verbose_name='ID do Curso Modelo no Moodle')
+    moodle_template_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname do Curso Modelo no Moodle')
+    moodle_template_category_id = models.PositiveIntegerField(null=True, blank=True, verbose_name='ID da Categoria do Curso Modelo no Moodle')
+    last_sync_at = models.DateTimeField(null=True, blank=True, verbose_name='Última Sincronização')
+    last_sync_status = models.CharField(max_length=20, blank=True, default='', verbose_name='Status da Última Sincronização')
+    last_sync_message = models.TextField(blank=True, default='', verbose_name='Mensagem da Última Sincronização')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Matriz Curricular'
+        verbose_name_plural = 'Matrizes Curriculares'
+        ordering = ['-ano_referencia', 'curso_base__nome', 'nome', 'versao']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['curso_base', 'ano_referencia', 'versao'],
+                name='uniq_matriz_curricular_por_versao',
+            ),
+            models.UniqueConstraint(
+                fields=['curso_base', 'ano_referencia'],
+                condition=Q(status='VIGENTE'),
+                name='uniq_matriz_curricular_vigente_por_ano',
+            ),
+        ]
+
+    def clean(self):
+        if self.curso_base_id and self.curso_base.tipo_curso != 'tecnico':
+            raise ValidationError({'curso_base': 'Matrizes curriculares explícitas são suportadas apenas para cursos técnicos nesta fase.'})
+
+        if not (self.nome or '').strip():
+            raise ValidationError({'nome': 'Informe o nome da matriz curricular.'})
+
+        if not self.ano_referencia:
+            raise ValidationError({'ano_referencia': 'Informe o ano de referência da matriz curricular.'})
+
+        if not (self.versao or '').strip():
+            raise ValidationError({'versao': 'Informe a versão da matriz curricular.'})
+
+        if not (self.status or '').strip():
+            raise ValidationError({'status': 'Informe o status da matriz curricular.'})
+
+    def save(self, *args, **kwargs):
+        self.nome = (self.nome or '').strip()
+        self.versao = (self.versao or '').strip()
+        self.last_sync_status = (self.last_sync_status or '').strip()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nome
+
+    @property
+    def total_modulos(self):
+        return (
+            self.componentes.exclude(modulo_numero__isnull=True)
+            .values('modulo_numero')
+            .distinct()
+            .count()
+        )
+
+    def componentes_por_modulo(self):
+        componentes = list(
+            self.componentes.order_by('modulo_numero', 'ordem_no_modulo', 'ordem', 'nome')
+        )
+        agrupados = []
+        atual = None
+
+        for componente in componentes:
+            chave_modulo = componente.modulo_numero or 0
+            if atual is None or atual['modulo_numero'] != chave_modulo:
+                atual = {
+                    'modulo_numero': componente.modulo_numero,
+                    'modulo_nome': componente.modulo_nome or (f'Módulo {componente.modulo_numero}' if componente.modulo_numero else 'Sem módulo'),
+                    'componentes': [],
+                }
+                agrupados.append(atual)
+
+            atual['componentes'].append(componente)
+
+        return agrupados
 
 
 class ComponenteCurricular(models.Model):
     """Componente da matriz curricular de um curso."""
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='componentes', verbose_name='Curso')
+    matriz_curricular = models.ForeignKey(
+        MatrizCurricular,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='componentes',
+        verbose_name='Matriz Curricular',
+    )
     nome = models.CharField(max_length=200, verbose_name='Nome')
     abreviatura = models.CharField(max_length=30, blank=True, default='', verbose_name='Abreviatura')
     sigla = models.CharField(max_length=30, blank=True, default='', verbose_name='Sigla')
@@ -79,15 +222,123 @@ class ComponenteCurricular(models.Model):
     sigla_qacademico = models.CharField(max_length=50, blank=True, default='', verbose_name='Sigla do Q-Acadêmico')
     observacao = models.TextField(blank=True, default='', verbose_name='Observação')
     ordem = models.PositiveIntegerField(default=1, verbose_name='Ordem')
+    modulo_numero = models.PositiveIntegerField(null=True, blank=True, verbose_name='Número do Módulo')
+    modulo_nome = models.CharField(max_length=120, blank=True, default='', verbose_name='Nome do Módulo')
+    ordem_no_modulo = models.PositiveIntegerField(null=True, blank=True, verbose_name='Ordem no Módulo')
 
     class Meta:
         verbose_name = 'Componente Curricular'
         verbose_name_plural = 'Componentes Curriculares'
-        ordering = ['ordem', 'nome']
-        unique_together = ('curso', 'nome')
+        ordering = ['modulo_numero', 'ordem_no_modulo', 'ordem', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['curso', 'nome'],
+                condition=Q(matriz_curricular__isnull=True),
+                name='uniq_componente_legado_por_curso_nome',
+            ),
+            models.UniqueConstraint(
+                fields=['matriz_curricular', 'nome'],
+                condition=Q(matriz_curricular__isnull=False),
+                name='uniq_componente_por_matriz_nome',
+            ),
+            models.UniqueConstraint(
+                fields=['matriz_curricular', 'modulo_numero', 'ordem_no_modulo'],
+                condition=Q(matriz_curricular__isnull=False) & Q(modulo_numero__isnull=False) & Q(ordem_no_modulo__isnull=False),
+                name='uniq_ordem_componente_por_modulo_matriz',
+            ),
+        ]
+
+    def clean(self):
+        errors = {}
+
+        self.nome = (self.nome or '').strip()
+        self.modulo_nome = (self.modulo_nome or '').strip()
+
+        if not self.nome:
+            errors['nome'] = 'Informe o nome do componente curricular.'
+
+        if (self.carga_horaria or 0) <= 0:
+            errors['carga_horaria'] = 'A carga horária deve ser maior que zero.'
+
+        if self.matriz_curricular_id:
+            if self.curso_id and self.matriz_curricular.curso_base_id != self.curso_id:
+                errors['matriz_curricular'] = 'A matriz curricular selecionada não pertence ao curso informado.'
+
+            if self.matriz_curricular.curso_base.tipo_curso == 'tecnico':
+                if self.modulo_numero is None:
+                    errors['modulo_numero'] = 'Informe o módulo para componentes vinculados a matrizes técnicas.'
+                if self.ordem_no_modulo is None:
+                    errors['ordem_no_modulo'] = 'Informe a ordem do componente dentro do módulo.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @property
+    def matriz_curricular_efetiva(self):
+        return self.matriz_curricular or getattr(self.curso, 'matriz_curricular', None)
+
+    @property
+    def matriz_curricular_efetiva_nome(self):
+        matriz = self.matriz_curricular_efetiva
+        if matriz is not None:
+            return matriz.nome
+        if self.curso_id:
+            return self.curso.nome
+        return ''
 
     def __str__(self):
         return f'{self.nome} ({self.curso.nome})'
+
+
+class MatrizCurricularLog(models.Model):
+    EVENTO_CHOICES = [
+        ('criacao_matriz', 'Criação de Matriz'),
+        ('migracao_componentes', 'Migração de Componentes'),
+        ('criacao_curso_modelo', 'Criação de Curso Modelo no Moodle'),
+        ('atualizacao_curso_modelo', 'Atualização de Curso Modelo no Moodle'),
+        ('criacao_oferta_real', 'Criação de Oferta Real'),
+        ('importacao_conteudo', 'Importação/Cópia de Conteúdo'),
+        ('falha_sincronizacao', 'Falha de Sincronização'),
+    ]
+    STATUS_CHOICES = [
+        ('info', 'Informação'),
+        ('success', 'Sucesso'),
+        ('error', 'Erro'),
+    ]
+
+    matriz_curricular = models.ForeignKey(
+        MatrizCurricular,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='logs',
+        verbose_name='Matriz Curricular',
+    )
+    curso = models.ForeignKey(
+        Curso,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='logs_matriz_curricular',
+        verbose_name='Curso Relacionado',
+    )
+    evento = models.CharField(max_length=40, choices=EVENTO_CHOICES, verbose_name='Evento')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='info', verbose_name='Status')
+    mensagem = models.TextField(blank=True, default='', verbose_name='Mensagem')
+    payload = models.JSONField(default=dict, blank=True, verbose_name='Payload')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Log de Matriz Curricular'
+        verbose_name_plural = 'Logs de Matrizes Curriculares'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.get_evento_display()} - {self.status}'
 
 class CalendarioLetivo(models.Model):
     """Calendário Letivo por ano/curso  Entidade Acadêmica do Class Diagram."""
