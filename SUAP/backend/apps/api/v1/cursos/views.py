@@ -233,14 +233,17 @@ class CursoListApiView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Curso.objects.select_related("unidade", "area_curso").order_by("nome")
         search = self.request.query_params.get("search", "").strip()
+        tipo_curso = self.request.query_params.get("tipo_curso", "").strip().lower()
         apenas_tecnicos = self.request.query_params.get("apenas_tecnicos", "").strip().lower()
         apenas_superiores = self.request.query_params.get("apenas_superiores", "").strip().lower()
         area_curso = self.request.query_params.get("area_curso", "").strip()
 
+        if tipo_curso:
+            queryset = queryset.filter(tipo_curso=tipo_curso)
         if apenas_tecnicos in {"1", "true", "sim", "yes"}:
-            queryset = queryset.exclude(eixo_tecnologico="")
+            queryset = queryset.filter(tipo_curso="tecnico")
         if apenas_superiores in {"1", "true", "sim", "yes"}:
-            queryset = queryset.filter(eixo_tecnologico="")
+            queryset = queryset.filter(tipo_curso="itinerante")
         if area_curso:
             queryset = queryset.filter(area_curso_id=area_curso)
 

@@ -3359,6 +3359,175 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   border-radius: 999px;
 }
 
+.cursos-sync-card,
+.moodle-settings-card {
+  border: 1px solid var(--color-gray-200);
+}
+
+.cursos-sync-card {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.cursos-sync-card__header,
+.moodle-settings-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cursos-sync-card__meta,
+.cursos-sync-card__stats,
+.moodle-settings-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.cursos-sync-card__pill,
+.moodle-settings-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f3ee;
+  color: #5a4635;
+}
+
+.cursos-sync-card__stats span,
+.cursos-sync-card__hint {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fcfaf7;
+  border: 1px solid #e5ddd3;
+  color: #5c4a3a;
+}
+
+.moodle-settings-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.moodle-settings-card {
+  display: grid;
+  gap: 16px;
+}
+
+.moodle-settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.moodle-settings-form-grid--compact {
+  align-items: start;
+}
+
+.moodle-settings-field,
+.moodle-settings-toggle {
+  display: grid;
+  gap: 6px;
+}
+
+.moodle-settings-field--full {
+  grid-column: 1 / -1;
+}
+
+.moodle-settings-field input,
+.moodle-settings-field select,
+.moodle-settings-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-300);
+  background: #fff;
+}
+
+.moodle-settings-field textarea {
+  min-height: 170px;
+  resize: vertical;
+  font-family: monospace;
+}
+
+.moodle-settings-toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  padding-top: 28px;
+}
+
+.moodle-settings-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.moodle-settings-action {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ded4c8;
+  background: linear-gradient(180deg, #fffdf9 0%, #f8f1e8 100%);
+  color: #4d3b2d;
+}
+
+.moodle-settings-action:hover {
+  border-color: #c4ae94;
+  background: linear-gradient(180deg, #fffaf2 0%, #f2e6d7 100%);
+}
+
+.moodle-settings-action span {
+  color: #6a5747;
+  font-size: 13px;
+}
+
+.moodle-settings-response-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.moodle-settings-response-status,
+.moodle-settings-response-payload {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e0d6ca;
+  background: #fcfaf7;
+}
+
+.moodle-settings-response-status {
+  display: grid;
+  gap: 6px;
+}
+
+.moodle-settings-response-status--ok {
+  background: #f2fbf4;
+  border-color: #c6e3cc;
+}
+
+.moodle-settings-response-status--error {
+  background: #fff5f4;
+  border-color: #efcbc7;
+}
+
+.moodle-settings-response-status--idle {
+  background: #fcfaf7;
+}
+
+.moodle-settings-stat {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.moodle-settings-stat strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
 @media (max-width: 1100px) {
   .profile-summary-card {
     grid-template-columns: 1fr;
@@ -3397,11 +3566,16 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   .area-cursos-page__header .page-header__actions,
   .area-cursos-filters-card__body,
   .area-cursos-filter-field,
-  .cursos-superiores-filters-grid {
+  .cursos-superiores-filters-grid,
+  .cursos-sync-card__header,
+  .moodle-settings-card__header,
+  .moodle-settings-response-grid {
     width: 100%;
   }
 
-  .cursos-superiores-filters-grid {
+  .cursos-superiores-filters-grid,
+  .moodle-settings-form-grid,
+  .moodle-settings-response-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3426,7 +3600,10 @@ td.empty-state { text-align: center; color: var(--color-gray-400); padding: 32px
   .componente-summary-grid,
   .componente-edit-form__grid,
   .componente-edit-form__grid--wide,
-  .area-curso-edit-row {
+  .area-curso-edit-row,
+  .cursos-sync-card__meta,
+  .cursos-sync-card__stats,
+  .moodle-settings-stats {
     grid-template-columns: 1fr;
   }
 

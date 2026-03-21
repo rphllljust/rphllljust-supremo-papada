@@ -98,6 +98,7 @@ def delete_moodle_categories(params: dict) -> dict | list:
 import logging
 from dataclasses import dataclass
 
+from django.conf import settings
 from django.db import transaction
 
 from apps.cursos.models import Curso
@@ -105,6 +106,7 @@ from apps.unidades.models import Unidade
 
 from .client import MoodleApiClient
 from .models import MoodleCategory, MoodleCourse, MoodleGradeSnapshot, MoodleWritebackLog
+from .schemas import MoodleApiSettings
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +138,13 @@ class MoodleCourseDeletionSummary:
     requested_ids: list[int]
     removed_local_records: int = 0
     unlinked_internal_courses: int = 0
+
+
+MOODLE_COURSE_ROOT_CATEGORY_IDS = {
+    "formacao_inicial": [399],
+    "tecnico": [387],
+    "itinerante": [415],
+}
 
 
 def get_moodle_api_client() -> MoodleApiClient:
@@ -184,23 +193,43 @@ def search_moodle_courses(params: dict) -> dict:
 
 
 def import_moodle_courses_to_formacao_inicial(unidade_codigo: str = "sede") -> MoodleCourseImportSummary:
+    return import_moodle_courses_by_type(
+        unidade_codigo=unidade_codigo,
+        tipo_curso="formacao_inicial",
+    )
+
+
+def import_moodle_courses_by_type(
+    unidade_codigo: str = "sede",
+    *,
+    tipo_curso: str = "formacao_inicial",
+    root_category_ids: list[int] | tuple[int, ...] | None = None,
+) -> MoodleCourseImportSummary:
     unidade = _get_unidade(unidade_codigo)
-    storage_summary, courses = sync_moodle_catalog_data()
-    return _import_moodle_course_payloads(courses, unidade=unidade, catalog_storage=storage_summary)
+    normalized_tipo_curso = _normalize_course_type(tipo_curso)
+    resolved_root_category_ids = _resolve_root_category_ids(normalized_tipo_curso, root_category_ids)
+
+    categories = get_moodle_categories()
+    courses = get_moodle_courses()
+    storage_summary = _persist_moodle_catalog_payloads(categories, courses)
+    filtered_courses = _filter_courses_by_root_categories(
+        courses,
+        categories,
+        resolved_root_category_ids,
+    )
+
+    return _import_moodle_course_payloads(
+        filtered_courses,
+        unidade=unidade,
+        catalog_storage=storage_summary,
+        tipo_curso=normalized_tipo_curso,
+    )
 
 
 def sync_moodle_catalog_data(category_criteria: dict | None = None) -> tuple[MoodleCatalogStorageSummary, list[dict]]:
     categories = get_moodle_categories(criteria=category_criteria)
     courses = get_moodle_courses()
-    summary = MoodleCatalogStorageSummary(
-        categories_received=len(categories),
-        courses_received=len(courses),
-    )
-
-    with transaction.atomic():
-        category_map = _store_moodle_categories(categories, summary)
-        _store_moodle_courses(courses, category_map, summary)
-
+    summary = _persist_moodle_catalog_payloads(categories, courses)
     return summary, courses
 
 
@@ -375,7 +404,9 @@ def _import_moodle_course_payloads(
     *,
     unidade: Unidade,
     catalog_storage: MoodleCatalogStorageSummary | None = None,
+    tipo_curso: str = "formacao_inicial",
 ) -> MoodleCourseImportSummary:
+    normalized_tipo_curso = _normalize_course_type(tipo_curso)
     summary = MoodleCourseImportSummary(
         unidade_codigo=unidade.codigo,
         total_received=len(courses),
@@ -397,14 +428,27 @@ def _import_moodle_course_payloads(
                     unidade=unidade,
                     nome__iexact=(course_payload.get("fullname") or "").strip(),
                     moodle_course_id__isnull=True,
+                    tipo_curso=normalized_tipo_curso,
                 ).first()
                 linked_existing = target_course is not None
 
             if target_course is None:
-                target_course = Curso.objects.create(**_build_new_course_data(course_payload, unidade))
+                target_course = Curso.objects.create(
+                    **_build_new_course_data(
+                        course_payload,
+                        unidade,
+                        tipo_curso=normalized_tipo_curso,
+                    )
+                )
                 summary.created += 1
             else:
-                _update_existing_course_from_moodle(target_course, course_payload, unidade=unidade, linked_existing=linked_existing)
+                _update_existing_course_from_moodle(
+                    target_course,
+                    course_payload,
+                    unidade=unidade,
+                    linked_existing=linked_existing,
+                    tipo_curso=normalized_tipo_curso,
+                )
 
                 if linked_existing:
                     summary.linked_existing += 1
@@ -429,8 +473,9 @@ def _resolve_sigla(course_payload: dict) -> str:
     return raw_sigla[:16]
 
 
-def _build_new_course_data(course_payload: dict, unidade: Unidade) -> dict:
+def _build_new_course_data(course_payload: dict, unidade: Unidade, *, tipo_curso: str) -> dict:
     return {
+        "tipo_curso": tipo_curso,
         "unidade": unidade,
         "area_curso": None,
         "nome": (course_payload.get("fullname") or "").strip(),
@@ -442,7 +487,15 @@ def _build_new_course_data(course_payload: dict, unidade: Unidade) -> dict:
     }
 
 
-def _update_existing_course_from_moodle(target_course: Curso, course_payload: dict, *, unidade: Unidade, linked_existing: bool):
+def _update_existing_course_from_moodle(
+    target_course: Curso,
+    course_payload: dict,
+    *,
+    unidade: Unidade,
+    linked_existing: bool,
+    tipo_curso: str,
+):
+    target_course.tipo_curso = tipo_curso
     target_course.moodle_course_id = course_payload["id"]
     target_course.moodle_shortname = (course_payload.get("shortname") or "").strip()
     target_course.nome = (course_payload.get("fullname") or target_course.nome or "").strip()
@@ -488,8 +541,16 @@ def _store_moodle_categories(categories: list[dict], summary: MoodleCatalogStora
         if not parent_id:
             continue
 
-        category = category_map.get(category_payload["id"])
-        parent = category_map.get(parent_id)
+        category = category_map.get(category_payload["id"]) or MoodleCategory.objects.filter(
+            moodle_category_id=category_payload["id"]
+        ).first()
+
+        # Prefer the freshly-created/updated parent from the in-memory map; if absent,
+        # try to resolve an existing local MoodleCategory by moodle_category_id so that
+        # creating a subcategory (where the parent already exists locally) correctly
+        # links the new child to its parent.
+        parent = category_map.get(parent_id) or MoodleCategory.objects.filter(moodle_category_id=parent_id).first()
+
         if category is None or parent is None or category.parent_id == parent.id:
             continue
 
@@ -536,6 +597,83 @@ def _store_moodle_courses(courses: list[dict], category_map: dict[int, MoodleCat
             summary.courses_updated += 1
         if linked_course is not None:
             summary.courses_linked_internal += 1
+
+
+def _persist_moodle_catalog_payloads(
+    categories: list[dict],
+    courses: list[dict],
+) -> MoodleCatalogStorageSummary:
+    summary = MoodleCatalogStorageSummary(
+        categories_received=len(categories),
+        courses_received=len(courses),
+    )
+
+    with transaction.atomic():
+        category_map = _store_moodle_categories(categories, summary)
+        _store_moodle_courses(courses, category_map, summary)
+
+    return summary
+
+
+def _normalize_course_type(tipo_curso: str | None) -> str:
+    normalized_tipo_curso = (tipo_curso or "formacao_inicial").strip().lower()
+    if normalized_tipo_curso not in MOODLE_COURSE_ROOT_CATEGORY_IDS:
+        raise ValueError(f"Tipo de curso '{normalized_tipo_curso}' nao suportado para sincronizacao Moodle.")
+    return normalized_tipo_curso
+
+
+def _resolve_root_category_ids(
+    tipo_curso: str,
+    root_category_ids: list[int] | tuple[int, ...] | None,
+) -> list[int]:
+    if root_category_ids:
+        normalized_ids = sorted({int(category_id) for category_id in root_category_ids if category_id is not None})
+        if normalized_ids:
+            return normalized_ids
+
+    return list(MOODLE_COURSE_ROOT_CATEGORY_IDS[_normalize_course_type(tipo_curso)])
+
+
+def _collect_branch_category_ids(categories: list[dict], root_category_ids: list[int]) -> set[int]:
+    normalized_roots = {int(category_id) for category_id in root_category_ids if category_id is not None}
+    branch_ids: set[int] = set(normalized_roots)
+
+    for category_payload in categories:
+        category_id = _parse_int(category_payload.get("id"))
+        if category_id is None:
+            continue
+
+        path_ids = {
+            parsed_id
+            for parsed_id in (_parse_int(chunk) for chunk in str(category_payload.get("path") or "").split("/"))
+            if parsed_id is not None
+        }
+
+        if category_id in normalized_roots or normalized_roots.intersection(path_ids):
+            branch_ids.add(category_id)
+
+    return branch_ids
+
+
+def _filter_courses_by_root_categories(
+    courses: list[dict],
+    categories: list[dict],
+    root_category_ids: list[int],
+) -> list[dict]:
+    if not root_category_ids:
+        return list(courses)
+
+    branch_category_ids = _collect_branch_category_ids(categories, root_category_ids)
+    if not branch_category_ids:
+        return []
+
+    filtered_courses = []
+    for course_payload in courses:
+        category_id = _parse_int(course_payload.get("categoryid"))
+        if category_id in branch_category_ids:
+            filtered_courses.append(course_payload)
+
+    return filtered_courses
 
 
 def _execute_course_write_operation(
@@ -592,19 +730,16 @@ def _sync_moodle_courses_by_ids(
         return None, None, []
 
     categories = get_moodle_categories()
-    summary = MoodleCatalogStorageSummary(
-        categories_received=len(categories),
-        courses_received=len(courses),
-    )
-
-    with transaction.atomic():
-        category_map = _store_moodle_categories(categories, summary)
-        _store_moodle_courses(courses, category_map, summary)
+    summary = _persist_moodle_catalog_payloads(categories, courses)
 
     import_summary = None
     if integrar_catalogo_interno:
         unidade = _get_unidade(unidade_codigo)
-        import_summary = _import_moodle_course_payloads(courses, unidade=unidade, catalog_storage=summary)
+        import_summary = _import_moodle_course_payloads(
+            courses,
+            unidade=unidade,
+            catalog_storage=summary,
+        )
 
     return summary, import_summary, courses
 
@@ -696,6 +831,47 @@ def _extract_course_ids(payload) -> list[int]:
 
     collect(payload)
     return sorted(set(course_ids))
+
+
+def _extract_category_ids(payload) -> list[int]:
+    ids: list[int] = []
+
+    def collect(value):
+        if isinstance(value, list):
+            for item in value:
+                collect(item)
+            return
+
+        if isinstance(value, dict):
+            if value.get("id") not in (None, ""):
+                parsed = _parse_int(value.get("id"))
+                if parsed is not None:
+                    ids.append(parsed)
+            if isinstance(value.get("categories"), list):
+                collect(value.get("categories"))
+
+    collect(payload)
+    return sorted(set(ids))
+
+
+def persist_moodle_categories(categories: list[dict]) -> MoodleCatalogStorageSummary:
+    """Persist a list of Moodle category payloads into local mirror and
+    return a summary object describing counts created/updated.
+    """
+    summary = MoodleCatalogStorageSummary(categories_received=len(categories))
+    with transaction.atomic():
+        _store_moodle_categories(categories, summary)
+    return summary
+
+
+def remove_local_categories_by_ids(category_ids: list[int]) -> int:
+    """Remove local `MoodleCategory` records for the given Moodle category ids.
+
+    Returns the number of deleted records.
+    """
+    if not category_ids:
+        return 0
+    return MoodleCategory.objects.filter(moodle_category_id__in=category_ids).delete()[0]
 
 
 def _extract_int(payload: dict, key: str) -> int | None:

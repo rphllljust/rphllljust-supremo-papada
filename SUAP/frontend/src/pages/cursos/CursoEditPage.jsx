@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import { areasCursoApi, cursosApi, eixosTecnologicosApi, unidadesApi } from '@/api/endpoints'
+import { areasCursoApi, cursosApi, eixosTecnologicosApi, unidadesApi, moodleIntegrationApi } from '@/api/endpoints'
 import { loadAllPaginatedResults } from '@/utils/loadAllPaginatedResults'
 
 const DEFAULT_VALUES = {
@@ -15,6 +15,7 @@ const DEFAULT_VALUES = {
   area_curso: '',
   eixo_tecnologico: '',
   carga_horaria: '',
+  moodle_category: '',
 }
 
 function getErrorMessage(error, fallback) {
@@ -44,6 +45,7 @@ export default function CursoEditPage() {
   const isCreateMode = !cursoId
   const isTechnicalCatalog = location.pathname.includes('/ensino/cursotecnico')
   const isInitialCatalog = location.pathname.includes('/ensino/cursoinicial')
+  const catalogCourseType = isTechnicalCatalog ? 'tecnico' : (isInitialCatalog ? 'formacao_inicial' : 'itinerante')
   const catalogMeta = isTechnicalCatalog
     ? {
         listPath: '/ensino/cursotecnico/',
@@ -68,14 +70,25 @@ export default function CursoEditPage() {
           editPathBuilder: (savedId) => `/ensino/cursoitinerante/${savedId}/editar`,
           titleCreate: 'Novo curso itinerante',
           titleList: 'Cursos itinerantes',
-          optionsScope: 'superior',
+          optionsScope: 'itinerante',
         }
-  const listPath = catalogMeta.listPath
+  // Se veio de um fluxo externo (ex: moodle-categorias-cursos), retorna para lá
+  const fromPath = location.state?.from
+  const listPath = fromPath || catalogMeta.listPath
+  const openedFromMoodlePanel = Boolean(
+    fromPath
+      && (
+        String(fromPath).includes('/ensino/moodle-categorias-cursos')
+        || String(fromPath).includes('/ti/moodle/catalogo')
+      )
+  )
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
@@ -104,6 +117,42 @@ export default function CursoEditPage() {
     staleTime: 60_000,
   })
 
+  // Sempre registrar o hook de categorias do Moodle aqui para manter a ordem de hooks
+  const { data: moodleCatsResp } = useQuery({ queryKey: ['moodle-categorias'], queryFn: () => moodleIntegrationApi.getCategorias(), enabled: isInitialCatalog || openedFromMoodlePanel, staleTime: 5 * 60 * 1000 })
+
+  const { data: moodleCourseMirrorResp } = useQuery({
+    queryKey: ['moodle-cursos', 'edit-detail', data?.moodle_course_id],
+    queryFn: () => moodleIntegrationApi.getCursosByField('id', data.moodle_course_id).then((response) => response.data),
+    enabled: !isCreateMode && isInitialCatalog && Boolean(data?.moodle_course_id),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const moodleCategories = Array.isArray(moodleCatsResp?.data)
+    ? moodleCatsResp.data
+    : Array.isArray(moodleCatsResp?.data?.results)
+      ? moodleCatsResp.data.results
+      : Array.isArray(moodleCatsResp)
+        ? moodleCatsResp
+        : Array.isArray(moodleCatsResp?.results)
+          ? moodleCatsResp.results
+          : []
+  const mirroredCourse = Array.isArray(moodleCourseMirrorResp?.data)
+    ? moodleCourseMirrorResp.data[0]
+    : Array.isArray(moodleCourseMirrorResp?.results)
+      ? moodleCourseMirrorResp.results[0]
+      : Array.isArray(moodleCourseMirrorResp)
+        ? moodleCourseMirrorResp[0]
+        : moodleCourseMirrorResp?.data?.[0] || moodleCourseMirrorResp?.results?.[0] || null
+  const currentMoodleCategoryId = Number(location.state?.categoryId || mirroredCourse?.categoryid || 0)
+  const selectedMoodleCategory = useMemo(() => {
+    const selectedId = currentMoodleCategoryId
+    if (!selectedId || moodleCategories.length === 0) {
+      return null
+    }
+
+    return moodleCategories.find((category) => Number(category?.id) === selectedId) || null
+  }, [currentMoodleCategoryId, moodleCategories])
+
   useEffect(() => {
     if (!data) {
       return
@@ -116,8 +165,25 @@ export default function CursoEditPage() {
       area_curso: data.area_curso ? String(data.area_curso) : '',
       eixo_tecnologico: data.eixo_tecnologico || '',
       carga_horaria: typeof data.carga_horaria === 'number' ? String(data.carga_horaria) : '',
+      moodle_category: '',
     })
   }, [data, reset])
+
+  useEffect(() => {
+    if (!currentMoodleCategoryId) {
+      return
+    }
+
+    if (String(getValues('moodle_category') || '').trim()) {
+      return
+    }
+
+    setValue('moodle_category', String(currentMoodleCategoryId), {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    })
+  }, [currentMoodleCategoryId, getValues, setValue])
 
   const saveMutation = useMutation({
     mutationFn: ({ id, payload }) => (id ? cursosApi.patch(id, payload) : cursosApi.create(payload)),
@@ -129,7 +195,13 @@ export default function CursoEditPage() {
         savedId ? queryClient.invalidateQueries({ queryKey: ['curso'] }) : Promise.resolve(),
       ])
 
-      toast.success(isCreateMode ? 'Curso salvo com sucesso.' : 'Curso atualizado com sucesso.')
+      toast.success(
+        isCreateMode
+          ? 'Curso salvo com sucesso.'
+          : isInitialCatalog
+            ? 'Curso sincronizado com o Moodle e salvo com sucesso.'
+            : 'Curso atualizado com sucesso.'
+      )
 
       if (submitModeRef.current === 'add') {
         reset(DEFAULT_VALUES)
@@ -193,15 +265,86 @@ export default function CursoEditPage() {
   const unidades = optionsData?.unidades || []
   const areas = optionsData?.areas || []
   const eixos = optionsData?.eixos || []
+  const showMoodleCategoryField = isInitialCatalog || (!isCreateMode && openedFromMoodlePanel)
 
   const onSubmit = handleSubmit(async (formData) => {
     const payload = {
+      tipo_curso: catalogCourseType,
       nome: formData.nome.trim(),
       sigla: formData.sigla.trim(),
       unidade: Number(formData.unidade),
-      area_curso: formData.area_curso ? Number(formData.area_curso) : null,
+      area_curso: Number(formData.area_curso),
       eixo_tecnologico: formData.eixo_tecnologico.trim(),
       carga_horaria: Number(formData.carga_horaria),
+    }
+
+    // When creating a course initial, create it in Moodle first so the category binding is real.
+    const initialCategoryId = Number(formData.moodle_category || currentMoodleCategoryId || 0)
+
+    if (isInitialCatalog && !initialCategoryId) {
+      toast.error('Selecione uma categoria do Moodle antes de criar ou atualizar o curso.')
+      return
+    }
+
+    if (isCreateMode && showMoodleCategoryField) {
+      const basePayload = {
+        unidade_codigo: 'sede',
+        persistir_espelho_local: true,
+        integrar_catalogo_interno: true,
+        params: {
+          courses: [
+            {
+              fullname: formData.nome.trim(),
+              shortname: formData.sigla.trim() || formData.nome.trim().slice(0, 16),
+              categoryid: initialCategoryId,
+              idnumber: formData.sigla.trim(),
+              summary: formData.nome.trim(),
+            },
+          ],
+        },
+      }
+
+      try {
+        await moodleIntegrationApi.createCursos(basePayload)
+        toast.success('Curso criado no Moodle e importado para o SUAP.')
+
+        queryClient.invalidateQueries({ queryKey: ['moodle-cursos'] })
+        queryClient.invalidateQueries({ queryKey: ['moodle-categorias'] })
+        queryClient.invalidateQueries({ queryKey: ['cursos'] })
+        navigate(location.state?.from || '/ti/moodle/catalogo/')
+        return
+      } catch (err) {
+        const message = err?.response?.data?.detail || err?.message || 'Erro ao criar/atualizar curso no Moodle.'
+        toast.error(String(message))
+        return
+      }
+    }
+
+    if (isInitialCatalog && !isCreateMode) {
+      const moodleCourseId = Number(data?.moodle_course_id || 0)
+      const basePayload = {
+        unidade_codigo: 'sede',
+        persistir_espelho_local: true,
+        integrar_catalogo_interno: true,
+        params: {
+          courses: [
+            {
+              fullname: formData.nome.trim(),
+              shortname: formData.sigla.trim() || formData.nome.trim().slice(0, 16),
+              categoryid: initialCategoryId || undefined,
+              idnumber: formData.sigla.trim(),
+              summary: formData.nome.trim(),
+            },
+          ],
+        },
+      }
+
+      if (moodleCourseId) {
+        basePayload.params.courses[0].id = moodleCourseId
+        await moodleIntegrationApi.updateCursos(basePayload)
+      } else {
+        await moodleIntegrationApi.createCursos(basePayload)
+      }
     }
 
     await saveMutation.mutateAsync({ id: data?.id, payload })
@@ -220,7 +363,7 @@ export default function CursoEditPage() {
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
-        <Link to={listPath}>{catalogMeta.titleList}</Link>
+        <Link to={catalogMeta.listPath}>{catalogMeta.titleList}</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
         <span>{isCreateMode ? title : `Editar ${title}`}</span>
       </nav>
@@ -231,7 +374,7 @@ export default function CursoEditPage() {
         </div>
         <div className="page-header__actions">
           <button type="button" className="btn btn--outline" onClick={() => navigate(listPath)}>
-            <ArrowLeft size={16} /> Voltar para listagem
+            <ArrowLeft size={16} /> Voltar
           </button>
         </div>
       </div>
@@ -247,9 +390,10 @@ export default function CursoEditPage() {
           </div>
 
           <div className="area-curso-edit-row">
-            <label className="area-curso-edit-row__label">Sigla</label>
+            <label className="area-curso-edit-row__label">* Sigla</label>
             <div className="area-curso-edit-row__field">
-              <input {...register('sigla')} />
+              <input {...register('sigla', { required: 'Informe a sigla do curso.' })} />
+              {errors.sigla ? <span className="form-field__error">{errors.sigla.message}</span> : null}
             </div>
           </div>
 
@@ -267,26 +411,27 @@ export default function CursoEditPage() {
           </div>
 
           <div className="area-curso-edit-row">
-            <label className="area-curso-edit-row__label">Área do curso</label>
+            <label className="area-curso-edit-row__label">* Área do curso</label>
             <div className="area-curso-edit-row__field">
-              <select {...register('area_curso')}>
-                <option value="">Sem área vinculada</option>
+              <select {...register('area_curso', { required: 'Selecione a área do curso.' })}>
+                <option value="">Selecione</option>
                 {areas.map((item) => (
                   <option key={item.id} value={item.id}>{item.descricao}</option>
                 ))}
               </select>
+              {errors.area_curso ? <span className="form-field__error">{errors.area_curso.message}</span> : null}
             </div>
           </div>
 
           <div className="area-curso-edit-row">
-            <label className="area-curso-edit-row__label">{isTechnicalCatalog ? '* Eixo tecnológico' : 'Eixo tecnológico'}</label>
+            <label className="area-curso-edit-row__label">* Eixo tecnológico</label>
             <div className="area-curso-edit-row__field">
               <select
                 {...register('eixo_tecnologico', {
-                  validate: (value) => (isTechnicalCatalog && !value.trim() ? 'Selecione o eixo tecnológico.' : true),
+                  required: 'Selecione o eixo tecnológico.',
                 })}
               >
-                <option value="">{isTechnicalCatalog ? 'Selecione' : 'Sem eixo tecnológico'}</option>
+                <option value="">Selecione</option>
                 {eixos.map((item) => (
                   <option key={item.id} value={item.descricao}>{item.descricao}</option>
                 ))}
@@ -302,6 +447,31 @@ export default function CursoEditPage() {
               {errors.carga_horaria ? <span className="form-field__error">{errors.carga_horaria.message}</span> : null}
             </div>
           </div>
+
+          {showMoodleCategoryField ? (
+            <div className="area-curso-edit-row">
+              <label className="area-curso-edit-row__label">* Vínculo Categoria Moodle</label>
+              <div className="area-curso-edit-row__field">
+                <select
+                  {...register('moodle_category', {
+                    required: 'Selecione uma categoria do Moodle.',
+                    validate: (value) => (Number(value || 0) > 0 ? true : 'Selecione uma categoria do Moodle.'),
+                  })}
+                >
+                  <option value="">— Selecionar categoria —</option>
+                  {moodleCategories.map((mc) => (
+                    <option key={mc.id} value={mc.id}>{mc.name || mc.nome || `ID ${mc.id}`}</option>
+                  ))}
+                </select>
+                {selectedMoodleCategory ? (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
+                    Categoria selecionada: <strong>{selectedMoodleCategory.name || selectedMoodleCategory.nome || `ID ${selectedMoodleCategory.id}`}</strong>
+                  </div>
+                ) : null}
+                {errors.moodle_category ? <span className="form-field__error">{errors.moodle_category.message}</span> : null}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="componente-edit-form__actions">

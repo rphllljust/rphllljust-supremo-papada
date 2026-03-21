@@ -82,6 +82,32 @@ export default function MoodleCursosPanel() {
     ])
   }
 
+  function extractArrayPayload(response) {
+    const payload = response?.data
+    if (!payload) return []
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload.results)) return payload.results
+    if (Array.isArray(payload.data)) return payload.data
+    return []
+  }
+
+  const updateCachedCourses = (updater) => {
+    queryClient.setQueryData(['moodle-cursos'], (old) => {
+      const current = extractArrayPayload(old)
+      const next = updater(Array.isArray(current) ? current.slice() : [])
+      if (!old) return { data: { results: next } }
+      const cloned = { ...old }
+      if (Array.isArray(cloned.data)) {
+        cloned.data = next
+      } else if (cloned.data && typeof cloned.data === 'object') {
+        cloned.data = { ...(cloned.data || {}), results: next }
+      } else {
+        cloned.data = { results: next }
+      }
+      return cloned
+    })
+  }
+
   const syncCategoriasMutation = useMutation({
     mutationFn: () => moodleIntegrationApi.syncCategorias({}),
     onSuccess: (response) => {
@@ -148,39 +174,101 @@ export default function MoodleCursosPanel() {
 
   const createCoursesMutation = useMutation({
     mutationFn: (payload) => moodleIntegrationApi.createCursos(payload),
-    onSuccess: async (response) => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['moodle-cursos'] })
+      const snapshot = queryClient.getQueryData(['moodle-cursos'])
+      return { snapshot }
+    },
+    onSuccess: async (response, variables, context) => {
       setWriteResult({ title: 'Curso criado no Moodle', payload: response.data })
       setCreateForm(DEFAULT_CREATE_FORM)
-      await invalidateCourses()
+      try {
+        const synced = response.data?.results || response.data?.synced_courses || []
+        if (Array.isArray(synced) && synced.length) {
+          updateCachedCourses((current) => {
+            const map = new Map(current.map((c) => [Number(c.id), c]))
+            synced.forEach((c) => map.set(Number(c.id), c))
+            return Array.from(map.values())
+          })
+        } else {
+          await invalidateCourses()
+        }
+      } catch (err) {
+        await invalidateCourses()
+      }
       toast.success('Curso criado no Moodle e refletido no SUAP.')
     },
-    onError: (error) => {
+    onError: async (error, variables, context) => {
+      if (context?.snapshot) queryClient.setQueryData(['moodle-cursos'], context.snapshot)
       toast.error(getErrorMessage(error, 'Nao foi possivel criar o curso no Moodle.'))
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['moodle-cursos'] })
     },
   })
 
   const updateCoursesMutation = useMutation({
     mutationFn: (payload) => moodleIntegrationApi.updateCursos(payload),
-    onSuccess: async (response) => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['moodle-cursos'] })
+      const snapshot = queryClient.getQueryData(['moodle-cursos'])
+      return { snapshot }
+    },
+    onSuccess: async (response, variables, context) => {
       setWriteResult({ title: 'Curso atualizado no Moodle', payload: response.data })
-      await invalidateCourses()
+      try {
+        const synced = response.data?.results || response.data?.synced_courses || []
+        if (Array.isArray(synced) && synced.length) {
+          updateCachedCourses((current) => {
+            const map = new Map(current.map((c) => [Number(c.id), c]))
+            synced.forEach((c) => map.set(Number(c.id), c))
+            return Array.from(map.values())
+          })
+        } else {
+          await invalidateCourses()
+        }
+      } catch (err) {
+        await invalidateCourses()
+      }
       toast.success('Curso atualizado no Moodle e sincronizado com o SUAP.')
     },
-    onError: (error) => {
+    onError: async (error, variables, context) => {
+      if (context?.snapshot) queryClient.setQueryData(['moodle-cursos'], context.snapshot)
       toast.error(getErrorMessage(error, 'Nao foi possivel atualizar o curso no Moodle.'))
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['moodle-cursos'] })
     },
   })
 
   const deleteCoursesMutation = useMutation({
     mutationFn: (payload) => moodleIntegrationApi.deleteCursos(payload),
-    onSuccess: async (response) => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['moodle-cursos'] })
+      const snapshot = queryClient.getQueryData(['moodle-cursos'])
+      return { snapshot }
+    },
+    onSuccess: async (response, variables, context) => {
       setWriteResult({ title: 'Cursos excluidos no Moodle', payload: response.data })
       setDeleteIds('')
-      await invalidateCourses()
+      try {
+        const requested = response.data?.deletion_summary?.requested_ids || []
+        if (Array.isArray(requested) && requested.length) {
+          updateCachedCourses((current) => current.filter((c) => !requested.includes(Number(c.id))))
+        } else {
+          await invalidateCourses()
+        }
+      } catch (err) {
+        await invalidateCourses()
+      }
       toast.success('Cursos excluidos no Moodle e desvinculados localmente.')
     },
-    onError: (error) => {
+    onError: async (error, variables, context) => {
+      if (context?.snapshot) queryClient.setQueryData(['moodle-cursos'], context.snapshot)
       toast.error(getErrorMessage(error, 'Nao foi possivel excluir os cursos no Moodle.'))
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['moodle-cursos'] })
     },
   })
 

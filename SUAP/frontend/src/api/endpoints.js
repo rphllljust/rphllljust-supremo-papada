@@ -69,13 +69,13 @@ export const cursosApi = {
   calendarios: (id) => client.get(`/cursos/${id}/calendarios/`),
 }
 export const moodleIntegrationApi = {
-  listCursos: (params) => client.get('/integracoes/moodle/cursos/', { params }),
-  importCursos: (data) => client.post('/integracoes/moodle/cursos/', data),
+  listCursos: (params) => client.get('/integracoes/moodle/espelho/cursos/', { params }),
+  importCursos: (data) => client.post('/integracoes/moodle/sincronizar/cursos/', data),
   getCursosByField: (field, value, params = {}) => client.get('/integracoes/moodle/cursos/', {
     params: { ...params, action: 'core_course_get_courses_by_field', field, value },
   }),
   getRecentCursos: (userid, params = {}) => client.get('/integracoes/moodle/cursos/', {
-    params: { ...params, action: 'core_course_get_recent_courses', userid },
+    params: { ...params, action: 'core_course_get_recent_courses', userid, source: 'live' },
   }),
   searchCursos: (criteriavalue, params = {}) => client.get('/integracoes/moodle/cursos/', {
     params: { ...params, action: 'core_course_search_courses', criterianame: 'search', criteriavalue },
@@ -84,8 +84,8 @@ export const moodleIntegrationApi = {
   updateCursos: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_update_courses' }),
   deleteCursos: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_delete_courses' }),
   viewCurso: (data) => client.post('/integracoes/moodle/cursos/', { ...data, action: 'core_course_view_course' }),
-  syncCategorias: (data) => client.post('/integracoes/moodle/categorias/', data),
-  getCategorias: (params = {}) => client.get('/integracoes/moodle/categorias/', { params }),
+  syncCategorias: (data) => client.post('/integracoes/moodle/sincronizar/categorias/', data),
+  getCategorias: (params = {}) => client.get('/integracoes/moodle/espelho/categorias/', { params }),
   createCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_create_categories' }),
   updateCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_update_categories' }),
   deleteCategorias: (data) => client.post('/integracoes/moodle/categorias/', { ...data, action: 'core_course_delete_categories' }),
@@ -158,6 +158,7 @@ export const conveniosApi = crud('convenios')
 export const estagiosApi = crud('estagios')
 export const moodleCategoriesApi = {
   resetAndSync: () => client.post('/integracoes/moodle/reset-sync-categorias/'),
+  resetLocalAndSync: () => client.post('/integracoes/moodle/reset-local-and-sync/'),
   diffAndSync: {
     diff: () => client.get('/integracoes/moodle/diff-sync-categorias/'),
     sync: () => client.post('/integracoes/moodle/diff-sync-categorias/'),

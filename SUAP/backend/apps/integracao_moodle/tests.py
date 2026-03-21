@@ -10,7 +10,11 @@ from apps.cursos.models import Curso
 from apps.integracao_moodle.api.views import (
 	MoodleAssignmentsIntegrationAPIView,
 	MoodleCategoriesIntegrationAPIView,
+	MoodleCategoriesMirrorAPIView,
+	MoodleCategoriesSyncAPIView,
 	MoodleCoursesIntegrationAPIView,
+	MoodleCoursesMirrorAPIView,
+	MoodleCoursesSyncAPIView,
 	MoodleGradesIntegrationAPIView,
 )
 from apps.integracao_moodle.client import MoodleApiClient
@@ -395,20 +399,23 @@ class MoodleApiClientTests(SimpleTestCase):
 		self.assertEqual(result["results"][0]["id"], 12)
 
 
-class MoodleIntegrationApiTests(SimpleTestCase):
+class MoodleIntegrationApiTests(TestCase):
 	def setUp(self):
 		self.factory = APIRequestFactory()
 		self.courses_view = MoodleCoursesIntegrationAPIView.as_view()
 		self.categories_view = MoodleCategoriesIntegrationAPIView.as_view()
+		self.courses_mirror_view = MoodleCoursesMirrorAPIView.as_view()
+		self.categories_mirror_view = MoodleCategoriesMirrorAPIView.as_view()
+		self.courses_sync_view = MoodleCoursesSyncAPIView.as_view()
+		self.categories_sync_view = MoodleCategoriesSyncAPIView.as_view()
 		self.grades_view = MoodleGradesIntegrationAPIView.as_view()
 		self.assignments_view = MoodleAssignmentsIntegrationAPIView.as_view()
 		self.user = Mock()
 		self.user.is_authenticated = True
 		self.user.is_superuser = True
 
-	@patch("apps.integracao_moodle.api.views.get_moodle_courses")
-	def test_courses_endpoint_returns_courses_for_authorized_user(self, get_moodle_courses_mock):
-		get_moodle_courses_mock.return_value = [{"id": 1, "shortname": "CURSO", "fullname": "Curso"}]
+	def test_courses_endpoint_returns_local_mirror_for_authorized_user(self):
+		MoodleCourse.objects.create(moodle_course_id=1, shortname="CURSO", fullname="Curso")
 		request = self.factory.get("/api/v1/integracoes/moodle/cursos/")
 		force_authenticate(request, user=self.user)
 
@@ -416,12 +423,13 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["count"], 1)
+		self.assertEqual(response.data["results"][0]["id"], 1)
 		self.assertEqual(response.data["results"][0]["shortname"], "CURSO")
 
-	@patch("apps.integracao_moodle.api.views.get_moodle_courses")
-	def test_courses_endpoint_maps_configuration_error_to_503(self, get_moodle_courses_mock):
-		get_moodle_courses_mock.side_effect = MoodleConfigurationError("Configuracao ausente")
-		request = self.factory.get("/api/v1/integracoes/moodle/cursos/")
+	@patch("apps.integracao_moodle.api.views.sync_moodle_catalog_data")
+	def test_courses_endpoint_maps_configuration_error_to_503(self, sync_moodle_catalog_data_mock):
+		sync_moodle_catalog_data_mock.side_effect = MoodleConfigurationError("Configuracao ausente")
+		request = self.factory.get("/api/v1/integracoes/moodle/cursos/", {"source": "live"})
 		force_authenticate(request, user=self.user)
 
 		response = self.courses_view(request)
@@ -450,13 +458,8 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 		self.assertEqual(response.data["summary"]["linked_existing"], 1)
 		self.assertEqual(response.data["catalog_storage"]["categories_received"], 2)
 
-	@patch("apps.integracao_moodle.api.views.search_moodle_courses")
-	def test_courses_endpoint_supports_search_action(self, search_moodle_courses_mock):
-		search_moodle_courses_mock.return_value = {
-			"total": 1,
-			"warnings": [],
-			"results": [{"id": 5, "shortname": "CUR-5", "fullname": "Curso 5"}],
-		}
+	def test_courses_endpoint_supports_search_action_using_local_mirror(self):
+		MoodleCourse.objects.create(moodle_course_id=5, shortname="CUR-5", fullname="Curso 5")
 		request = self.factory.get(
 			"/api/v1/integracoes/moodle/cursos/",
 			{"action": "core_course_search_courses", "criterianame": "search", "criteriavalue": "Curso"},
@@ -469,6 +472,20 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 		self.assertEqual(response.data["action"], "core_course_search_courses")
 		self.assertEqual(response.data["total"], 1)
 		self.assertEqual(response.data["results"][0]["id"], 5)
+
+	def test_courses_endpoint_supports_get_by_field_using_local_mirror(self):
+		MoodleCourse.objects.create(moodle_course_id=9, shortname="CURSO-9", fullname="Curso 9")
+		request = self.factory.get(
+			"/api/v1/integracoes/moodle/cursos/",
+			{"action": "core_course_get_courses_by_field", "field": "id", "value": 9},
+		)
+		force_authenticate(request, user=self.user)
+
+		response = self.courses_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["count"], 1)
+		self.assertEqual(response.data["results"][0]["id"], 9)
 
 	@patch("apps.integracao_moodle.api.views.create_moodle_courses")
 	def test_courses_endpoint_supports_create_action(self, create_moodle_courses_mock):
@@ -498,9 +515,8 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 		self.assertEqual(response.data["log_id"], 18)
 		self.assertEqual(response.data["course_ids"], [71])
 
-	@patch("apps.integracao_moodle.api.views.get_moodle_categories")
-	def test_categories_endpoint_returns_categories(self, get_moodle_categories_mock):
-		get_moodle_categories_mock.return_value = [{"id": 1, "name": "Raiz"}]
+	def test_categories_endpoint_returns_local_mirror(self):
+		MoodleCategory.objects.create(moodle_category_id=1, nome="Raiz")
 		request = self.factory.get("/api/v1/integracoes/moodle/categorias/")
 		force_authenticate(request, user=self.user)
 
@@ -508,7 +524,70 @@ class MoodleIntegrationApiTests(SimpleTestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertEqual(response.data["count"], 1)
+		self.assertEqual(response.data["results"][0]["id"], 1)
 		self.assertEqual(response.data["results"][0]["name"], "Raiz")
+
+	@patch("apps.integracao_moodle.api.views.sync_moodle_categories_data")
+	def test_categories_endpoint_syncs_live_when_requested(self, sync_moodle_categories_data_mock):
+		MoodleCategory.objects.create(moodle_category_id=2, nome="Sincronizada")
+		request = self.factory.get("/api/v1/integracoes/moodle/categorias/", {"source": "live"})
+		force_authenticate(request, user=self.user)
+
+		response = self.categories_view(request)
+
+		sync_moodle_categories_data_mock.assert_called_once()
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["results"][0]["name"], "Sincronizada")
+
+	def test_categories_mirror_endpoint_returns_local_data(self):
+		MoodleCategory.objects.create(moodle_category_id=7, nome="Espelho")
+		request = self.factory.get("/api/v1/integracoes/moodle/espelho/categorias/")
+		force_authenticate(request, user=self.user)
+
+		response = self.categories_mirror_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["results"][0]["id"], 7)
+
+	@patch("apps.integracao_moodle.api.views.sync_moodle_categories_data")
+	def test_categories_sync_endpoint_runs_sync(self, sync_moodle_categories_data_mock):
+		sync_moodle_categories_data_mock.return_value = MoodleCatalogStorageSummary(categories_received=3, categories_created=2, categories_updated=1)
+		request = self.factory.post("/api/v1/integracoes/moodle/sincronizar/categorias/", {}, format="json")
+		force_authenticate(request, user=self.user)
+
+		response = self.categories_sync_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["summary"]["categories_received"], 3)
+
+	def test_courses_mirror_endpoint_returns_local_data(self):
+		MoodleCourse.objects.create(moodle_course_id=17, shortname="ESP-17", fullname="Curso Espelho 17")
+		request = self.factory.get("/api/v1/integracoes/moodle/espelho/cursos/")
+		force_authenticate(request, user=self.user)
+
+		response = self.courses_mirror_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["results"][0]["id"], 17)
+
+	@patch("apps.integracao_moodle.api.views.import_moodle_courses_to_formacao_inicial")
+	def test_courses_sync_endpoint_runs_sync(self, import_moodle_courses_mock):
+		import_moodle_courses_mock.return_value = MoodleCourseImportSummary(
+			unidade_codigo="sede",
+			total_received=4,
+			created=2,
+			updated=1,
+			linked_existing=1,
+			skipped=0,
+			catalog_storage=MoodleCatalogStorageSummary(categories_received=2, courses_received=4),
+		)
+		request = self.factory.post("/api/v1/integracoes/moodle/sincronizar/cursos/", {"integrar_catalogo_interno": True}, format="json")
+		force_authenticate(request, user=self.user)
+
+		response = self.courses_sync_view(request)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data["summary"]["created"], 2)
 
 	def test_grades_endpoint_stores_grade_tree_snapshot(self):
 		grade_tree_handler = Mock(return_value=Mock(

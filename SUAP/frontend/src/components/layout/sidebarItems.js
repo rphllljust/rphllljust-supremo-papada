@@ -127,6 +127,42 @@ export const sidebarItems = [
     ],
   },
   {
+    id: 'ti',
+    type: 'group',
+    label: 'Tecnologia da Informacao',
+    icon: Settings,
+    items: [
+      {
+        id: 'ti-moodle',
+        type: 'group',
+        label: 'Moodle',
+        items: [
+          {
+            id: 'ti-moodle-categorias',
+            type: 'link',
+            label: 'Categorias Moodle',
+            to: '/ti/moodle/categorias/',
+            activePrefixes: ['/ti/moodle/categorias', '/ensino/moodle-categorias'],
+          },
+          {
+            id: 'ti-moodle-catalogo',
+            type: 'link',
+            label: 'Categorias & Cursos (Moodle)',
+            to: '/ti/moodle/catalogo/',
+            activePrefixes: ['/ti/moodle/catalogo', '/ensino/moodle-categorias-cursos'],
+          },
+          {
+            id: 'ti-moodle-config',
+            type: 'link',
+            label: 'Central Moodle',
+            to: '/ti/moodle/configuracoes/',
+            activePrefixes: ['/ti/moodle/configuracoes', '/ensino/moodle-config'],
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 'ensino',
     type: 'group',
     label: 'Ensino',
@@ -172,20 +208,6 @@ export const sidebarItems = [
             label: 'Cursos iniciais',
             to: '/ensino/cursoinicial/',
             activePrefixes: ['/ensino/cursoinicial', '/ensino/areacurso'],
-          },
-          {
-            id: 'moodle-categorias',
-            type: 'link',
-            label: 'Categorias Moodle',
-            to: '/ensino/moodle-categorias/',
-            activePrefixes: ['/ensino/moodle-categorias'],
-          },
-          {
-            id: 'moodle-config',
-            type: 'link',
-            label: 'Configurações Moodle',
-            to: '/ensino/moodle-config/',
-            activePrefixes: ['/ensino/moodle-config'],
           },
           {
             id: 'catalogo-cursos-tecnicos',

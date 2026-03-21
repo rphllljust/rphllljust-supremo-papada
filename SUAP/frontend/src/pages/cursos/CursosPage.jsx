@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import { cursosApi } from '@/api/endpoints'
+import { cursosApi, moodleIntegrationApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { DatabaseZap, Eye, Pencil, Plus, RefreshCcw, Settings2, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const COLUMNS = [
@@ -30,12 +30,14 @@ export default function CursosPage({
   detailPathBuilder = null,
   extraHeaderActions = null,
   beforeTableContent = null,
+  moodleSyncConfig = null,
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedCourseId, setSelectedCourseId] = useState(null)
+  const [lastSyncResult, setLastSyncResult] = useState(null)
 
   const deleteMutation = useMutation({
     mutationFn: (cursoId) => cursosApi.remove(cursoId),
@@ -52,6 +54,34 @@ export default function CursosPage({
     onError: (error) => {
       const detail = error?.response?.data?.detail
       toast.error(detail || 'Não foi possível remover o curso.')
+    },
+  })
+
+  const syncMutation = useMutation({
+    mutationFn: () => {
+      if (!moodleSyncConfig) {
+        throw new Error('Sincronizacao Moodle nao configurada para esta pagina.')
+      }
+
+      return moodleIntegrationApi.importCursos({
+        unidade_codigo: moodleSyncConfig.unidadeCodigo || 'sede',
+        integrar_catalogo_interno: true,
+        tipo_curso: moodleSyncConfig.tipoCurso,
+        root_category_ids: moodleSyncConfig.rootCategoryIds,
+      })
+    },
+    onSuccess: async (response) => {
+      setLastSyncResult(response.data || null)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['cursos'] }),
+        queryClient.invalidateQueries({ queryKey: ['moodle-cursos'] }),
+        queryClient.invalidateQueries({ queryKey: ['moodle-categorias'] }),
+      ])
+      toast.success(moodleSyncConfig?.successMessage || 'Sincronizacao concluida com sucesso.')
+    },
+    onError: (error) => {
+      const detail = error?.response?.data?.detail
+      toast.error(detail || moodleSyncConfig?.errorMessage || 'Nao foi possivel sincronizar os cursos com o Moodle.')
     },
   })
 
@@ -121,6 +151,57 @@ export default function CursosPage({
         <div className="alert alert--error">
           Nao foi possivel carregar os cursos com as permissoes atuais.
         </div>
+      ) : null}
+
+      {moodleSyncConfig ? (
+        <section className="dashboard-card cursos-sync-card">
+          <div className="cursos-sync-card__header">
+            <div>
+              <h2 className="dashboard-card__title">Sincronizacao com Moodle</h2>
+              <p className="page-subtitle">{moodleSyncConfig.description}</p>
+            </div>
+            <div className="page-header__actions">
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() => syncMutation.mutate()}
+                disabled={syncMutation.isPending}
+              >
+                <RefreshCcw size={16} /> {syncMutation.isPending ? 'Sincronizando...' : (moodleSyncConfig.syncLabel || 'Sincronizar agora')}
+              </button>
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() => navigate('/ti/moodle/configuracoes/')}
+              >
+                <Settings2 size={16} /> Central Moodle
+              </button>
+            </div>
+          </div>
+
+          <div className="cursos-sync-card__meta">
+            <div className="cursos-sync-card__pill">
+              <DatabaseZap size={15} /> Categoria raiz Moodle: {moodleSyncConfig.rootCategoryIds.join(', ')}
+            </div>
+            <div className="cursos-sync-card__pill">
+              Tipo SUAP: {moodleSyncConfig.tipoCursoLabel || moodleSyncConfig.tipoCurso}
+            </div>
+          </div>
+
+          {lastSyncResult?.summary ? (
+            <div className="cursos-sync-card__stats">
+              <span>Recebidos: {lastSyncResult.summary.total_received ?? 0}</span>
+              <span>Criados: {lastSyncResult.summary.created ?? 0}</span>
+              <span>Atualizados: {lastSyncResult.summary.updated ?? 0}</span>
+              <span>Vinculados: {lastSyncResult.summary.linked_existing ?? 0}</span>
+              <span>Ignorados: {lastSyncResult.summary.skipped ?? 0}</span>
+            </div>
+          ) : (
+            <div className="cursos-sync-card__hint">
+              A listagem abaixo sempre usa a base local do SUAP. A sincronizacao busca os cursos no Moodle, considera subcategorias descendentes da raiz informada e persiste os registros antes de atualizar a tela.
+            </div>
+          )}
+        </section>
       ) : null}
 
       {beforeTableContent}

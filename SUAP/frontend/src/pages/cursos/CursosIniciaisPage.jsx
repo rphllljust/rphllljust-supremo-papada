@@ -1,6 +1,4 @@
 import CursosPage from './CursosPage'
-import MoodleCursosPanel from './MoodleCursosPanel'
-import { Link } from 'react-router-dom'
 
 const BREADCRUMBS = [
   { label: 'Inicio', to: '/dashboard' },
@@ -16,20 +14,21 @@ export default function CursosIniciaisPage() {
       subtitle="Ensino • Cadastros Gerais"
       breadcrumbs={BREADCRUMBS}
       queryScope="cursos-iniciais"
-      listParams={{ apenas_superiores: true }}
+      listParams={{ tipo_curso: 'formacao_inicial' }}
       searchPlaceholder="Buscar curso inicial..."
       emptyMessage="Nenhum curso inicial encontrado."
       createPath="/ensino/cursoinicial/novo"
       editPathBuilder={(cursoId) => `/ensino/cursoinicial/${cursoId}/editar`}
       detailPathBuilder={(cursoId) => `/ensino/cursoinicial/${cursoId}`}
-      beforeTableContent={
-        <>
-          <MoodleCursosPanel />
-        </>
-      }
-      extraHeaderActions={
-        <Link className="btn btn--outline" to="/ensino/moodle-categorias">Categorias Moodle</Link>
-      }
+      beforeTableContent={null}
+      moodleSyncConfig={{
+        tipoCurso: 'formacao_inicial',
+        tipoCursoLabel: 'Formacao inicial e continuada',
+        rootCategoryIds: [399],
+        syncLabel: 'Sincronizar cursos iniciais',
+        successMessage: 'Cursos iniciais sincronizados a partir do Moodle.',
+        description: 'Busca todos os cursos sob a categoria Moodle 399, incluindo subcategorias descendentes, persiste no banco local do SUAP e atualiza esta listagem.',
+      }}
     />
   )
 }

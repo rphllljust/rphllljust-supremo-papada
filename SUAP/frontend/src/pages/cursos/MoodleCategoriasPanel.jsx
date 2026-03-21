@@ -221,7 +221,6 @@ export default function MoodleCategoriasPanel() {
         <div style={{display: 'flex', gap: 8}}>
           <input placeholder="Buscar categorias..." value={query} onChange={e => setQuery(e.target.value)} style={{padding: '6px 8px', borderRadius: 6, border: '1px solid #ddd'}} />
           <button className="btn btn--secondary" onClick={() => queryClient.invalidateQueries(['moodle-categorias'])} disabled={isFetching} title="Atualizar lista"><RefreshCw size={16} />&nbsp;Atualizar</button>
-          <button className="btn btn--outline" onClick={() => compareMutation.mutate()} disabled={compareMutation.isPending || syncMutation.isPending}><RefreshCw size={14} />&nbsp;Comparar & Sincronizar</button>
           <button
             className="btn btn--danger"
             onClick={() => {

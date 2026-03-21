@@ -189,11 +189,9 @@ class Command(BaseCommand):
             setor = self._seed_setor()
             users = self._seed_users(setor)
             area_curso, eixo = self._seed_catalogs()
-            cursos, turmas = self._seed_course_structure(unidade, area_curso, eixo, users)
-            matriculas_por_turma = self._seed_students(cursos, turmas, users)
-            self._seed_academic_records(turmas, matriculas_por_turma, users)
-            self._seed_selection_flow(cursos["TDSDEV"], users["secretaria.dev"], users["aluno.dev.1"])
-            self._seed_process_flow(users["aluno.dev.1"], users["secretaria.dev"])
+
+            # A criação de cursos, componentes e turmas foi removida conforme solicitação.
+            self.stdout.write(self.style.WARNING("Seed de cursos e componentes pulado conforme solicitacao."))
 
         self.stdout.write(self.style.SUCCESS("Dados de desenvolvimento disponíveis no banco configurado."))
         self.stdout.write("Usuários criados:")
@@ -296,112 +294,9 @@ class Command(BaseCommand):
         return area_curso, eixo
 
     def _seed_course_structure(self, unidade, area_curso, eixo, professor):
-        curso_tecnico, _ = self.models["Curso"].objects.update_or_create(
-            sigla="TDSDEV",
-            defaults={
-                "unidade": unidade,
-                "area_curso": area_curso,
-                "nome": "Técnico em Desenvolvimento de Sistemas DEV",
-                "eixo_tecnologico": eixo.descricao,
-                "carga_horaria": 1200,
-            },
-        )
-
-        curso_fic, _ = self.models["Curso"].objects.update_or_create(
-            sigla="FICDEV",
-            defaults={
-                "unidade": unidade,
-                "area_curso": area_curso,
-                "nome": "Curso Itinerante DEV de Inclusão Digital",
-                "eixo_tecnologico": eixo.descricao,
-                "carga_horaria": 160,
-            },
-        )
-
-        for component in SEED_COMPONENTS:
-            self.models["ComponenteCurricular"].objects.update_or_create(
-                curso=curso_tecnico,
-                nome=component["nome"],
-                defaults={
-                    "abreviatura": component["abreviatura"],
-                    "sigla": component["abreviatura"],
-                    "tipo_componente": "Obrigatório",
-                    "nivel_ensino": "Técnico",
-                    "grupo_atuacao": "Base tecnológica",
-                    "carga_horaria": component["carga_horaria"],
-                    "hora_aula": component["carga_horaria"],
-                    "qtd_creditos": 4,
-                    "ordem": component["ordem"],
-                    "ativo": True,
-                },
-            )
-
-        for component in SEED_FIC_COMPONENTS:
-            self.models["ComponenteCurricular"].objects.update_or_create(
-                curso=curso_fic,
-                nome=component["nome"],
-                defaults={
-                    "abreviatura": component["abreviatura"],
-                    "sigla": component["abreviatura"],
-                    "tipo_componente": "Obrigatório",
-                    "nivel_ensino": "Formação Inicial e Continuada",
-                    "grupo_atuacao": "Qualificação profissional",
-                    "carga_horaria": component["carga_horaria"],
-                    "hora_aula": component["carga_horaria"],
-                    "qtd_creditos": 2,
-                    "ordem": component["ordem"],
-                    "ativo": True,
-                },
-            )
-
-        self.models["CalendarioLetivo"].objects.update_or_create(
-            ano_letivo="2026/1",
-            curso=curso_tecnico,
-            defaults={
-                "data_inicio": date(2026, 2, 2),
-                "data_fim": date(2026, 12, 18),
-                "dias_letivos": 200,
-                "status": "VIGENTE",
-                "descricao": "Calendário de desenvolvimento gerado automaticamente.",
-            },
-        )
-
-        self.models["CalendarioLetivo"].objects.update_or_create(
-            ano_letivo="2026/1",
-            curso=curso_fic,
-            defaults={
-                "data_inicio": date(2026, 2, 10),
-                "data_fim": date(2026, 5, 30),
-                "dias_letivos": 80,
-                "status": "VIGENTE",
-                "descricao": "Calendário FIC de desenvolvimento gerado automaticamente.",
-            },
-        )
-
-        turma_tecnico, _ = self.models["Turma"].objects.update_or_create(
-            curso=curso_tecnico,
-            nome="DEV-TDS-2026-1",
-            defaults={
-                "ano_letivo": 2026,
-                "status": "ATIVA",
-                "professor_responsavel": professor["professor.dev"],
-            },
-        )
-
-        turma_fic, _ = self.models["Turma"].objects.update_or_create(
-            curso=curso_fic,
-            nome="DEV-FIC-2026-1",
-            defaults={
-                "ano_letivo": 2026,
-                "status": "ATIVA",
-                "professor_responsavel": professor["professor.dev.2"],
-            },
-        )
-
-        return {"TDSDEV": curso_tecnico, "FICDEV": curso_fic}, {
-            "DEV-TDS-2026-1": turma_tecnico,
-            "DEV-FIC-2026-1": turma_fic,
-        }
+        # Curso, componentes e turmas foram removidos do seed por decisão do time.
+        self.stdout.write(self.style.WARNING("_seed_course_structure: criação de cursos, componentes e turmas desativada."))
+        return {}, {}
 
     def _seed_students(self, cursos, turmas, users):
         matriculas_por_turma = {}

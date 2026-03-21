@@ -1,16 +1,25 @@
+from django.db.models import Q
+from django.db import transaction
+import logging
+
+logger = logging.getLogger(__name__)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.access.api.permissions import CanExportToAva
+from apps.integracao_moodle.api.serializers import MoodleCategoryMirrorSerializer, MoodleCourseMirrorSerializer
 from apps.integracao_moodle.exceptions import MoodleAPIError, MoodleAuthenticationError, MoodleConfigurationError
+from apps.integracao_moodle.models import MoodleCategory, MoodleCourse
 from apps.integracao_moodle.services import (
+    MOODLE_COURSE_ROOT_CATEGORY_IDS,
     create_moodle_courses,
     delete_moodle_courses,
     get_moodle_categories,
     get_moodle_courses,
     get_moodle_courses_by_field,
     get_moodle_recent_courses,
+    import_moodle_courses_by_type,
     import_moodle_courses_to_formacao_inicial,
     save_moodle_assignment_grade,
     save_moodle_assignment_grades,
@@ -47,6 +56,14 @@ def _as_bool(value, default: bool = False) -> bool:
 class MoodleBaseIntegrationAPIView(APIView):
     permission_classes = [IsAuthenticated, CanExportToAva]
     module_name = "integracao_moodle"
+    LOCAL_COURSE_FIELD_MAP = {
+        "id": "moodle_course_id",
+        "shortname": "shortname",
+        "idnumber": "idnumber",
+        "fullname": "fullname",
+        "displayname": "displayname",
+        "categoryid": "categoria__moodle_category_id",
+    }
 
     def handle_moodle_error(self, exc: Exception):
         if isinstance(exc, MoodleConfigurationError):
@@ -57,17 +74,235 @@ class MoodleBaseIntegrationAPIView(APIView):
             return Response({"detail": str(exc)}, status=400)
         return Response({"detail": str(exc)}, status=502)
 
+    def get_local_categories_queryset(self):
+        return MoodleCategory.objects.select_related("parent").order_by("depth", "sortorder", "nome")
+
+    def get_local_courses_queryset(self):
+        return MoodleCourse.objects.select_related("categoria", "curso", "curso__unidade", "curso__area_curso").order_by("fullname")
+
+    def parse_root_category_ids(self, value) -> list[int]:
+        if value in (None, ""):
+            return []
+
+        if isinstance(value, (list, tuple)):
+            raw_values = value
+        else:
+            raw_values = [chunk.strip() for chunk in str(value).split(",") if chunk.strip()]
+
+        parsed_ids = []
+        for raw_value in raw_values:
+            try:
+                parsed_ids.append(int(raw_value))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Informe IDs de categorias Moodle validos.") from exc
+
+        return sorted(set(parsed_ids))
+
+    def resolve_root_category_ids(self, tipo_curso: str | None, root_category_ids=None) -> list[int]:
+        parsed_root_category_ids = self.parse_root_category_ids(root_category_ids)
+        if parsed_root_category_ids:
+            return parsed_root_category_ids
+
+        normalized_tipo_curso = (tipo_curso or "").strip().lower()
+        if not normalized_tipo_curso:
+            return []
+        if normalized_tipo_curso not in MOODLE_COURSE_ROOT_CATEGORY_IDS:
+            raise ValueError(f"Tipo de curso '{normalized_tipo_curso}' nao suportado para sincronizacao Moodle.")
+        return list(MOODLE_COURSE_ROOT_CATEGORY_IDS[normalized_tipo_curso])
+
+    def filter_local_courses_by_root_categories(self, queryset, root_category_ids: list[int]):
+        if not root_category_ids:
+            return queryset
+
+        filters = Q()
+        for root_category_id in root_category_ids:
+            filters |= Q(categoria__moodle_category_id=root_category_id)
+            filters |= Q(categoria__path__icontains=f"/{root_category_id}/")
+            filters |= Q(categoria__path__endswith=f"/{root_category_id}")
+
+        return queryset.filter(filters).distinct()
+
+    def serialize_local_categories(self, queryset=None):
+        queryset = queryset or self.get_local_categories_queryset()
+        return MoodleCategoryMirrorSerializer(queryset, many=True).data
+
+    def serialize_local_courses(self, queryset=None):
+        queryset = queryset or self.get_local_courses_queryset()
+        return MoodleCourseMirrorSerializer(queryset, many=True).data
+
+    def sync_categories_to_local(self, *, criteria=None):
+        return sync_moodle_categories_data(category_criteria=criteria or {})
+
+    def sync_courses_to_local(self):
+        return sync_moodle_catalog_data(category_criteria={})
+
+    def build_local_course_search_queryset(self, search_term: str):
+        normalized = (search_term or "").strip()
+        queryset = self.get_local_courses_queryset()
+        if not normalized:
+            return queryset
+        return queryset.filter(
+            Q(fullname__icontains=normalized)
+            | Q(displayname__icontains=normalized)
+            | Q(shortname__icontains=normalized)
+            | Q(idnumber__icontains=normalized)
+            | Q(categoria__nome__icontains=normalized)
+            | Q(curso__nome__icontains=normalized)
+            | Q(curso__sigla__icontains=normalized)
+        )
+
+    def build_local_course_field_queryset(self, field: str, value):
+        field_name = self.LOCAL_COURSE_FIELD_MAP.get((field or "").strip().lower())
+        if not field_name:
+            raise ValueError(f"Campo '{field}' nao suportado para consulta local do espelho Moodle.")
+
+        queryset = self.get_local_courses_queryset()
+        if value is None or value == "":
+            return queryset.none()
+
+        if field_name in {"moodle_course_id", "categoria__moodle_category_id"}:
+            try:
+                value = int(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Valor invalido para o campo '{field}'.") from exc
+            return queryset.filter(**{field_name: value})
+
+        return queryset.filter(**{f"{field_name}__iexact": str(value).strip()})
+
+
+class MoodleCategoriesMirrorAPIView(MoodleBaseIntegrationAPIView):
+    def get(self, request):
+        serialized = self.serialize_local_categories()
+        return Response({"count": len(serialized), "results": serialized})
+
+
+class MoodleCoursesMirrorAPIView(MoodleBaseIntegrationAPIView):
+    def get(self, request):
+        search = request.query_params.get("search") or request.query_params.get("q") or ""
+        queryset = self.build_local_course_search_queryset(search)
+        root_category_ids = self.resolve_root_category_ids(
+            request.query_params.get("tipo_curso"),
+            request.query_params.get("root_category_ids") or request.query_params.get("root_category_id"),
+        )
+        queryset = self.filter_local_courses_by_root_categories(queryset, root_category_ids)
+        serialized = self.serialize_local_courses(queryset)
+        return Response({"count": len(serialized), "results": serialized})
+
+
+class MoodleCategoriesSyncAPIView(MoodleBaseIntegrationAPIView):
+    def post(self, request):
+        criteria = request.data.get("criteria") or {}
+
+        try:
+            summary = self.sync_categories_to_local(criteria=criteria)
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+            return self.handle_moodle_error(exc)
+
+        return Response(
+            {
+                "detail": "Categorias do Moodle sincronizadas para o espelho local do SUAP.",
+                "summary": {
+                    "categories_received": summary.categories_received,
+                    "categories_created": summary.categories_created,
+                    "categories_updated": summary.categories_updated,
+                },
+            }
+        )
+
+
+class MoodleCoursesSyncAPIView(MoodleBaseIntegrationAPIView):
+    def post(self, request):
+        unidade_codigo = (request.data.get("unidade_codigo") or request.query_params.get("unidade_codigo") or "sede").strip().lower()
+        tipo_curso = (request.data.get("tipo_curso") or request.query_params.get("tipo_curso") or "formacao_inicial").strip().lower()
+        root_category_ids = self.resolve_root_category_ids(
+            tipo_curso,
+            request.data.get("root_category_ids")
+            or request.data.get("root_category_id")
+            or request.query_params.get("root_category_ids")
+            or request.query_params.get("root_category_id"),
+        )
+        integrar_catalogo_interno = _as_bool(
+            request.data.get("integrar_catalogo_interno")
+            if "integrar_catalogo_interno" in request.data
+            else request.query_params.get("integrar_catalogo_interno"),
+            default=True,
+        )
+
+        try:
+            if integrar_catalogo_interno:
+                summary = import_moodle_courses_by_type(
+                    unidade_codigo=unidade_codigo,
+                    tipo_curso=tipo_curso,
+                    root_category_ids=root_category_ids,
+                )
+            else:
+                storage_summary, courses = self.sync_courses_to_local()
+                summary = {
+                    "unidade_codigo": unidade_codigo,
+                    "tipo_curso": tipo_curso,
+                    "total_received": len(courses),
+                    "created": 0,
+                    "updated": 0,
+                    "linked_existing": 0,
+                    "skipped": 0,
+                    "catalog_storage": self._serialize_catalog_storage(storage_summary),
+                }
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError, ValueError) as exc:
+            return self.handle_moodle_error(exc)
+
+        if isinstance(summary, dict):
+            catalog_storage = summary["catalog_storage"]
+            summary_payload = summary
+        else:
+            catalog_storage = summary.catalog_storage
+            summary_payload = {
+                "unidade_codigo": summary.unidade_codigo,
+                "tipo_curso": tipo_curso,
+                "root_category_ids": root_category_ids,
+                "total_received": summary.total_received,
+                "created": summary.created,
+                "updated": summary.updated,
+                "linked_existing": summary.linked_existing,
+                "skipped": summary.skipped,
+            }
+
+        return Response(
+            {
+                "detail": (
+                    "Cursos do Moodle sincronizados e integrados ao catalogo interno do SUAP."
+                    if integrar_catalogo_interno
+                    else "Cursos do Moodle sincronizados para o espelho local do SUAP."
+                ),
+                "tipo_curso": tipo_curso,
+                "root_category_ids": root_category_ids,
+                "summary": summary_payload,
+                "catalog_storage": {
+                    "categories_received": catalog_storage.categories_received if catalog_storage else 0,
+                    "categories_created": catalog_storage.categories_created if catalog_storage else 0,
+                    "categories_updated": catalog_storage.categories_updated if catalog_storage else 0,
+                    "courses_received": catalog_storage.courses_received if catalog_storage else 0,
+                    "courses_created": catalog_storage.courses_created if catalog_storage else 0,
+                    "courses_updated": catalog_storage.courses_updated if catalog_storage else 0,
+                    "courses_linked_internal": catalog_storage.courses_linked_internal if catalog_storage else 0,
+                },
+            }
+        )
+
 
 class MoodleCategoriesIntegrationAPIView(MoodleBaseIntegrationAPIView):
     def get(self, request):
         criteria = request.query_params.dict()
+        source = (criteria.pop("source", "local") or "local").strip().lower()
+        sync = _as_bool(criteria.pop("sync", None), default=False)
 
-        try:
-            categories = get_moodle_categories(criteria=criteria)
-        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
-            return self.handle_moodle_error(exc)
+        if source == "live" or sync:
+            try:
+                self.sync_categories_to_local(criteria=criteria)
+            except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+                return self.handle_moodle_error(exc)
 
-        return Response({"count": len(categories), "results": categories})
+        serialized = self.serialize_local_categories()
+        return Response({"count": len(serialized), "results": serialized})
 
     def post(self, request):
         # Support both: sync local mirror (no action) and write actions via `action` param
@@ -78,14 +313,107 @@ class MoodleCategoriesIntegrationAPIView(MoodleBaseIntegrationAPIView):
             try:
                 if action == "core_course_create_categories":
                     payload = create_moodle_categories(params)
+                    # Persist created categories locally if Moodle returned them
+                    try:
+                        from apps.integracao_moodle.services import persist_moodle_categories, _extract_category_ids
+
+                        def _normalize_created_categories_response(response_payload, request_params):
+                            # Moodle may return only ids (or a partial payload). When that happens,
+                            # fall back to the original request payload so we preserve the parent.
+                            if isinstance(response_payload, dict) and isinstance(response_payload.get("categories"), list):
+                                response_items = list(response_payload["categories"])
+                            elif isinstance(response_payload, list):
+                                response_items = list(response_payload)
+                            elif isinstance(response_payload, dict):
+                                response_items = [response_payload]
+                            else:
+                                response_items = []
+
+                            request_items = []
+                            if isinstance(request_params, dict) and isinstance(request_params.get("categories"), list):
+                                request_items = list(request_params["categories"])
+                            elif isinstance(request_params, list):
+                                request_items = list(request_params)
+                            elif isinstance(request_params, dict) and isinstance(request_params.get("params"), list):
+                                request_items = list(request_params["params"])
+
+                            normalized = []
+                            for index, response_item in enumerate(response_items):
+                                request_item = request_items[index] if index < len(request_items) and isinstance(request_items[index], dict) else {}
+                                if not isinstance(response_item, dict):
+                                    response_item = {}
+
+                                merged = dict(request_item)
+                                merged.update(response_item)
+
+                                # ensure essential fields exist so the local mirror can rebuild the tree
+                                if "parent" not in merged:
+                                    merged["parent"] = request_item.get("parent", 0)
+                                if "name" not in merged:
+                                    merged["name"] = request_item.get("name") or request_item.get("nome") or ""
+
+                                normalized.append(merged)
+
+                            return normalized
+
+                        created_ids = _extract_category_ids(payload) or []
+                        normalized_payload = _normalize_created_categories_response(payload, params)
+
+                        if normalized_payload:
+                            persist_moodle_categories(normalized_payload)
+                        elif created_ids:
+                            # fetch those specific categories and persist
+                            cats = get_moodle_categories(criteria={"ids": created_ids})
+                            persist_moodle_categories(cats)
+                    except Exception:
+                        logger.exception("Failed to persist created Moodle categories locally")
+
                     return Response({"detail": "Categorias criadas no Moodle.", "moodle_response": payload})
 
                 if action == "core_course_update_categories":
                     payload = update_moodle_categories(params)
+                    try:
+                        from apps.integracao_moodle.services import persist_moodle_categories, _extract_category_ids
+
+                        updated_ids = _extract_category_ids(payload) or []
+                        if isinstance(payload, list) and payload:
+                            persist_moodle_categories(payload)
+                        elif updated_ids:
+                            cats = get_moodle_categories(criteria={"ids": updated_ids})
+                            persist_moodle_categories(cats)
+                    except Exception:
+                        logger.exception("Failed to persist updated Moodle categories locally")
+
                     return Response({"detail": "Categorias atualizadas no Moodle.", "moodle_response": payload})
 
                 if action == "core_course_delete_categories":
                     payload = delete_moodle_categories(params)
+                    try:
+                        from apps.integracao_moodle.services import _extract_category_ids, remove_local_categories_by_ids
+
+                        deleted_ids = _extract_category_ids(payload) or []
+                        # fallback: try to extract from params (support `categoryids` convenience param)
+                        if not deleted_ids:
+                            deleted_ids = _extract_category_ids(params) or []
+
+                        if not deleted_ids and isinstance(params, dict):
+                            raw_ids = params.get('categoryids') or params.get('categoryids[]')
+                            if raw_ids:
+                                try:
+                                    if isinstance(raw_ids, (list, tuple)):
+                                        deleted_ids = [int(x) for x in raw_ids]
+                                    else:
+                                        # comma-separated string
+                                        deleted_ids = [int(x.strip()) for x in str(raw_ids).split(',') if x.strip()]
+                                except Exception:
+                                    deleted_ids = []
+
+                        if deleted_ids:
+                            removed_count = remove_local_categories_by_ids(deleted_ids)
+                            logger.info("Removed %s local MoodleCategory records for deleted ids: %s", removed_count, deleted_ids)
+                    except Exception:
+                        logger.exception("Failed to remove local Moodle categories after delete action")
+
                     return Response({"detail": "Categorias excluidas no Moodle.", "moodle_response": payload})
 
                 return Response({"detail": "Acao de categorias do Moodle nao suportada."}, status=400)
@@ -170,12 +498,18 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
         if action:
             return self._handle_read_action(request, action)
 
-        try:
-            courses = get_moodle_courses()
-        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
-            return self.handle_moodle_error(exc)
+        params = request.query_params.dict()
+        source = (params.pop("source", "local") or "local").strip().lower()
+        sync = _as_bool(params.pop("sync", None), default=False)
 
-        return Response({"count": len(courses), "results": courses})
+        if source == "live" or sync:
+            try:
+                self.sync_courses_to_local()
+            except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+                return self.handle_moodle_error(exc)
+
+        serialized = self.serialize_local_courses()
+        return Response({"count": len(serialized), "results": serialized})
 
     def post(self, request):
         action = (request.data.get("action") or "").strip().lower()
@@ -183,6 +517,14 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
             return self._handle_write_action(request, action)
 
         unidade_codigo = (request.data.get("unidade_codigo") or request.query_params.get("unidade_codigo") or "sede").strip().lower()
+        tipo_curso = (request.data.get("tipo_curso") or request.query_params.get("tipo_curso") or "formacao_inicial").strip().lower()
+        root_category_ids = self.resolve_root_category_ids(
+            tipo_curso,
+            request.data.get("root_category_ids")
+            or request.data.get("root_category_id")
+            or request.query_params.get("root_category_ids")
+            or request.query_params.get("root_category_id"),
+        )
         integrar_catalogo_interno = _as_bool(
             request.data.get("integrar_catalogo_interno")
             if "integrar_catalogo_interno" in request.data
@@ -192,17 +534,22 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
 
         try:
             if integrar_catalogo_interno:
-                summary = import_moodle_courses_to_formacao_inicial(unidade_codigo=unidade_codigo)
+                summary = import_moodle_courses_by_type(
+                    unidade_codigo=unidade_codigo,
+                    tipo_curso=tipo_curso,
+                    root_category_ids=root_category_ids,
+                )
             else:
                 storage_summary, courses = sync_moodle_catalog_data()
                 summary = {
                     "unidade_codigo": unidade_codigo,
+                    "tipo_curso": tipo_curso,
                     "total_received": len(courses),
                     "created": 0,
                     "updated": 0,
                     "linked_existing": 0,
                     "skipped": 0,
-                    "catalog_storage": storage_summary,
+                    "catalog_storage": self._serialize_catalog_storage(storage_summary),
                 }
         except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError, ValueError) as exc:
             return self.handle_moodle_error(exc)
@@ -214,6 +561,8 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
             catalog_storage = summary.catalog_storage
             summary_payload = {
                 "unidade_codigo": summary.unidade_codigo,
+                "tipo_curso": tipo_curso,
+                "root_category_ids": root_category_ids,
                 "total_received": summary.total_received,
                 "created": summary.created,
                 "updated": summary.updated,
@@ -228,6 +577,8 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
                     if integrar_catalogo_interno
                     else "Cursos e categorias do Moodle armazenados localmente com sucesso."
                 ),
+                "tipo_curso": tipo_curso,
+                "root_category_ids": root_category_ids,
                 "summary": summary_payload,
                 "catalog_storage": {
                     "categories_received": catalog_storage.categories_received if catalog_storage else 0,
@@ -247,28 +598,51 @@ class MoodleCoursesIntegrationAPIView(MoodleBaseIntegrationAPIView):
 
         params = request.query_params.dict()
         params.pop("action", None)
+        source = (params.pop("source", "local") or "local").strip().lower()
+        sync = _as_bool(params.pop("sync", None), default=False)
+
+        if source == "live" or sync:
+            try:
+                self.sync_courses_to_local()
+            except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+                return self.handle_moodle_error(exc)
 
         try:
             if action == "core_course_get_courses_by_field":
-                courses = get_moodle_courses_by_field(params.get("field", ""), params.get("value"))
-                return Response({"action": action, "count": len(courses), "results": courses})
+                queryset = self.build_local_course_field_queryset(params.get("field", ""), params.get("value"))
+                serialized = self.serialize_local_courses(queryset)
+                return Response({"action": action, "count": len(serialized), "results": serialized})
 
             if action == "core_course_get_recent_courses":
-                courses = get_moodle_recent_courses(params)
-                # Return plain list of courses to match Moodle's `core_course_get_recent_courses` response
-                return Response(courses)
+                if not (source == "live" or sync):
+                    return Response(
+                        {
+                            "action": action,
+                            "count": 0,
+                            "results": [],
+                            "detail": "Consulta de cursos recentes exige sincronizacao live enquanto o SUAP nao persiste historico de acesso por usuario.",
+                        }
+                    )
 
-            result = search_moodle_courses(params)
+                live_courses = get_moodle_recent_courses(params)
+                course_ids = [course.get("id") for course in live_courses if course.get("id") is not None]
+                queryset = self.get_local_courses_queryset().filter(moodle_course_id__in=course_ids)
+                serialized = self.serialize_local_courses(queryset)
+                return Response({"action": action, "count": len(serialized), "results": serialized})
+
+            queryset = self.build_local_course_search_queryset(params.get("criteriavalue") or params.get("search") or "")
+            serialized = self.serialize_local_courses(queryset)
         except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError, ValueError) as exc:
             return self.handle_moodle_error(exc)
 
         return Response(
             {
                 "action": action,
-                "count": len(result.get("courses", [])),
-                "total": result.get("total"),
-                "warnings": result.get("warnings", []),
-                "courses": result.get("courses", []),
+                "count": len(serialized),
+                "total": len(serialized),
+                "warnings": [],
+                "courses": serialized,
+                "results": serialized,
             }
         )
 
@@ -630,3 +1004,54 @@ class MoodleIntegrationConfigAPIView(MoodleBaseIntegrationAPIView):
             return Response({"detail": "Falha ao salvar configuracao."}, status=500)
 
         return Response({"detail": "Configuracao salva com sucesso."})
+
+
+class MoodleLocalResetAndSyncAPIView(MoodleBaseIntegrationAPIView):
+    permission_classes = [IsAuthenticated, CanExportToAva]
+
+    def post(self, request):
+        """Wipe local mirror tables and repopulate from live Moodle.
+
+        Deletes local mirror records (`MoodleCourse`, `MoodleCategory`,
+        `MoodleGradeSnapshot`, `MoodleWritebackLog`) and then calls
+        `sync_moodle_catalog_data()` to fetch and persist fresh data from
+        the Moodle instance.
+        """
+        try:
+            from apps.integracao_moodle.models import (
+                MoodleCategory,
+                MoodleCourse,
+                MoodleGradeSnapshot,
+                MoodleWritebackLog,
+            )
+
+            with transaction.atomic():
+                deleted = {}
+                deleted["moodle_courses"] = MoodleCourse.objects.all().delete()[0]
+                deleted["moodle_categories"] = MoodleCategory.objects.all().delete()[0]
+                deleted["grade_snapshots"] = MoodleGradeSnapshot.objects.all().delete()[0]
+                deleted["writeback_logs"] = MoodleWritebackLog.objects.all().delete()[0]
+
+            summary, courses = sync_moodle_catalog_data()
+        except (MoodleConfigurationError, MoodleAuthenticationError, MoodleAPIError) as exc:
+            return self.handle_moodle_error(exc)
+        except Exception as exc:
+            logger.exception("Failed resetting local Moodle mirror: %s", exc)
+            return Response({"detail": str(exc)}, status=500)
+
+        return Response(
+            {
+                "detail": "Espelho local reinicializado e sincronizado a partir do Moodle.",
+                "deleted_counts": deleted,
+                "summary": {
+                    "categories_received": summary.categories_received,
+                    "categories_created": summary.categories_created,
+                    "categories_updated": summary.categories_updated,
+                    "courses_received": summary.courses_received,
+                    "courses_created": summary.courses_created,
+                    "courses_updated": summary.courses_updated,
+                    "courses_linked_internal": summary.courses_linked_internal,
+                },
+                "courses_synced": len(courses),
+            }
+        )

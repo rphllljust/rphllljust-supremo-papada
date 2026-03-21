@@ -112,6 +112,7 @@ class CursoSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "nome",
+            "tipo_curso",
             "sigla",
             "moodle_course_id",
             "moodle_shortname",
