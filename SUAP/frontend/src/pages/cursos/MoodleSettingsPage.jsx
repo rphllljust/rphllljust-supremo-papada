@@ -62,6 +62,12 @@ const QUICK_ACTIONS = [
     run: ({ executeShortcut }) => executeShortcut('testConnection'),
   },
   {
+    key: 'test-latency',
+    label: 'Testar latência',
+    description: 'Mede a latência média até o Moodle usando múltiplas requisições.',
+    run: ({ executeShortcut }) => executeShortcut('testLatency'),
+  },
+  {
     key: 'sync-categorias',
     label: 'Sincronizar categorias',
     description: 'Atualiza o espelho local de categorias do Moodle.',
@@ -216,6 +222,43 @@ export default function MoodleSettingsPage() {
     )
   }
 
+  async function testLatency({ runs = 5 } = {}) {
+    setLoading(true)
+    setStatus(null)
+    setLastResponse(null)
+
+    try {
+      const payload = {}
+      if (wstoken) payload.wstoken = wstoken
+      if (restFormat) payload.moodlewsrestformat = restFormat
+
+      const samples = []
+      for (let i = 0; i < runs; i += 1) {
+        const start = Date.now()
+        await client.post('/integracoes/moodle/test-connection/', payload)
+        samples.push(Date.now() - start)
+      }
+
+      const sum = samples.reduce((a, b) => a + b, 0)
+      const avg = Math.round(sum / samples.length)
+      const min = Math.min(...samples)
+      const max = Math.max(...samples)
+
+      const latencyResult = { samples, avg, min, max }
+      setStatus('ok')
+      setLastResponse({ ...(lastResponse || {}), latency: latencyResult })
+      toast.success(`Latência média ${avg} ms (${samples.length} amostras)`)
+      return latencyResult
+    } catch (err) {
+      setStatus('error')
+      setLastResponse({ message: getErrorMessage(err, 'Falha ao medir latência') })
+      toast.error(getErrorMessage(err, 'Falha ao medir latência'))
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function loadConfig() {
     try {
       const res = await client.get('/integracoes/moodle/config/')
@@ -288,6 +331,11 @@ export default function MoodleSettingsPage() {
   async function executeShortcut(shortcutKey) {
     if (shortcutKey === 'testConnection') {
       await testSiteInfo()
+      return
+    }
+
+    if (shortcutKey === 'testLatency') {
+      await testLatency()
       return
     }
 
