@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { BookCopy, Boxes, Pencil, RefreshCcw } from 'lucide-react'
+import { Boxes, Copy, Pencil, Power, RefreshCcw, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { matrizesCurricularesApi } from '@/api/endpoints'
@@ -38,18 +38,55 @@ export default function MatrizCurricularDetailPage() {
     },
   })
 
-  const offerMutation = useMutation({
-    mutationFn: () => matrizesCurricularesApi.gerarOferta(matrizId),
+  const cloneMutation = useMutation({
+    mutationFn: () => matrizesCurricularesApi.clonar(matrizId),
     onSuccess: async (response) => {
-      toast.success('Oferta real criada a partir da matriz curricular.')
-      const courseId = response?.data?.curso?.id
+      const cloneId = response?.data?.matriz?.id
       await queryClient.invalidateQueries({ queryKey: ['matriz-curricular', matrizId] })
-      if (courseId) {
-        navigate(`/ensino/cursotecnico/${courseId}/editar`)
+      await queryClient.invalidateQueries({ queryKey: ['matrizes-curriculares'] })
+      toast.success('Matriz curricular clonada com sucesso.')
+      if (cloneId) {
+        navigate(`/ensino/matrizes-curriculares/${cloneId}/editar`)
       }
     },
     onError: (error) => {
-      toast.error(error?.response?.data?.detail || 'Não foi possível gerar a oferta real a partir da matriz.')
+      toast.error(error?.response?.data?.detail || 'Não foi possível clonar a matriz curricular.')
+    },
+  })
+
+  const publishMutation = useMutation({
+    mutationFn: () => matrizesCurricularesApi.publicar(matrizId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['matriz-curricular', matrizId] })
+      await queryClient.invalidateQueries({ queryKey: ['matrizes-curriculares'] })
+      toast.success('Matriz curricular publicada com sucesso.')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.detail || 'Não foi possível publicar a matriz curricular.')
+    },
+  })
+
+  const closeMutation = useMutation({
+    mutationFn: () => matrizesCurricularesApi.encerrar(matrizId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['matriz-curricular', matrizId] })
+      await queryClient.invalidateQueries({ queryKey: ['matrizes-curriculares'] })
+      toast.success('Matriz curricular encerrada com sucesso.')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.detail || 'Não foi possível encerrar a matriz curricular.')
+    },
+  })
+
+  const setCurrentMutation = useMutation({
+    mutationFn: () => matrizesCurricularesApi.definirVigente(matrizId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['matriz-curricular', matrizId] })
+      await queryClient.invalidateQueries({ queryKey: ['matrizes-curriculares'] })
+      toast.success('Matriz curricular definida como vigente.')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.detail || 'Não foi possível definir a matriz curricular como vigente.')
     },
   })
 
@@ -91,17 +128,37 @@ export default function MatrizCurricularDetailPage() {
           <p className="page-subtitle">Curso base: {data.curso_base_nome} • Ano {data.ano_referencia} • Versão {data.versao}</p>
         </div>
         <div className="page-header__actions">
+          <button type="button" className="btn btn--outline" onClick={() => cloneMutation.mutate()} disabled={cloneMutation.isPending || !data.pode_clonar}>
+            <Copy size={16} /> {cloneMutation.isPending ? 'Clonando...' : 'Clonar matriz'}
+          </button>
+          <button type="button" className="btn btn--outline" onClick={() => publishMutation.mutate()} disabled={publishMutation.isPending || !data.pode_publicar}>
+            <ShieldCheck size={16} /> {publishMutation.isPending ? 'Publicando...' : 'Publicar matriz'}
+          </button>
+          <button type="button" className="btn btn--outline" onClick={() => setCurrentMutation.mutate()} disabled={setCurrentMutation.isPending || !data.pode_definir_vigente}>
+            <Power size={16} /> {setCurrentMutation.isPending ? 'Definindo...' : 'Definir vigente'}
+          </button>
+          <button type="button" className="btn btn--outline" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending || !data.pode_encerrar}>
+            <Power size={16} /> {closeMutation.isPending ? 'Encerrando...' : 'Encerrar matriz'}
+          </button>
           <button type="button" className="btn btn--outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
             <RefreshCcw size={16} /> {syncMutation.isPending ? 'Sincronizando...' : 'Atualizar modelo Moodle'}
           </button>
-          <button type="button" className="btn btn--secondary" onClick={() => offerMutation.mutate()} disabled={offerMutation.isPending}>
-            <BookCopy size={16} /> {offerMutation.isPending ? 'Gerando oferta...' : 'Criar oferta a partir da matriz'}
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={() => navigate(`/ensino/ofertas/nova?curso_base=${encodeURIComponent(data.curso_base)}&matriz_curricular=${encodeURIComponent(data.id)}`)}
+          >
+            Nova oferta vinculada
           </button>
-          <button type="button" className="btn btn--primary" onClick={() => navigate(`/ensino/matrizes-curriculares/${data.id}/editar`)}>
+          <button type="button" className="btn btn--primary" onClick={() => navigate(`/ensino/matrizes-curriculares/${data.id}/editar`)} disabled={!data.permite_edicao}>
             <Pencil size={16} /> Editar matriz
           </button>
         </div>
       </div>
+
+      {!data.permite_edicao ? (
+        <div className="alert alert--info">Esta matriz está vigente e não pode ser editada diretamente. Clone a matriz para criar uma nova versão.</div>
+      ) : null}
 
       <section className="dashboard-card matrix-page__hero">
         <div className="matrix-summary-grid">

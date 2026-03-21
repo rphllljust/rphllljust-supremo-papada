@@ -99,7 +99,7 @@ export default function ComponenteDetailPage() {
         <div className="componente-summary-grid componente-summary-grid--detail">
           <SummaryCard label="Sigla" value={data.sigla || '-'} />
           <SummaryCard label="Abreviatura" value={data.abreviatura || '-'} />
-          <SummaryCard label="Nível de ensino" value={data.nivel_ensino || '-'} />
+          <SummaryCard label="Nível de ensino" value={data.nivel_ensino_nome || data.nivel_ensino || '-'} />
           <SummaryCard label="Status" value={data.esta_ativo ? 'Ativo' : 'Inativo'} />
         </div>
       </section>
@@ -125,8 +125,8 @@ export default function ComponenteDetailPage() {
               <DetailField label="Descrição" value={data.descricao} wide />
               <DetailField label="Abreviatura" value={data.abreviatura} />
               <DetailField label="Sigla" value={data.sigla} />
-              <DetailField label="Tipo do componente" value={data.tipo_componente} />
-              <DetailField label="Nível de ensino" value={data.nivel_ensino} />
+              <DetailField label="Tipo do componente" value={data.tipo_componente_nome || data.tipo_componente} />
+              <DetailField label="Nível de ensino" value={data.nivel_ensino_nome || data.nivel_ensino} />
               <DetailField label="Coordenação/Departamento responsável" value={data.diretoria} />
               <DetailField label="Eixo tecnológico / Área de conhecimento" value={data.grupo_atuacao} />
               <DetailField label="Está ativo" value={data.esta_ativo ? 'Sim' : 'Não'} />

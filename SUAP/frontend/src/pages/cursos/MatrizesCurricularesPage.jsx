@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Eye, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react'
+import { Copy, Eye, Pencil, Plus, RefreshCcw, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { matrizesCurricularesApi } from '@/api/endpoints'
@@ -45,6 +45,21 @@ export default function MatrizesCurricularesPage() {
     },
     onError: (error) => {
       toast.error(error?.response?.data?.detail || 'Não foi possível remover a matriz curricular.')
+    },
+  })
+
+  const cloneMutation = useMutation({
+    mutationFn: (id) => matrizesCurricularesApi.clonar(id),
+    onSuccess: async (response) => {
+      const cloneId = response?.data?.matriz?.id
+      await queryClient.invalidateQueries({ queryKey: ['matrizes-curriculares'] })
+      toast.success('Matriz curricular clonada com sucesso.')
+      if (cloneId) {
+        navigate(`/ensino/matrizes-curriculares/${cloneId}/editar`)
+      }
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.detail || 'Não foi possível clonar a matriz curricular.')
     },
   })
 
@@ -107,10 +122,13 @@ export default function MatrizesCurricularesPage() {
               <button type="button" className="btn btn--outline btn--sm" onClick={() => navigate(`/ensino/matrizes-curriculares/${row.id}`)}>
                 <Eye size={14} /> Detalhes
               </button>
-              <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/ensino/matrizes-curriculares/${row.id}/editar`)}>
+              <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/ensino/matrizes-curriculares/${row.id}/editar`)} disabled={!row.permite_edicao}>
                 <Pencil size={14} /> Editar
               </button>
-              <button type="button" className="btn btn--danger btn--sm" onClick={() => handleRemove(row)} disabled={removeMutation.isPending}>
+              <button type="button" className="btn btn--outline btn--sm" onClick={() => cloneMutation.mutate(row.id)} disabled={cloneMutation.isPending}>
+                <Copy size={14} /> Clonar
+              </button>
+              <button type="button" className="btn btn--danger btn--sm" onClick={() => handleRemove(row)} disabled={removeMutation.isPending || row.status === 'VIGENTE'}>
                 <Trash2 size={14} /> Excluir
               </button>
             </div>

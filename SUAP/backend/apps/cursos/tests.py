@@ -1,11 +1,12 @@
 from django.test import TestCase
 from django.urls import reverse
+from unittest.mock import patch
 
 from apps.unidades.models import Unidade
 from apps.usuarios.models import Usuario
 
-from .models import ComponenteCurricular, Curso, MatrizCurricular
-from .services import create_initial_matrix_for_course, rollback_initial_matrices
+from .models import CalendarioLetivo, ComponenteCurricular, Curso, MatrizCurricular, NivelEnsino, OfertaCurso, TipoComponente
+from .services import clone_matriz_curricular, close_matriz_curricular, create_initial_matrix_for_course, create_oferta_curso, publish_matriz_curricular, rollback_initial_matrices, set_matriz_as_current, sync_oferta_curso_to_moodle
 
 
 class CursoCrudTests(TestCase):
@@ -109,3 +110,231 @@ class MatrizCurricularTransitionTests(TestCase):
         self.assertIsNone(self.componente_1.matriz_curricular)
         self.assertIsNone(self.componente_2.matriz_curricular)
         self.assertIsNone(self.curso.matriz_curricular)
+
+
+class ComponenteCatalogoCompatibilityTests(TestCase):
+    def setUp(self):
+        self.unidade, _ = Unidade.objects.get_or_create(codigo='sede', defaults={'nome': 'Sede'})
+        self.curso = Curso.objects.create(
+            unidade=self.unidade,
+            nome='Técnico em Logística',
+            sigla='LOGTEC',
+            tipo_curso='tecnico',
+            carga_horaria=1000,
+        )
+
+    def test_legacy_text_fields_create_catalog_links(self):
+        componente = ComponenteCurricular.objects.create(
+            curso=self.curso,
+            nome='Fundamentos de Logística',
+            sigla='FLOG',
+            tipo_componente='Disciplina',
+            nivel_ensino='Técnico',
+            carga_horaria=60,
+            hora_aula=80,
+            qtd_creditos=4,
+        )
+
+        self.assertEqual(componente.tipo_componente_catalogo.descricao, 'Disciplina')
+        self.assertEqual(componente.nivel_ensino_catalogo.descricao, 'Técnico')
+        self.assertTrue(TipoComponente.objects.filter(descricao='Disciplina').exists())
+        self.assertTrue(NivelEnsino.objects.filter(descricao='Técnico').exists())
+
+    def test_catalog_links_refresh_legacy_text_fields(self):
+        tipo = TipoComponente.objects.create(descricao='Projeto Integrador')
+        nivel = NivelEnsino.objects.create(descricao='Educação Profissional Técnica')
+
+        componente = ComponenteCurricular.objects.create(
+            curso=self.curso,
+            nome='Projeto Aplicado',
+            sigla='PAPL',
+            tipo_componente_catalogo=tipo,
+            nivel_ensino_catalogo=nivel,
+            carga_horaria=40,
+            hora_aula=60,
+            qtd_creditos=2,
+        )
+
+        self.assertEqual(componente.tipo_componente, 'Projeto Integrador')
+        self.assertEqual(componente.nivel_ensino, 'Educação Profissional Técnica')
+
+
+class MatrizCurricularGovernanceTests(TestCase):
+    def setUp(self):
+        self.unidade, _ = Unidade.objects.get_or_create(codigo='sede', defaults={'nome': 'Sede'})
+        self.curso = Curso.objects.create(
+            unidade=self.unidade,
+            nome='Técnico em Redes',
+            sigla='REDTEC',
+            tipo_curso='tecnico',
+            carga_horaria=1200,
+        )
+        self.matriz = MatrizCurricular.objects.create(
+            curso_base=self.curso,
+            nome='Matriz Redes 2026',
+            ano_referencia=2026,
+            versao='1.0',
+            status='RASCUNHO',
+            ativa=True,
+        )
+        ComponenteCurricular.objects.create(
+            curso=self.curso,
+            matriz_curricular=self.matriz,
+            nome='Infraestrutura de Redes',
+            sigla='INFR',
+            carga_horaria=80,
+            hora_aula=100,
+            qtd_creditos=4,
+            modulo_numero=1,
+            modulo_nome='Base técnica',
+            ordem_no_modulo=1,
+        )
+
+    def test_clone_matriz_curricular_creates_new_version_with_components(self):
+        clone = clone_matriz_curricular(self.matriz)
+
+        self.assertNotEqual(clone.id, self.matriz.id)
+        self.assertEqual(clone.status, 'RASCUNHO')
+        self.assertEqual(clone.componentes.count(), 1)
+        self.assertNotEqual(clone.versao, self.matriz.versao)
+
+    def test_publish_matriz_curricular_sets_course_reference(self):
+        publish_matriz_curricular(self.matriz)
+        self.matriz.refresh_from_db()
+        self.curso.refresh_from_db()
+
+        self.assertEqual(self.matriz.status, 'VIGENTE')
+        self.assertEqual(self.curso.matriz_curricular, self.matriz)
+
+    def test_set_matriz_as_current_closes_previous_vigente(self):
+        publish_matriz_curricular(self.matriz)
+        clone = clone_matriz_curricular(self.matriz, versao='1.1')
+
+        set_matriz_as_current(clone)
+
+        self.matriz.refresh_from_db()
+        clone.refresh_from_db()
+        self.curso.refresh_from_db()
+
+        self.assertEqual(self.matriz.status, 'ENCERRADA')
+        self.assertEqual(clone.status, 'VIGENTE')
+        self.assertEqual(self.curso.matriz_curricular, clone)
+
+    def test_close_matriz_curricular_removes_course_reference_when_no_other_vigente_exists(self):
+        publish_matriz_curricular(self.matriz)
+
+        close_matriz_curricular(self.matriz)
+
+        self.matriz.refresh_from_db()
+        self.curso.refresh_from_db()
+        self.assertEqual(self.matriz.status, 'ENCERRADA')
+        self.assertIsNone(self.curso.matriz_curricular)
+
+
+class OfertaCursoServiceTests(TestCase):
+    def setUp(self):
+        self.unidade, _ = Unidade.objects.get_or_create(codigo='sede', defaults={'nome': 'Sede'})
+        self.polo, _ = Unidade.objects.get_or_create(codigo='rio_branco', defaults={'nome': 'Rio Branco'})
+        self.curso = Curso.objects.create(
+            unidade=self.unidade,
+            nome='Técnico em Informática',
+            sigla='INFTEC',
+            tipo_curso='tecnico',
+            carga_horaria=1200,
+        )
+        self.matriz = MatrizCurricular.objects.create(
+            curso_base=self.curso,
+            nome='Matriz Informática 2026',
+            ano_referencia=2026,
+            versao='1.0',
+            status='VIGENTE',
+            ativa=True,
+        )
+        self.curso.matriz_curricular = self.matriz
+        self.curso.save(update_fields=['matriz_curricular'])
+        ComponenteCurricular.objects.create(
+            curso=self.curso,
+            matriz_curricular=self.matriz,
+            nome='Lógica de Programação',
+            sigla='LOGP',
+            carga_horaria=80,
+            hora_aula=100,
+            qtd_creditos=4,
+            modulo_numero=1,
+            modulo_nome='Fundamentos',
+            ordem_no_modulo=1,
+        )
+        ComponenteCurricular.objects.create(
+            curso=self.curso,
+            matriz_curricular=self.matriz,
+            nome='Banco de Dados',
+            sigla='BDAD',
+            carga_horaria=80,
+            hora_aula=100,
+            qtd_creditos=4,
+            modulo_numero=2,
+            modulo_nome='Dados',
+            ordem_no_modulo=1,
+        )
+        self.calendario = CalendarioLetivo.objects.create(
+            ano_letivo='2026',
+            curso=self.curso,
+            data_inicio='2026-02-01',
+            data_fim='2026-12-20',
+            status='VIGENTE',
+        )
+
+    def test_create_oferta_curso_uses_course_current_matrix_by_default(self):
+        oferta = create_oferta_curso(
+            curso_base=self.curso,
+            calendario_letivo=self.calendario,
+            polo=self.polo,
+            codigo_turma='A',
+            periodo_letivo='1',
+            turno='NOITE',
+            vagas_totais=30,
+        )
+
+        self.assertEqual(oferta.matriz_curricular, self.matriz)
+        self.assertEqual(oferta.ano_oferta, 2026)
+        self.assertEqual(oferta.vagas_disponiveis, 30)
+        self.assertTrue(oferta.logs.filter(evento='criacao_oferta').exists())
+
+    @patch('apps.cursos.services.duplicate_moodle_course')
+    @patch('apps.cursos.services.create_moodle_categories')
+    @patch('apps.cursos.services.get_moodle_categories')
+    def test_sync_oferta_curso_to_moodle_creates_course_and_updates_sync_fields(self, mock_get_categories, mock_create_categories, mock_duplicate_course):
+        self.matriz.moodle_template_course_id = 555
+        self.matriz.save(update_fields=['moodle_template_course_id'])
+        oferta = create_oferta_curso(
+            curso_base=self.curso,
+            calendario_letivo=self.calendario,
+            polo=self.polo,
+            codigo_turma='B',
+            periodo_letivo='2',
+            turno='MANHA',
+            vagas_totais=25,
+        )
+        mock_get_categories.side_effect = [
+            [],
+            [{'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387}],
+            [
+                {'id': 900, 'name': 'OFERTAS SUAP', 'idnumber': 'suap-ofertas-tecnico', 'parent': 387},
+                {'id': 901, 'name': 'Rio Branco', 'idnumber': 'suap-ofertas-polo-rio_branco', 'parent': 900},
+            ],
+        ]
+        mock_create_categories.side_effect = [
+            [{'id': 900}],
+            [{'id': 901}],
+            [{'id': 902}],
+        ]
+        mock_duplicate_course.return_value = {'course_ids': [777], 'response_payload': {'id': 777}}
+
+        result = sync_oferta_curso_to_moodle(oferta)
+
+        oferta.refresh_from_db()
+        self.assertEqual(result['oferta'].id, oferta.id)
+        self.assertEqual(oferta.moodle_course_id, 777)
+        self.assertEqual(oferta.moodle_category_id, 902)
+        self.assertEqual(oferta.last_sync_status, 'success')
+        self.assertTrue(oferta.logs.filter(evento='sincronizacao_moodle').exists())

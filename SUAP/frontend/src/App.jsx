@@ -60,6 +60,9 @@ const ComponenteVinculacaoPage = lazy(() => import('@/pages/cursos/ComponenteVin
 const MatrizesCurricularesPage = lazy(() => import('@/pages/cursos/MatrizesCurricularesPage'))
 const MatrizCurricularDetailPage = lazy(() => import('@/pages/cursos/MatrizCurricularDetailPage'))
 const MatrizCurricularEditPage = lazy(() => import('@/pages/cursos/MatrizCurricularEditPage'))
+const OfertasCursosPage = lazy(() => import('@/pages/cursos/OfertasCursosPage'))
+const OfertaCursoDetailPage = lazy(() => import('@/pages/cursos/OfertaCursoDetailPage'))
+const OfertaCursoEditPage = lazy(() => import('@/pages/cursos/OfertaCursoEditPage'))
 const MoodleCategoriasPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasPanel'))
 const MoodleCategoriasCursosPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasCursosPanel'))
 const MoodleSettingsPage = lazy(() => import('@/pages/cursos/MoodleSettingsPage'))
@@ -310,6 +313,14 @@ export default function App() {
                   <Route path="/ensino/matrizes-curriculares/:matrizId/editar" element={<RouteShell><MatrizCurricularEditPage /></RouteShell>} />
                   <Route path="/ensino/matrizes-curriculares/:matrizId/editar/" element={<RouteShell><MatrizCurricularEditPage /></RouteShell>} />
                   <Route path="/ensino/moodle-categorias" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />
+                  <Route path="/ensino/ofertas" element={<RouteShell><OfertasCursosPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/" element={<RouteShell><OfertasCursosPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/nova" element={<RouteShell><OfertaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/nova/" element={<RouteShell><OfertaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/:ofertaId" element={<RouteShell><OfertaCursoDetailPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/:ofertaId/" element={<RouteShell><OfertaCursoDetailPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/:ofertaId/editar" element={<RouteShell><OfertaCursoEditPage /></RouteShell>} />
+                  <Route path="/ensino/ofertas/:ofertaId/editar/" element={<RouteShell><OfertaCursoEditPage /></RouteShell>} />
                   <Route path="/ensino/moodle-categorias/" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />
                   <Route path="/ti/moodle/categorias" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />
                   <Route path="/ti/moodle/categorias/" element={<RouteShell><MoodleCategoriasPanel /></RouteShell>} />

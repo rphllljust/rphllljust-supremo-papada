@@ -245,6 +245,13 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/matrizes-curriculares'],
           },
           {
+            id: 'ofertas-cursos',
+            type: 'link',
+            label: 'Ofertas de Curso',
+            to: '/ensino/ofertas/',
+            activePrefixes: ['/ensino/ofertas'],
+          },
+          {
             id: 'componentes',
             type: 'link',
             label: 'Componentes',

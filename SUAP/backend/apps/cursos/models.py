@@ -165,6 +165,22 @@ class MatrizCurricular(models.Model):
         return self.nome
 
     @property
+    def permite_edicao(self):
+        return self.status != 'VIGENTE'
+
+    @property
+    def pode_publicar(self):
+        return self.status == 'RASCUNHO'
+
+    @property
+    def pode_encerrar(self):
+        return self.status != 'ENCERRADA'
+
+    @property
+    def pode_definir_vigente(self):
+        return self.status != 'ENCERRADA'
+
+    @property
     def total_modulos(self):
         return (
             self.componentes.exclude(modulo_numero__isnull=True)
@@ -215,6 +231,22 @@ class ComponenteCurricular(models.Model):
     ativo = models.BooleanField(default=True, verbose_name='Está ativo')
     tipo_componente = models.CharField(max_length=80, blank=True, default='', verbose_name='Tipo do Componente')
     nivel_ensino = models.CharField(max_length=80, blank=True, default='', verbose_name='Nível de ensino')
+    tipo_componente_catalogo = models.ForeignKey(
+        TipoComponente,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='componentes_curriculares',
+        verbose_name='Tipo do Componente (Catálogo)',
+    )
+    nivel_ensino_catalogo = models.ForeignKey(
+        NivelEnsino,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='componentes_curriculares',
+        verbose_name='Nível de Ensino (Catálogo)',
+    )
     grupo_atuacao = models.CharField(max_length=120, blank=True, default='', verbose_name='Grupo de Atuação')
     carga_horaria = models.PositiveIntegerField(default=0, verbose_name='Carga Horária (h)')
     hora_aula = models.PositiveIntegerField(default=0, verbose_name='Hora/aula')
@@ -252,7 +284,11 @@ class ComponenteCurricular(models.Model):
         errors = {}
 
         self.nome = (self.nome or '').strip()
+        self.tipo_componente = (self.tipo_componente or '').strip()
+        self.nivel_ensino = (self.nivel_ensino or '').strip()
         self.modulo_nome = (self.modulo_nome or '').strip()
+
+        self._sync_catalog_fields()
 
         if not self.nome:
             errors['nome'] = 'Informe o nome do componente curricular.'
@@ -277,6 +313,26 @@ class ComponenteCurricular(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    def _sync_catalog_fields(self):
+        tipo_texto = (self.tipo_componente or '').strip()
+        nivel_texto = (self.nivel_ensino or '').strip()
+
+        if self.tipo_componente_catalogo_id:
+            self.tipo_componente = self.tipo_componente_catalogo.descricao
+        elif tipo_texto:
+            self.tipo_componente_catalogo, _ = TipoComponente.objects.get_or_create(descricao=tipo_texto)
+            self.tipo_componente = self.tipo_componente_catalogo.descricao
+        else:
+            self.tipo_componente_catalogo = None
+
+        if self.nivel_ensino_catalogo_id:
+            self.nivel_ensino = self.nivel_ensino_catalogo.descricao
+        elif nivel_texto:
+            self.nivel_ensino_catalogo, _ = NivelEnsino.objects.get_or_create(descricao=nivel_texto)
+            self.nivel_ensino = self.nivel_ensino_catalogo.descricao
+        else:
+            self.nivel_ensino_catalogo = None
+
     @property
     def matriz_curricular_efetiva(self):
         return self.matriz_curricular or getattr(self.curso, 'matriz_curricular', None)
@@ -297,6 +353,10 @@ class ComponenteCurricular(models.Model):
 class MatrizCurricularLog(models.Model):
     EVENTO_CHOICES = [
         ('criacao_matriz', 'Criação de Matriz'),
+        ('clonagem_matriz', 'Clonagem de Matriz'),
+        ('publicacao_matriz', 'Publicação de Matriz'),
+        ('encerramento_matriz', 'Encerramento de Matriz'),
+        ('definicao_vigencia', 'Definição de Vigência'),
         ('migracao_componentes', 'Migração de Componentes'),
         ('criacao_curso_modelo', 'Criação de Curso Modelo no Moodle'),
         ('atualizacao_curso_modelo', 'Atualização de Curso Modelo no Moodle'),
@@ -379,3 +439,165 @@ class CalendarioLetivo(models.Model):
 
     def __str__(self):
         return f'Calendário {self.ano_letivo}  {self.curso.nome} [{self.get_status_display()}]'
+
+
+class OfertaCurso(models.Model):
+    STATUS_CHOICES = [
+        ('PLANEJADA', 'Planejada'),
+        ('ATIVA', 'Ativa'),
+        ('ENCERRADA', 'Encerrada'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    TURNO_CHOICES = [
+        ('MANHA', 'Manhã'),
+        ('TARDE', 'Tarde'),
+        ('NOITE', 'Noite'),
+        ('INTEGRAL', 'Integral'),
+    ]
+
+    curso_base = models.ForeignKey(
+        Curso,
+        on_delete=models.CASCADE,
+        related_name='ofertas',
+        verbose_name='Curso Base',
+    )
+    matriz_curricular = models.ForeignKey(
+        MatrizCurricular,
+        on_delete=models.PROTECT,
+        related_name='ofertas',
+        verbose_name='Matriz Curricular',
+    )
+    polo = models.ForeignKey(
+        Unidade,
+        on_delete=models.PROTECT,
+        related_name='ofertas_curso',
+        verbose_name='Polo',
+    )
+    calendario_letivo = models.ForeignKey(
+        CalendarioLetivo,
+        on_delete=models.PROTECT,
+        related_name='ofertas',
+        verbose_name='Calendário Letivo',
+    )
+    nome = models.CharField(max_length=200, verbose_name='Nome da Oferta')
+    codigo_turma = models.CharField(max_length=50, blank=True, default='', verbose_name='Turma')
+    ano_oferta = models.PositiveIntegerField(verbose_name='Ano da Oferta')
+    periodo_letivo = models.CharField(max_length=20, default='1', verbose_name='Período Letivo')
+    turno = models.CharField(max_length=16, choices=TURNO_CHOICES, default='NOITE', verbose_name='Turno')
+    vagas_totais = models.PositiveIntegerField(default=0, verbose_name='Vagas Totais')
+    vagas_ocupadas = models.PositiveIntegerField(default=0, verbose_name='Vagas Ocupadas')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PLANEJADA', verbose_name='Status')
+    observacao = models.TextField(blank=True, default='', verbose_name='Observações')
+    moodle_course_id = models.PositiveIntegerField(null=True, blank=True, unique=True, verbose_name='ID do Curso da Oferta no Moodle')
+    moodle_shortname = models.CharField(max_length=100, blank=True, default='', verbose_name='Shortname da Oferta no Moodle')
+    moodle_category_id = models.PositiveIntegerField(null=True, blank=True, verbose_name='ID da Categoria da Oferta no Moodle')
+    last_sync_at = models.DateTimeField(null=True, blank=True, verbose_name='Última Sincronização')
+    last_sync_status = models.CharField(max_length=20, blank=True, default='', verbose_name='Status da Última Sincronização')
+    last_sync_message = models.TextField(blank=True, default='', verbose_name='Mensagem da Última Sincronização')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Oferta de Curso'
+        verbose_name_plural = 'Ofertas de Cursos'
+        ordering = ['-ano_oferta', '-periodo_letivo', 'curso_base__nome', 'codigo_turma', 'nome']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['curso_base', 'matriz_curricular', 'polo', 'ano_oferta', 'periodo_letivo', 'codigo_turma'],
+                name='uniq_oferta_curso_por_execucao',
+            ),
+        ]
+
+    def clean(self):
+        errors = {}
+
+        self.nome = (self.nome or '').strip()
+        self.codigo_turma = (self.codigo_turma or '').strip()
+        self.periodo_letivo = (self.periodo_letivo or '').strip()
+        self.observacao = (self.observacao or '').strip()
+        self.moodle_shortname = (self.moodle_shortname or '').strip()
+        self.last_sync_status = (self.last_sync_status or '').strip()
+
+        if self.curso_base_id and self.curso_base.tipo_curso != 'tecnico':
+            errors['curso_base'] = 'OfertaCurso está disponível apenas para cursos técnicos nesta fase.'
+
+        if self.matriz_curricular_id and self.curso_base_id and self.matriz_curricular.curso_base_id != self.curso_base_id:
+            errors['matriz_curricular'] = 'A matriz curricular selecionada não pertence ao curso base informado.'
+
+        if self.calendario_letivo_id and self.curso_base_id and self.calendario_letivo.curso_id != self.curso_base_id:
+            errors['calendario_letivo'] = 'O calendário letivo informado não pertence ao curso base selecionado.'
+
+        if not self.nome:
+            errors['nome'] = 'Informe o nome da oferta do curso.'
+
+        if not self.ano_oferta:
+            errors['ano_oferta'] = 'Informe o ano da oferta.'
+
+        if not self.periodo_letivo:
+            errors['periodo_letivo'] = 'Informe o período letivo da oferta.'
+
+        if self.vagas_ocupadas > self.vagas_totais:
+            errors['vagas_ocupadas'] = 'As vagas ocupadas não podem ser maiores que as vagas totais.'
+
+        if self.matriz_curricular_id and self.matriz_curricular.status == 'ENCERRADA':
+            errors['matriz_curricular'] = 'Não é possível criar oferta com matriz curricular encerrada.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @property
+    def vagas_disponiveis(self):
+        return max((self.vagas_totais or 0) - (self.vagas_ocupadas or 0), 0)
+
+    @property
+    def pode_sincronizar_moodle(self):
+        return self.status in {'PLANEJADA', 'ATIVA'}
+
+    @property
+    def modulo_nomes(self):
+        modulos = []
+        for modulo in self.matriz_curricular.componentes_por_modulo():
+            modulos.append(modulo['modulo_nome'])
+        return modulos
+
+    def __str__(self):
+        return self.nome
+
+
+class OfertaCursoLog(models.Model):
+    EVENTO_CHOICES = [
+        ('criacao_oferta', 'Criação de Oferta'),
+        ('atualizacao_oferta', 'Atualização de Oferta'),
+        ('sincronizacao_moodle', 'Sincronização com Moodle'),
+        ('importacao_conteudo', 'Importação/Cópia de Conteúdo'),
+        ('falha_sincronizacao', 'Falha de Sincronização'),
+    ]
+    STATUS_CHOICES = [
+        ('info', 'Informação'),
+        ('success', 'Sucesso'),
+        ('error', 'Erro'),
+    ]
+
+    oferta_curso = models.ForeignKey(
+        OfertaCurso,
+        on_delete=models.CASCADE,
+        related_name='logs',
+        verbose_name='Oferta do Curso',
+    )
+    evento = models.CharField(max_length=40, choices=EVENTO_CHOICES, verbose_name='Evento')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='info', verbose_name='Status')
+    mensagem = models.TextField(blank=True, default='', verbose_name='Mensagem')
+    payload = models.JSONField(default=dict, blank=True, verbose_name='Payload')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Log de Oferta de Curso'
+        verbose_name_plural = 'Logs de Ofertas de Cursos'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.get_evento_display()} - {self.status}'

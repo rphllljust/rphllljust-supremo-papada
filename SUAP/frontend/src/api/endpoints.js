@@ -142,8 +142,17 @@ export const matrizesCurricularesApi = {
   componentes: (id, params) => client.get(`/cursos/matrizes-curriculares/${id}/componentes/`, { params }),
   createComponente: (id, data) => client.post(`/cursos/matrizes-curriculares/${id}/componentes/`, data),
   logs: (id) => client.get(`/cursos/matrizes-curriculares/${id}/logs/`),
+  clonar: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/clonar/`, data),
+  publicar: (id) => client.post(`/cursos/matrizes-curriculares/${id}/publicar/`),
+  encerrar: (id) => client.post(`/cursos/matrizes-curriculares/${id}/encerrar/`),
+  definirVigente: (id) => client.post(`/cursos/matrizes-curriculares/${id}/definir-vigente/`),
   syncTemplate: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/sincronizar-template-moodle/`, data),
   gerarOferta: (id, data = {}) => client.post(`/cursos/matrizes-curriculares/${id}/gerar-oferta/`, data),
+}
+export const ofertasApi = {
+  ...crud('ofertas'),
+  logs: (id) => client.get(`/ofertas/${id}/logs/`),
+  syncMoodle: (id, data = {}) => client.post(`/ofertas/${id}/sincronizar-moodle/`, data),
 }
 export const turmasApi = {
   ...crud('turmas'),

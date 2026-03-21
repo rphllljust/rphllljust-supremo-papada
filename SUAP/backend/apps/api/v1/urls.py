@@ -20,6 +20,7 @@ urlpatterns = [
     path("inscricoes/", include("apps.api.v1.inscricoes.urls")),
     path("integracoes/moodle/", include(("apps.integracao_moodle.api.urls", "integracao_moodle_api"), namespace="integracao_moodle_api")),
     path("notificacoes/", include("apps.api.v1.notificacoes.urls")),
+    path("ofertas/", include("apps.api.v1.ofertas.urls")),
     path("processos/", include("apps.api.v1.processos.urls")),
     path("publicacoes/", include("apps.api.v1.publicacoes.urls")),
     path("servidores/", include("apps.api.v1.servidores.urls")),

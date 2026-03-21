@@ -29,7 +29,8 @@ function mapRow(row) {
     id: row.id,
     sigla: row.sigla,
     descricao: row.descricao || row.nome,
-    nivel: row.nivel_ensino,
+    tipo: row.tipo_componente_nome || row.tipo_componente,
+    nivel: row.nivel_ensino_nome || row.nivel_ensino,
     grupo: row.grupo_atuacao,
     hora_relogio: row.carga_horaria,
     hora_aula: row.hora_aula,
@@ -116,6 +117,7 @@ const TableRow = memo(({ row, onView, onEdit }) => (
     <td>{row.id}</td>
     <td className="td--link" onClick={onView}>{row.sigla}</td>
     <td>{row.descricao}</td>
+    <td>{row.tipo}</td>
     <td>{row.nivel}</td>
     <td className="td--dash">{row.grupo || '-'}</td>
     <td className="td--center">{row.hora_relogio}</td>
@@ -232,6 +234,7 @@ export default function ComponentesPage() {
     { key: 'id', label: 'ID', sortable: true },
     { key: 'sigla', label: 'Sigla', sortable: true },
     { key: 'descricao', label: 'Descrição', sortable: true },
+    { key: 'tipo', label: 'Tipo do componente' },
     { key: 'nivel', label: 'Nível de ensino' },
     { key: 'grupo', label: 'Grupo de Atuação' },
     { key: 'hora_relogio', label: 'Hora/relógio', sortable: true },

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.cursos.models import AreaCurso, ComponenteCurricular, Curso, EixoTecnologico, MatrizCurricular, MatrizCurricularLog, NivelEnsino, TipoComponente
+from apps.cursos.models import AreaCurso, CalendarioLetivo, ComponenteCurricular, Curso, EixoTecnologico, MatrizCurricular, MatrizCurricularLog, NivelEnsino, TipoComponente
 
 
 class EixoTecnologicoSerializer(serializers.ModelSerializer):
@@ -59,6 +59,10 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
     matriz_curricular = serializers.SerializerMethodField(read_only=True)
     matriz_curricular_id = serializers.PrimaryKeyRelatedField(source='matriz_curricular', queryset=MatrizCurricular.objects.all(), required=False, allow_null=True)
     matriz_curricular_nome = serializers.SerializerMethodField(read_only=True)
+    tipo_componente_id = serializers.PrimaryKeyRelatedField(source='tipo_componente_catalogo', queryset=TipoComponente.objects.all(), required=False, allow_null=True)
+    tipo_componente_nome = serializers.CharField(source='tipo_componente_catalogo.descricao', read_only=True)
+    nivel_ensino_id = serializers.PrimaryKeyRelatedField(source='nivel_ensino_catalogo', queryset=NivelEnsino.objects.all(), required=False, allow_null=True)
+    nivel_ensino_nome = serializers.CharField(source='nivel_ensino_catalogo.descricao', read_only=True)
     curso_id = serializers.IntegerField(read_only=True)
     curso_nome = serializers.CharField(source='curso.nome', read_only=True)
     esta_ativo = serializers.BooleanField(source='ativo', required=False)
@@ -75,7 +79,11 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
             'descricao_diploma_historico',
             'diretoria',
             'tipo_componente',
+            'tipo_componente_id',
+            'tipo_componente_nome',
             'nivel_ensino',
+            'nivel_ensino_id',
+            'nivel_ensino_nome',
             'curso',
             'matriz_curricular',
             'matriz_curricular_id',
@@ -107,6 +115,11 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         matriz = attrs.get('matriz_curricular', getattr(self.instance, 'matriz_curricular', None))
         curso = attrs.get('curso', getattr(self.instance, 'curso', None))
+        tipo_catalogo = attrs.get('tipo_componente_catalogo', getattr(self.instance, 'tipo_componente_catalogo', None))
+        nivel_catalogo = attrs.get('nivel_ensino_catalogo', getattr(self.instance, 'nivel_ensino_catalogo', None))
+
+        tipo_texto = attrs.get('tipo_componente', getattr(self.instance, 'tipo_componente', ''))
+        nivel_texto = attrs.get('nivel_ensino', getattr(self.instance, 'nivel_ensino', ''))
 
         if matriz and curso is None:
             attrs['curso'] = matriz.curso_base
@@ -117,6 +130,26 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
 
         if matriz and matriz.curso_base_id != curso.id:
             raise serializers.ValidationError({'matriz_curricular_id': 'A matriz curricular deve pertencer ao mesmo curso informado.'})
+
+        if tipo_catalogo is None and (tipo_texto or '').strip():
+            attrs['tipo_componente_catalogo'], _ = TipoComponente.objects.get_or_create(descricao=tipo_texto.strip())
+        if nivel_catalogo is None and (nivel_texto or '').strip():
+            attrs['nivel_ensino_catalogo'], _ = NivelEnsino.objects.get_or_create(descricao=nivel_texto.strip())
+
+        if 'tipo_componente_catalogo' in attrs and attrs.get('tipo_componente_catalogo') is None and 'tipo_componente' not in attrs:
+            attrs['tipo_componente'] = ''
+        if 'nivel_ensino_catalogo' in attrs and attrs.get('nivel_ensino_catalogo') is None and 'nivel_ensino' not in attrs:
+            attrs['nivel_ensino'] = ''
+
+        if attrs.get('tipo_componente_catalogo') is not None:
+            attrs['tipo_componente'] = attrs['tipo_componente_catalogo'].descricao
+        elif 'tipo_componente' in attrs:
+            attrs['tipo_componente'] = (attrs.get('tipo_componente') or '').strip()
+
+        if attrs.get('nivel_ensino_catalogo') is not None:
+            attrs['nivel_ensino'] = attrs['nivel_ensino_catalogo'].descricao
+        elif 'nivel_ensino' in attrs:
+            attrs['nivel_ensino'] = (attrs.get('nivel_ensino') or '').strip()
 
         return attrs
 
@@ -215,6 +248,24 @@ class CursoSerializer(serializers.ModelSerializer):
         return 'moodle' if obj.moodle_course_id else 'manual'
 
 
+class CalendarioLetivoSerializer(serializers.ModelSerializer):
+    curso_nome = serializers.CharField(source='curso.nome', read_only=True)
+
+    class Meta:
+        model = CalendarioLetivo
+        fields = [
+            'id',
+            'ano_letivo',
+            'curso',
+            'curso_nome',
+            'data_inicio',
+            'data_fim',
+            'dias_letivos',
+            'status',
+            'descricao',
+        ]
+
+
 class MatrizCurricularLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatrizCurricularLog
@@ -227,6 +278,11 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
     curso_base_tipo = serializers.CharField(source='curso_base.tipo_curso', read_only=True)
     total_componentes = serializers.IntegerField(source='componentes.count', read_only=True)
     total_modulos = serializers.IntegerField(read_only=True)
+    permite_edicao = serializers.BooleanField(read_only=True)
+    pode_publicar = serializers.BooleanField(read_only=True)
+    pode_encerrar = serializers.BooleanField(read_only=True)
+    pode_definir_vigente = serializers.BooleanField(read_only=True)
+    pode_clonar = serializers.SerializerMethodField(read_only=True)
     componentes_por_modulo = serializers.SerializerMethodField(read_only=True)
     logs_recentes = MatrizCurricularLogSerializer(source='logs.all', many=True, read_only=True)
 
@@ -254,6 +310,11 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
             'updated_at',
             'total_componentes',
             'total_modulos',
+            'permite_edicao',
+            'pode_publicar',
+            'pode_encerrar',
+            'pode_definir_vigente',
+            'pode_clonar',
             'componentes_por_modulo',
             'logs_recentes',
         ]
@@ -268,6 +329,11 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
             'updated_at',
             'total_componentes',
             'total_modulos',
+            'permite_edicao',
+            'pode_publicar',
+            'pode_encerrar',
+            'pode_definir_vigente',
+            'pode_clonar',
             'componentes_por_modulo',
             'logs_recentes',
         ]
@@ -285,10 +351,16 @@ class MatrizCurricularSerializer(serializers.ModelSerializer):
         return versao
 
     def validate(self, attrs):
+        if self.instance and self.instance.status == 'VIGENTE':
+            raise serializers.ValidationError('Matrizes vigentes não podem ser editadas diretamente. Clone a matriz para gerar uma nova versão.')
+
         curso_base = attrs.get('curso_base', getattr(self.instance, 'curso_base', None))
         if curso_base and curso_base.tipo_curso != 'tecnico':
             raise serializers.ValidationError({'curso_base': 'A matriz curricular explícita está disponível apenas para cursos técnicos nesta fase.'})
         return attrs
+
+    def get_pode_clonar(self, obj):
+        return True
 
     def get_componentes_por_modulo(self, obj):
         grupos = []

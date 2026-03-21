@@ -100,6 +100,8 @@ export default function MatrizCurricularEditPage() {
     )
   }
 
+  const isLocked = !isCreateMode && data && !data.permite_edicao
+
   const onSubmit = handleSubmit(async (formData) => {
     await saveMutation.mutateAsync({
       id: matrizId,
@@ -137,7 +139,10 @@ export default function MatrizCurricularEditPage() {
         </div>
       </div>
 
+      {isLocked ? <div className="alert alert--info">Esta matriz está vigente e foi bloqueada para edição direta. Clone a matriz para gerar uma nova versão editável.</div> : null}
+
       <form className="dashboard-card matrix-form" onSubmit={onSubmit}>
+        <fieldset disabled={isLocked || saveMutation.isPending}>
         <div className="matrix-form__grid">
           <label className="matrix-form__field matrix-form__field--full">
             <span>Curso base técnico</span>
@@ -187,10 +192,11 @@ export default function MatrizCurricularEditPage() {
         </div>
 
         <div className="matrix-form__actions">
-          <button type="submit" className="btn btn--primary" disabled={saveMutation.isPending}>
+          <button type="submit" className="btn btn--primary" disabled={saveMutation.isPending || isLocked}>
             <Save size={16} /> {saveMutation.isPending ? 'Salvando...' : 'Salvar matriz'}
           </button>
         </div>
+        </fieldset>
       </form>
     </div>
   )

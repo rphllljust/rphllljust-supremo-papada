@@ -15,9 +15,9 @@ const DEFAULT_VALUES = {
   descricao_diploma: '',
   abreviatura: '',
   sigla: '',
-  tipo_componente: '',
+  tipo_componente_id: '',
   diretoria: '',
-  nivel_ensino: '',
+  nivel_ensino_id: '',
   esta_ativo: true,
   grupo_atuacao: '',
   sigla_qacademico: '',
@@ -59,9 +59,9 @@ function buildFormValues(component) {
     descricao_diploma: descricaoOficial,
     abreviatura: component?.abreviatura || '',
     sigla: component?.sigla || '',
-    tipo_componente: component?.tipo_componente || '',
+    tipo_componente_id: component?.tipo_componente_id ? String(component.tipo_componente_id) : '',
     diretoria: component?.diretoria || '',
-    nivel_ensino: component?.nivel_ensino || '',
+    nivel_ensino_id: component?.nivel_ensino_id ? String(component.nivel_ensino_id) : '',
     esta_ativo: component?.esta_ativo ?? true,
     grupo_atuacao: component?.grupo_atuacao || '',
     sigla_qacademico: component?.sigla_qacademico || '',
@@ -255,9 +255,9 @@ export default function ComponenteEditPage() {
       descricao_diploma_historico: descricaoPersistida,
       abreviatura: formData.abreviatura.trim(),
       sigla: formData.sigla.trim(),
-      tipo_componente: formData.tipo_componente.trim(),
+      tipo_componente_id: formData.tipo_componente_id ? Number(formData.tipo_componente_id) : null,
       diretoria: formData.diretoria.trim(),
-      nivel_ensino: formData.nivel_ensino.trim(),
+      nivel_ensino_id: formData.nivel_ensino_id ? Number(formData.nivel_ensino_id) : null,
       esta_ativo: parseBooleanSelectValue(formData.esta_ativo),
       grupo_atuacao: formData.grupo_atuacao.trim(),
       sigla_qacademico: formData.sigla_qacademico.trim(),
@@ -353,7 +353,7 @@ export default function ComponenteEditPage() {
             </FormRow>
 
             <FormRow label="Tipo do Componente">
-              <select {...register('tipo_componente')}>
+              <select {...register('tipo_componente_id')}>
                 <option value="">Escolha uma opção</option>
                 {renderSelectOptions(opcoes?.tipos_componente)}
               </select>
@@ -361,7 +361,7 @@ export default function ComponenteEditPage() {
 
 
             <FormRow label="Nível de ensino">
-              <select {...register('nivel_ensino')}>
+              <select {...register('nivel_ensino_id')}>
                 <option value="">Escolha uma opção</option>
                 {renderSelectOptions(opcoes?.niveis_ensino)}
               </select>
