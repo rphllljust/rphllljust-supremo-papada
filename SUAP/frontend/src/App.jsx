@@ -30,6 +30,7 @@ const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
 const DocumentosPage = lazy(() => import('@/pages/documentos/DocumentosPage'))
 const DeclaracoesPage = lazy(() => import('@/pages/documentos/DeclaracoesPage'))
 const HistoricosPage = lazy(() => import('@/pages/documentos/HistoricosPage'))
+const HistoricosDigitaisPage = lazy(() => import('@/pages/documentos/HistoricosDigitaisPage'))
 const GuiasTransferenciaPage = lazy(() => import('@/pages/documentos/GuiasTransferenciaPage'))
 const MatriculasPage = lazy(() => import('@/pages/matriculas/MatriculasPage'))
 const DiariosPage    = lazy(() => import('@/pages/diarios/DiariosPage'))
@@ -231,6 +232,7 @@ export default function App() {
                   <Route path="/documentos/declaracoes/nova" element={<RouteShell><DeclaracoesPage /></RouteShell>} />
                   <Route path="/documentos/historicos" element={<RouteShell><HistoricosPage /></RouteShell>} />
                   <Route path="/documentos/historicos/novo" element={<RouteShell><HistoricosPage /></RouteShell>} />
+                  <Route path="/documentos/historicos-digitais" element={<RouteShell><HistoricosDigitaisPage /></RouteShell>} />
                   <Route path="/documentos/guias" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/documentos/guias/nova" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/matriculas" element={<RouteShell><MatriculasPage /></RouteShell>} />

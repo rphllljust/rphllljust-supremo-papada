@@ -13,6 +13,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - ./.env.homolog.local
     environment:
       APP_ENV: homolog
       SECRET_KEY: troque-por-uma-chave-segura-de-homolog
@@ -26,6 +28,11 @@ services:
       DATABASE_USER: suap_homolog
       DATABASE_PASSWORD: suap_homolog
       DATABASE_CONN_MAX_AGE: 60
+      MOODLE_BASE_URL: https://cursos.idep.ro.gov.br
+      MOODLE_REST_PATH: /webservice/rest/server.php
+      MOODLE_WS_FORMAT: json
+      MOODLE_TIMEOUT: 30
+      MOODLE_VERIFY_SSL: "false"
 
   frontend:
     ports:

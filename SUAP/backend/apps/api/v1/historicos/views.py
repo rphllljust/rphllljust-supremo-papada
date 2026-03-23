@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
 from apps.documentos.models import HistoricoEscolar
+from apps.usuarios.models import PerfilUsuario
 
 from .serializers import HistoricoEscolarSerializer
 
@@ -14,7 +15,11 @@ class HistoricoEscolarViewSet(viewsets.ModelViewSet):
     access_surface = "api"
     serializer_class = HistoricoEscolarSerializer
     pagination_class = StandardResultsSetPagination
-    queryset = HistoricoEscolar.objects.select_related("matricula__aluno__pessoa", "emitido_por__pessoa").order_by("-data_emissao", "-id")
+    queryset = (
+        HistoricoEscolar.objects
+        .select_related("matricula__aluno__pessoa", "matricula__turma", "emitido_por__pessoa")
+        .order_by("-data_emissao", "-id")
+    )
 
     def get_permissions(self):
         if self.action in {"create", "update", "partial_update", "destroy"}:
@@ -25,6 +30,14 @@ class HistoricoEscolarViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
+        if user and getattr(user, "is_authenticated", False) and not getattr(user, "is_superuser", False):
+            profile = getattr(user, "tipo", "")
+            if profile == PerfilUsuario.ALUNO:
+                queryset = queryset.filter(matricula__aluno=user)
+            elif profile == PerfilUsuario.PROFESSOR:
+                queryset = queryset.filter(matricula__turma__professor_responsavel=user)
+
         search = self.request.query_params.get("search", "").strip()
         if search:
             queryset = queryset.filter(

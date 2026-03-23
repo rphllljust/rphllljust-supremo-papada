@@ -278,3 +278,18 @@ INITIAL_ADMIN_CPF = env_str("INITIAL_ADMIN_CPF", default="")
 INITIAL_ADMIN_PASSWORD = env_str("INITIAL_ADMIN_PASSWORD", default="admin")
 INITIAL_ADMIN_FIRST_NAME = env_str("INITIAL_ADMIN_FIRST_NAME", default="Administrador")
 INITIAL_ADMIN_LAST_NAME = env_str("INITIAL_ADMIN_LAST_NAME", default="Inicial")
+
+DOCUMENTOS_MEC_XSD_ROOT = Path(
+    env_str(
+        "DOCUMENTOS_MEC_XSD_ROOT",
+        default=str(BASE_DIR / "schemas" / "mec" / "historico"),
+    )
+)
+DOCUMENTOS_VALIDATION_BASE_URL = env_str(
+    "DOCUMENTOS_VALIDATION_BASE_URL",
+    default="http://localhost:8000/api/v1/historicos-digitais/validar-publico/",
+)
+DOCUMENTOS_XMLDSIG_ENABLED = env_bool("DOCUMENTOS_XMLDSIG_ENABLED", default=False)
+DOCUMENTOS_XMLDSIG_PRIVATE_KEY_PATH = env_str("DOCUMENTOS_XMLDSIG_PRIVATE_KEY_PATH", default="")
+DOCUMENTOS_XMLDSIG_CERT_PATH = env_str("DOCUMENTOS_XMLDSIG_CERT_PATH", default="")
+DOCUMENTOS_XSD_STRICT_VALIDATION = env_bool("DOCUMENTOS_XSD_STRICT_VALIDATION", default=False)

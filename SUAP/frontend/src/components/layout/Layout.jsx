@@ -355,8 +355,14 @@ function buildRegistryLink(user) {
   return `/rh/servidores/${user.id}`
 }
 
-function SidebarLeaf({ item }) {
-  const label = <span className="sidebar__label">{item.label}</span>
+function SidebarLeaf({ item, depth = 0 }) {
+  const Icon = depth === 0 ? item.icon : null
+  const label = (
+    <>
+      {Icon ? <Icon size={15} className="sidebar__item-icon" aria-hidden="true" /> : null}
+      <span className="sidebar__label">{item.label}</span>
+    </>
+  )
 
   if (item.type === 'external') {
     return (
@@ -401,6 +407,7 @@ function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedO
         }}
       >
         <summary className={`${summaryClassName} ${active ? 'sidebar__summary--active' : ''}`}>
+          {depth === 0 && item.icon ? <item.icon size={15} className="sidebar__item-icon" aria-hidden="true" /> : null}
           <span className="sidebar__label">{item.label}</span>
           <ChevronDown size={16} className="sidebar__caret" />
         </summary>
@@ -417,14 +424,14 @@ function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedO
 
   if (!item.items?.length) {
     if (depth === 0) {
-      return <SidebarLeaf item={item} />
+      return <SidebarLeaf item={item} depth={depth} />
     }
 
     if (item.type === 'external') {
       return (
         <li className="sidebar__tree-item">
           <a href={item.href} className={`sidebar__tree-link ${active ? 'sidebar__tree-link--active' : ''}`}>
-            {item.label}
+            <span className="sidebar__label">{item.label}</span>
           </a>
         </li>
       )
@@ -440,7 +447,7 @@ function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedO
             `sidebar__tree-link ${isActive || active ? 'sidebar__tree-link--active' : ''}`
           }
         >
-          {item.label}
+          <span className="sidebar__label">{item.label}</span>
         </NavLink>
       </li>
     )
@@ -463,6 +470,7 @@ function SidebarNode({ item, depth, pathname, openGroups, setOpenGroups, forcedO
       }}
     >
       <summary className={`${summaryClassName} ${active ? 'sidebar__summary--active' : ''}`}>
+        {depth === 0 && item.icon ? <item.icon size={15} className="sidebar__item-icon" aria-hidden="true" /> : null}
         <span className="sidebar__label">{item.label}</span>
         <ChevronDown size={16} className="sidebar__caret" />
       </summary>

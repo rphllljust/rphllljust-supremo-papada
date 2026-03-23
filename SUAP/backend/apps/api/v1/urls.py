@@ -17,6 +17,7 @@ urlpatterns = [
     path("guarda-documental/", include("apps.api.v1.guarda_documental.urls")),
     path("guias-transferencia/", include("apps.api.v1.guias_transferencia.urls")),
     path("historicos/", include("apps.api.v1.historicos.urls")),
+    path("historicos-digitais/", include("apps.api.v1.historicos_digitais.urls")),
     path("inscricoes/", include("apps.api.v1.inscricoes.urls")),
     path("integracoes/moodle/", include(("apps.integracao_moodle.api.urls", "integracao_moodle_api"), namespace="integracao_moodle_api")),
     path("notificacoes/", include("apps.api.v1.notificacoes.urls")),

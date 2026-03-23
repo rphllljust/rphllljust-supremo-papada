@@ -15,6 +15,12 @@ const ITEMS = [
     icon: GraduationCap,
   },
   {
+    to: '/documentos/historicos-digitais',
+    title: 'Historicos Digitais MEC',
+    description: 'Emissao XML/XSD, segunda via, validacao por chave e QR Code.',
+    icon: FileText,
+  },
+  {
     to: '/documentos/guias',
     title: 'Guias de Transferencia',
     description: 'Emita e acompanhe guias vinculadas a transferencias.',

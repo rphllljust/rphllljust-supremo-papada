@@ -4,7 +4,7 @@ import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { historicosApi, matriculasApi } from '@/api/endpoints'
+import { historicosApi, historicosDigitaisApi, matriculasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
@@ -107,6 +107,20 @@ export default function HistoricosPage() {
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir o historico.')),
   })
 
+  const emitirDigitalMutation = useMutation({
+    mutationFn: ({ historicoId, tipo_documento }) => historicosDigitaisApi.emitir(historicoId, { tipo_documento, assinar_xml: false }),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['historicos'] })
+      const documento = response?.data?.documento
+      if (response?.data?.created) {
+        toast.success(`Historico digital emitido (${documento?.numero_unico || 'ok'})`)
+      } else {
+        toast.success(`Historico digital ja existente (${documento?.numero_unico || 'ok'})`)
+      }
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel emitir o historico digital.')),
+  })
+
   const matriculas = matriculasData?.results || []
   const selectedMatriculaOption = formData.matricula && editingItem ? {
     id: editingItem.matricula,
@@ -185,6 +199,21 @@ export default function HistoricosPage() {
           <div className="table-actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}><Eye size={14} /> Visualizar</button>
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              disabled={emitirDigitalMutation.isPending}
+              onClick={() => {
+                const tipoDocumento = window.prompt(
+                  'Tipo digital MEC (PARCIAL, FINAL, SEGUNDA_VIA_NATO_FISICO):',
+                  row.tipo === 'PARCIAL' ? 'PARCIAL' : 'FINAL',
+                )
+                if (!tipoDocumento) return
+                emitirDigitalMutation.mutate({ historicoId: row.id, tipo_documento: tipoDocumento.trim().toUpperCase() })
+              }}
+            >
+              Emitir digital
+            </button>
             <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir o historico ${row.numero_protocolo}?`) && deleteMutation.mutate(row.id)}><Trash2 size={14} /> Excluir</button>
           </div>
         )}

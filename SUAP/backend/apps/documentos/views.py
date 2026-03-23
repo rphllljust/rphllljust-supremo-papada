@@ -5,6 +5,12 @@ from apps.unidades.models import Unidade
 
 from .forms import AtaOficioMemorandoForm, DeclaracaoForm, GuiaTransferenciaForm, HistoricoEscolarForm
 from .models import AtaAnexo, AtaOficioMemorando, Declaracao, GuiaTransferencia, HistoricoEscolar
+from .historico_digital_views import (
+    consulta_publica_historico,
+    exportar_historico_pdf,
+    exportar_historico_xml,
+    validar_historico_publico,
+)
 
 
 def _salvar_anexos_ata(doc, anexos_metadata, files):

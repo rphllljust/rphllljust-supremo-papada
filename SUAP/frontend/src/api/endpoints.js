@@ -57,6 +57,13 @@ export const servidoresApi = {
 export const setoresApi = crud('setores')
 export const declaracoesApi = crud('declaracoes')
 export const historicosApi = crud('historicos')
+export const historicosDigitaisApi = {
+  list: (params) => client.get('/historicos-digitais/', { params }),
+  get: (id) => client.get(`/historicos-digitais/${id}/`),
+  emitir: (historicoId, data) => client.post(`/historicos-digitais/emitir/${historicoId}/`, data),
+  revogar: (id, data) => client.post(`/historicos-digitais/${id}/revogar/`, data),
+  validarPublico: (chave) => client.get('/historicos-digitais/validar-publico/', { params: { chave } }),
+}
 export const guiasTransferenciaApi = crud('guias-transferencia')
 export const transferenciasApi = {
   list: (params) => client.get('/transferencias/', { params }),

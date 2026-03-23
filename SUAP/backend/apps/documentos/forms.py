@@ -243,3 +243,20 @@ class AtaAnexoUploadForm(forms.ModelForm):
     class Meta:
         model = AtaAnexo
         fields = ["tipo_anexo", "descricao", "arquivo"]
+
+
+class ConsultaCodigoValidacaoForm(forms.Form):
+    codigo_validacao = forms.CharField(
+        label="C\u00f3digo de valida\u00e7\u00e3o",
+        max_length=60,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Ex.: HE-IDEPRO-2023-00001",
+                "autocomplete": "off",
+            }
+        ),
+    )
+
+    def clean_codigo_validacao(self):
+        return self.cleaned_data["codigo_validacao"].strip().upper()

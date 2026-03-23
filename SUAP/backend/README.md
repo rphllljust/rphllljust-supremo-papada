@@ -218,6 +218,22 @@ CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 CORS_ALLOW_CREDENTIALS=True
 ```
 
+### 5.3. Historico escolar digital (MEC/XSD)
+
+Foi adicionada uma camada digital complementar para historicos escolares, sem alterar as estruturas legadas:
+
+* modelo `HistoricoEscolarDigital`
+* emissao XML em namespace MEC
+* validacao XSD
+* assinatura XMLDSig (opcional por ambiente)
+* PDF + chave de autenticacao + QR Code
+* segunda via rastreavel
+* auditoria de emissao/revogacao
+
+Documentacao operacional:
+
+* `docs/historico-digital-mec.md`
+
 Suba o backend normalmente:
 
 ```powershell

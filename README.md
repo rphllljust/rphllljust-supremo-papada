@@ -24,3 +24,21 @@ Exemplos:
 .\scripts\docker-compose-ambiente.ps1 -Environment development -Action down
 .\scripts\docker-compose-ambiente.ps1 -Environment production -Action up -NoBuild
 ```
+
+Gateway Nginx opcional
+
+Foi adicionada uma sobreposicao opcional para proxy reverso sem alterar os arquivos atuais de ambiente:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.homolog.yml -f docker-compose.gateway.yml up -d nginx
+```
+
+Arquivo de configuracao:
+
+* `docker/nginx/suap.conf`
+
+Historico escolar digital MEC
+
+Documentacao tecnica detalhada da nova camada (XML/XSD/XMLDSig/PDF/QR/auditoria):
+
+* `SUAP/backend/docs/historico-digital-mec.md`

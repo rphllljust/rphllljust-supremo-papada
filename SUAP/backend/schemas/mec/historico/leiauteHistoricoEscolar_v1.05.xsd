@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+    xmlns:ds="https://www.w3.org/2000/09/xmldsig#"
+    xmlns:xs="https://www.w3.org/2001/XMLSchema"
+    xmlns="https://portal.mec.gov.br/diplomadigital/arquivos-em-xsd"
+    targetNamespace="https://portal.mec.gov.br/diplomadigital/arquivos-em-xsd"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+    <xs:complexType name="TDocumentoHistoricoEscolarDigital">
+        <xs:sequence>
+            <xs:element name="IdentificacaoDocumento" type="TIdentificacaoDocumento"/>
+            <xs:element name="DadosInstituicao" type="TDadosInstituicao"/>
+            <xs:element name="DadosAluno" type="TDadosAluno"/>
+            <xs:element name="DadosCurso" type="TDadosCurso"/>
+            <xs:element name="ComponentesCurriculares" type="TComponentesCurriculares" minOccurs="0"/>
+            <xs:any namespace="https://www.w3.org/2000/09/xmldsig#" minOccurs="0" maxOccurs="1" processContents="lax"/>
+        </xs:sequence>
+        <xs:attribute name="versao" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="TDocumentoHistoricoEscolarSegundaViaNatoFisico">
+        <xs:complexContent>
+            <xs:extension base="TDocumentoHistoricoEscolarDigital"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="TIdentificacaoDocumento">
+        <xs:sequence>
+            <xs:element name="HistoricoId" type="xs:string"/>
+            <xs:element name="NumeroProtocolo" type="xs:string"/>
+            <xs:element name="VersaoDocumento" type="xs:string"/>
+            <xs:element name="DataEmissao" type="xs:date" minOccurs="0"/>
+            <xs:element name="ReferenciaOriginal" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TDadosInstituicao">
+        <xs:sequence>
+            <xs:element name="NomeInstituicao" type="xs:string"/>
+            <xs:element name="Unidade" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TDadosAluno">
+        <xs:sequence>
+            <xs:element name="Nome" type="xs:string"/>
+            <xs:element name="CPF" type="xs:string"/>
+            <xs:element name="NumeroMatricula" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TDadosCurso">
+        <xs:sequence>
+            <xs:element name="NomeCurso" type="xs:string"/>
+            <xs:element name="CargaHorariaTotal" type="xs:integer"/>
+            <xs:element name="MediaFinal" type="xs:string" minOccurs="0"/>
+            <xs:element name="FrequenciaPercentual" type="xs:string" minOccurs="0"/>
+            <xs:element name="SituacaoFinal" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TComponentesCurriculares">
+        <xs:sequence>
+            <xs:element name="Componente" type="TComponenteCurricular" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TComponenteCurricular">
+        <xs:sequence>
+            <xs:element name="Nome" type="xs:string"/>
+            <xs:element name="CargaHoraria" type="xs:string" minOccurs="0"/>
+            <xs:element name="Nota" type="xs:string" minOccurs="0"/>
+            <xs:element name="Frequencia" type="xs:string" minOccurs="0"/>
+            <xs:element name="Situacao" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
