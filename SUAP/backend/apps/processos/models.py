@@ -141,3 +141,30 @@ class Solicitacao(models.Model):
 
     def __str__(self):
         return f'Solicitação [{self.get_tipo_display()}]  {self.solicitante} [{self.get_status_display()}]'
+
+class HipoteseLegal(models.Model):
+    NIVEL_ACESSO_CHOICES = (
+        ('PUBLICO', 'Publico'),
+        ('RESTRITO', 'Restrito'),
+        ('SIGILOSO', 'Sigiloso'),
+    )
+
+    descricao = models.CharField(max_length=255, unique=True, verbose_name='Descricao')
+    base_legal = models.CharField(max_length=255, verbose_name='Base legal')
+    nivel_acesso = models.CharField(
+        max_length=20,
+        choices=NIVEL_ACESSO_CHOICES,
+        default='RESTRITO',
+        verbose_name='Nivel de acesso',
+    )
+    ativo = models.BooleanField(default=True, verbose_name='Ativo')
+    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    data_atualizacao = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Hipotese Legal'
+        verbose_name_plural = 'Hipoteses Legais'
+        ordering = ['descricao', 'id']
+
+    def __str__(self):
+        return f'{self.descricao} ({self.get_nivel_acesso_display()})'

@@ -31,6 +31,7 @@ class PublicacaoInscricaoListApiView(generics.ListCreateAPIView):
         search = self.request.query_params.get("search", "").strip()
         status_value = self.request.query_params.get("status", "").strip()
         curso_id = self.request.query_params.get("curso", "").strip()
+        modalidade = self.request.query_params.get("modalidade_ingresso", "").strip()
 
         if status_value:
             queryset = queryset.filter(status=status_value)
@@ -38,9 +39,13 @@ class PublicacaoInscricaoListApiView(generics.ListCreateAPIView):
         if curso_id:
             queryset = queryset.filter(curso_id=curso_id)
 
+        if modalidade:
+            queryset = queryset.filter(modalidade_ingresso=modalidade)
+
         if search:
             queryset = queryset.filter(
-                Q(titulo__icontains=search)
+                Q(codigo_edital__icontains=search)
+                | Q(titulo__icontains=search)
                 | Q(descricao__icontains=search)
                 | Q(curso__nome__icontains=search)
             )

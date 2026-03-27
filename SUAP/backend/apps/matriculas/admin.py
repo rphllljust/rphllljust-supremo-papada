@@ -1,7 +1,9 @@
 from django.contrib import admin
 
 from .models import (
+    AproveitamentoComponente,
     ConsolidacaoAcademica,
+    DependenciaAcademica,
     DocumentoEmitido,
     DocumentoMatricula,
     EtapaFluxo,
@@ -78,6 +80,29 @@ class ConsolidacaoAcademicaAdmin(admin.ModelAdmin):
     list_display = ("matricula", "situacao", "media_final", "percentual_frequencia", "data_consolidacao")
     list_filter = ("situacao",)
     readonly_fields = ("data_consolidacao",)
+
+
+@admin.register(AproveitamentoComponente)
+class AproveitamentoComponenteAdmin(admin.ModelAdmin):
+    list_display = ("matricula", "componente_origem", "componente_destino", "status", "data_solicitacao")
+    list_filter = ("status",)
+    search_fields = (
+        "matricula__numero_matricula",
+        "matricula__aluno__username",
+        "componente_origem",
+        "componente_destino",
+    )
+
+
+@admin.register(DependenciaAcademica)
+class DependenciaAcademicaAdmin(admin.ModelAdmin):
+    list_display = ("matricula", "componente", "motivo", "status", "periodo_referencia", "data_registro")
+    list_filter = ("motivo", "status")
+    search_fields = (
+        "matricula__numero_matricula",
+        "matricula__aluno__username",
+        "componente",
+    )
 
 
 class EtapaFluxoInline(admin.TabularInline):

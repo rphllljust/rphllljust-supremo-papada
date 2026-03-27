@@ -27,6 +27,12 @@ const ITEMS = [
     icon: Waypoints,
   },
   {
+    to: '/documentos/hipoteses-legais',
+    title: 'Hipoteses Legais',
+    description: 'Cadastre e mantenha as hipoteses legais usadas para classificar niveis de acesso.',
+    icon: ScrollText,
+  },
+  {
     to: '/ata-professores',
     title: 'Atas dos Professores',
     description: 'Acesse o assistente de atas escolares digitais e seus rascunhos.',

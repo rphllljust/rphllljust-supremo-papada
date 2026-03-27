@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Processo, Tramitacao
+from .models import HipoteseLegal, Processo, Solicitacao, Tramitacao
 
 
 class TramitacaoInline(admin.TabularInline):
@@ -24,11 +24,15 @@ class TramitacaoAdmin(admin.ModelAdmin):
     list_filter = ("acao",)
     readonly_fields = ("data",)
 
-
-from .models import Solicitacao
-
 @admin.register(Solicitacao)
 class SolicitacaoAdmin(admin.ModelAdmin):
     list_display = ("solicitante", "tipo", "status", "data_abertura", "data_resolucao", "processo")
     list_filter = ("tipo", "status")
     search_fields = ("solicitante__username", "descricao")
+
+
+@admin.register(HipoteseLegal)
+class HipoteseLegalAdmin(admin.ModelAdmin):
+    list_display = ("descricao", "base_legal", "nivel_acesso", "ativo", "data_atualizacao")
+    list_filter = ("nivel_acesso", "ativo")
+    search_fields = ("descricao", "base_legal")

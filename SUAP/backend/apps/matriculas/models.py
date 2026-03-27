@@ -899,6 +899,52 @@ class AproveitamentoComponente(models.Model):
 
 # ── Fechamento e Conclusão ────────────────────────────────────────────────────
 
+class DependenciaAcademica(models.Model):
+    """Controle de componentes em dependência por matrícula."""
+
+    STATUS_CHOICES = (
+        ("ATIVA", "Ativa"),
+        ("CUMPRIDA", "Cumprida"),
+        ("DISPENSADA", "Dispensada"),
+    )
+    MOTIVO_CHOICES = (
+        ("NOTA", "Nota"),
+        ("FREQUENCIA", "Frequência"),
+        ("AMBOS", "Nota e Frequência"),
+        ("OUTRO", "Outro"),
+    )
+
+    matricula = models.ForeignKey(
+        Matricula,
+        on_delete=models.CASCADE,
+        related_name="dependencias",
+        verbose_name="Matrícula",
+    )
+    componente = models.CharField(max_length=255, verbose_name="Componente/Disciplina")
+    periodo_referencia = models.CharField(max_length=50, blank=True, verbose_name="Período de Referência")
+    motivo = models.CharField(max_length=15, choices=MOTIVO_CHOICES, default="NOTA", verbose_name="Motivo")
+    nota_obtida = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Nota Obtida")
+    frequencia_percentual = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Frequência (%)",
+    )
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default="ATIVA", verbose_name="Status")
+    data_registro = models.DateField(auto_now_add=True, verbose_name="Data de Registro")
+    data_resolucao = models.DateField(null=True, blank=True, verbose_name="Data de Resolução")
+    observacao = models.TextField(blank=True, verbose_name="Observação")
+
+    class Meta:
+        verbose_name = "Dependência Acadêmica"
+        verbose_name_plural = "Dependências Acadêmicas"
+        ordering = ["-data_registro", "-id"]
+
+    def __str__(self):
+        return f"Dependência [{self.get_status_display()}] – {self.componente} ({self.matricula.numero_matricula})"
+
+
 class ConselhoClasse(models.Model):
     """Registro do Conselho de Classe por turma/período."""
 

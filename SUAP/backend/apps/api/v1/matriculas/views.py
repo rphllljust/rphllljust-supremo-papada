@@ -24,7 +24,13 @@ class MatriculaListApiView(generics.ListCreateAPIView):
         return super().get_permissions()
 
     def get_queryset(self):
-        queryset = Matricula.objects.select_related("aluno__pessoa", "curso", "turma").order_by(
+        queryset = Matricula.objects.select_related(
+            "aluno__pessoa",
+            "curso",
+            "turma",
+            "turma__professor_responsavel",
+            "consolidacao",
+        ).prefetch_related("turma__diarios").order_by(
             "-data_matricula", "-id"
         )
 
@@ -54,7 +60,13 @@ class MatriculaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     module_name = "matriculas"
     access_surface = "api"
     serializer_class = MatriculaSerializer
-    queryset = Matricula.objects.select_related("aluno__pessoa", "curso", "turma")
+    queryset = Matricula.objects.select_related(
+        "aluno__pessoa",
+        "curso",
+        "turma",
+        "turma__professor_responsavel",
+        "consolidacao",
+    ).prefetch_related("turma__diarios")
 
     def get_permissions(self):
         if self.request.method in {"PUT", "PATCH", "DELETE"}:

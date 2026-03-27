@@ -154,6 +154,16 @@ ACCESS_MATRIX = {
             "manage": STAFF_MANAGE,
         },
     },
+    "certificados": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
     "estagio": {
         "web": {
             "view": TEACHING_VIEW,
@@ -169,8 +179,42 @@ ACCESS_MATRIX = {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
         },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
     },
     "processos": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
+    "pedagogia": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
+    "sica": {
+        "web": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
+    },
+    "configurar_curso": {
         "web": {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,

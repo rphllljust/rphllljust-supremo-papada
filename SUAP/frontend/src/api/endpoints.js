@@ -57,6 +57,42 @@ export const servidoresApi = {
 export const setoresApi = crud('setores')
 export const declaracoesApi = crud('declaracoes')
 export const historicosApi = crud('historicos')
+export const certificadosApi = {
+  modelos: {
+    list: (params) => client.get('/certificados/modelos/', { params }),
+    get: (id) => client.get(`/certificados/modelos/${id}/`),
+    create: (data) => client.post('/certificados/modelos/', data),
+    update: (id, data) => client.put(`/certificados/modelos/${id}/`, data),
+    patch: (id, data) => client.patch(`/certificados/modelos/${id}/`, data),
+    remove: (id) => client.delete(`/certificados/modelos/${id}/`),
+  },
+  assinaturas: {
+    list: (params) => client.get('/certificados/assinaturas/', { params }),
+    create: (data) => client.post('/certificados/assinaturas/', data),
+    update: (id, data) => client.put(`/certificados/assinaturas/${id}/`, data),
+    remove: (id) => client.delete(`/certificados/assinaturas/${id}/`),
+  },
+  configuracoesVisuais: {
+    list: (params) => client.get('/certificados/configuracoes-visuais/', { params }),
+    create: (data) => client.post('/certificados/configuracoes-visuais/', data),
+    update: (id, data) => client.put(`/certificados/configuracoes-visuais/${id}/`, data),
+    remove: (id) => client.delete(`/certificados/configuracoes-visuais/${id}/`),
+  },
+  emitidos: {
+    list: (params) => client.get('/certificados/emitidos/', { params }),
+    listar: (params) => client.get('/certificados/emitidos/', { params }),
+    get: (id) => client.get(`/certificados/emitidos/${id}/`),
+    update: (id, data) => client.patch(`/certificados/emitidos/${id}/`, data),
+    preview: (id) => client.get(`/certificados/emitidos/${id}/preview/`),
+    pdf: (id) => client.get(`/certificados/emitidos/${id}/pdf/`, { responseType: 'blob' }),
+    reimprimir: (id) => client.post(`/certificados/emitidos/${id}/reimprimir/`),
+  },
+  emitir: (data) => client.post('/certificados/emitir/', data),
+  emitirLote: (data) => client.post('/certificados/emitir-lote/', data),
+  previewRascunho: (data) => client.post('/certificados/preview/', data),
+  validarPublico: (codigo) => publicClient.get(`/certificados/validar/${encodeURIComponent(codigo)}/`),
+  historico: (params) => client.get('/certificados/historico/', { params }),
+}
 export const historicosDigitaisApi = {
   list: (params) => client.get('/historicos-digitais/', { params }),
   get: (id) => client.get(`/historicos-digitais/${id}/`),
@@ -196,6 +232,20 @@ export const eventosApi = crud('eventos')
 export const processosApi = {
   ...crud('processos'),
   tramitar: (id, data) => client.post(`/processos/${id}/tramitar/`, data),
+}
+export const hipotesesLegaisApi = crud('hipoteses-legais')
+export const pedagogiaApi = crud('pedagogia')
+export const sicaApi = {
+  listMatrizes: (params) => client.get('/sica/matrizes/', { params }),
+  getMatriz: (id) => client.get(`/sica/matrizes/${id}/`),
+  createMatriz: (data) => client.post('/sica/matrizes/', data),
+  patchMatriz: (id, data) => client.patch(`/sica/matrizes/${id}/`, data),
+  removeMatriz: (id) => client.delete(`/sica/matrizes/${id}/`),
+  listComponentes: (params) => client.get('/sica/componentes/', { params }),
+  getComponente: (id) => client.get(`/sica/componentes/${id}/`),
+  createComponente: (data) => client.post('/sica/componentes/', data),
+  patchComponente: (id, data) => client.patch(`/sica/componentes/${id}/`, data),
+  removeComponente: (id) => client.delete(`/sica/componentes/${id}/`),
 }
 export const guardaApi = crud('guarda-documental')
 export const publicacoesApi = crud('publicacoes')

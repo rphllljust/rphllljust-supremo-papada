@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -109,10 +111,13 @@ def inscricao_delete(request, pk):
 def inscricao_documentos(request, pk):
     ins = get_object_or_404(Inscricao, pk=pk)
     documentos = ins.documentos.all()
-    form = DocumentoInscricaoForm(request.POST or None)
+    form = DocumentoInscricaoForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         doc = form.save(commit=False)
         doc.inscricao = ins
+        if doc.status_validacao != "PENDENTE":
+            doc.validado_por = request.user if request.user.is_authenticated else None
+            doc.data_validacao = date.today()
         doc.save()
         messages.success(request, "Documento registrado.")
         return redirect("inscricoes:inscricao_documentos", pk=pk)

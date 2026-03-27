@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Certificado {{ certificado.numero_certificado }}</title>
+    <style>{{ stylesheet_css|safe }}</style>
+  </head>
+  <body>
+    <article class="cert-idep">
+      <div class="cert-idep__layout">
+        <aside class="cert-idep__ribbon" aria-hidden="true">
+          <span class="ribbon-curve ribbon-curve--yellow"></span>
+          <span class="ribbon-curve ribbon-curve--green"></span>
+          <span class="ribbon-curve ribbon-curve--shadow"></span>
+        </aside>
+
+        <section class="cert-idep__content">
+          <div class="wm wm--a"></div>
+          <div class="wm wm--b"></div>
+
+          <header class="cert-idep__header">
+            <img
+              class="cert-idep__brasao"
+              src="{{ brasao_rondonia_data_uri }}"
+              alt="Brasao do Estado de Rondonia"
+            />
+            <h1 class="cert-idep__titulo">CERTIFICADO</h1>
+            <p class="cert-idep__subtitulo">
+              Em nome do Governo de Rondonia concede este certificado a familia de
+            </p>
+          </header>
+
+          <h2 class="cert-idep__nome">
+            {{ certificado.nome_aluno|default:"Nome do(a) Aluno(a)" }}
+          </h2>
+
+          <p class="cert-idep__texto">
+            {{ certificado.texto_certificado }}
+          </p>
+
+          <p class="cert-idep__data">
+            {{ certificado.cidade }}, {{ certificado.data_emissao }}
+          </p>
+
+          <section class="cert-idep__assinaturas">
+            <div class="assinatura">
+              <div class="assinatura__linha"></div>
+              <div class="assinatura__nome">{{ certificado.nome_assinante_1 }}</div>
+              <div class="assinatura__cargo">{{ certificado.cargo_assinante_1 }}</div>
+            </div>
+            <div class="assinatura">
+              <div class="assinatura__linha"></div>
+              <div class="assinatura__nome">{{ certificado.nome_assinante_2 }}</div>
+              <div class="assinatura__cargo">{{ certificado.cargo_assinante_2 }}</div>
+            </div>
+          </section>
+
+          <section class="cert-idep__logos">
+            {% if certificado.logos_rodape %}
+              {% for logo in certificado.logos_rodape %}
+                <img src="{{ logo }}" alt="Logo institucional {{ forloop.counter }}" />
+              {% endfor %}
+            {% else %}
+              <span>LOGO1</span>
+              <span>LOGO2</span>
+              <span>LOGO3</span>
+              <span>LOGO4</span>
+              <span>LOGO5</span>
+            {% endif %}
+          </section>
+
+          <p class="cert-idep__controle">
+            Certificado {{ certificado.numero_certificado }} |
+            Codigo {{ certificado.codigo_validacao }}
+          </p>
+        </section>
+      </div>
+    </article>
+  </body>
+</html>

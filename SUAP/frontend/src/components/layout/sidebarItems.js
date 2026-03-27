@@ -1,4 +1,4 @@
-import {
+﻿import {
   Bell,
   LayoutDashboard,
   Rocket,
@@ -88,6 +88,26 @@ export const sidebarItems = [
           { id: 'documentos', type: 'link', label: 'Documentos', to: '/documentos' },
           unavailable('documentos-pessoais', 'Documentos Pessoais'),
           unavailable('documentos-pessoais-digitalizados', 'Documentos Pessoais Digitalizados'),
+          {
+            id: 'documentos-eletronicos-cadastros',
+            type: 'group',
+            label: 'Cadastros',
+            items: [
+              unavailable('documentos-eletronicos-classificacoes', 'Classificacoes'),
+              {
+                id: 'documentos-eletronicos-hipoteses-legais',
+                type: 'link',
+                label: 'Hipoteses Legais',
+                to: '/documentos/hipoteses-legais',
+                activePrefixes: ['/documentos/hipoteses-legais'],
+              },
+              unavailable('documentos-eletronicos-modelos', 'Modelos'),
+              unavailable('documentos-eletronicos-tipos-conferencia', 'Tipos Conferencia'),
+              unavailable('documentos-eletronicos-tipos-documentos-externos', 'Tipos de Documentos Externos'),
+              unavailable('documentos-eletronicos-tipos-documentos-internos', 'Tipos de Documentos Internos'),
+              unavailable('documentos-eletronicos-tipos-vinculo-documentos', 'Tipos de Vinculos entre Documentos'),
+            ],
+          },
         ],
       },
       {
@@ -174,6 +194,7 @@ export const sidebarItems = [
         label: 'Alunos e Professores',
         items: [
           { id: 'alunos-nav', type: 'link', label: 'Alunos', to: '/alunos' },
+          { id: 'pedagogia-nav', type: 'link', label: 'Pedagogia', to: '/pedagogia', activePrefixes: ['/pedagogia'] },
           {
             id: 'professores-nav',
             type: 'link',
@@ -191,7 +212,7 @@ export const sidebarItems = [
           {
             id: 'eixos-tecnologicos',
             type: 'link',
-            label: 'Eixos Tecnológicos',
+            label: 'Eixos TecnolÃ³gicos',
             to: '/ensino/eixotecnologico/',
             activePrefixes: ['/ensino/eixotecnologico'],
           },
@@ -205,7 +226,7 @@ export const sidebarItems = [
           {
             id: 'niveis-ensino',
             type: 'link',
-            label: 'Níveis de Ensino',
+            label: 'NÃ­veis de Ensino',
             to: '/ensino/niveis-ensino/',
             activePrefixes: ['/ensino/niveis-ensino'],
           },
@@ -226,7 +247,7 @@ export const sidebarItems = [
           {
             id: 'catalogo-cursos-tecnicos',
             type: 'link',
-            label: 'Catálogo de cursos técnicos',
+            label: 'CatÃ¡logo de cursos tÃ©cnicos',
             to: '/ensino/cursotecnico/',
             activePrefixes: ['/ensino/cursotecnico'],
           },
@@ -257,6 +278,20 @@ export const sidebarItems = [
             label: 'Componentes',
             to: '/ensino/componentes/',
             activePrefixes: ['/ensino/componentes', '/componentes'],
+          },
+          {
+            id: 'sica-curricular',
+            type: 'link',
+            label: 'SICA Curricular',
+            to: '/sica',
+            activePrefixes: ['/sica'],
+          },
+          {
+            id: 'configurar-curso-wizard',
+            type: 'link',
+            label: 'Configurar Curso (Wizard)',
+            to: '/ensino/configurar-curso',
+            activePrefixes: ['/ensino/configurar-curso', '/configurar-curso'],
           },
         ],
       },
@@ -298,7 +333,17 @@ export const sidebarItems = [
       unavailable('dados-de-ensino', 'Dados de Ensino'),
       unavailable('certificados-enem', 'Certificados ENEM'),
       unavailable('comunicador', 'Comunicador'),
-      unavailable('diplomas-e-certificados', 'Diplomas e Certificados'),
+      {
+        id: 'diplomas-e-certificados',
+        type: 'group',
+        label: 'Diplomas e Certificados',
+        items: [
+          { id: 'certificados-emitidos-nav', type: 'link', label: 'Certificados', to: '/certificados', activePrefixes: ['/certificados'] },
+          { id: 'certificados-modelos-nav', type: 'link', label: 'Modelos de Certificado', to: '/certificados/modelos', activePrefixes: ['/certificados/modelos'] },
+          { id: 'certificados-historico-nav', type: 'link', label: 'Historico de Emissao', to: '/certificados/historico', activePrefixes: ['/certificados/historico'] },
+          { id: 'certificados-validacao-nav', type: 'link', label: 'Validacao Publica', to: '/certificados/validacao', activePrefixes: ['/certificados/validacao'] },
+        ],
+      },
       unavailable('ead', 'EAD'),
       { id: 'estagios-docentes', type: 'link', label: 'Estagios Docentes', to: '/estagio' },
       unavailable('etep', 'ETEP'),
@@ -403,3 +448,4 @@ export const sidebarItems = [
     ],
   },
 ]
+

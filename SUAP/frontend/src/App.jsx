@@ -32,6 +32,11 @@ const DeclaracoesPage = lazy(() => import('@/pages/documentos/DeclaracoesPage'))
 const HistoricosPage = lazy(() => import('@/pages/documentos/HistoricosPage'))
 const HistoricosDigitaisPage = lazy(() => import('@/pages/documentos/HistoricosDigitaisPage'))
 const GuiasTransferenciaPage = lazy(() => import('@/pages/documentos/GuiasTransferenciaPage'))
+const HipotesesLegaisPage = lazy(() => import('@/pages/documentos/HipotesesLegaisPage'))
+const CertificadosPage = lazy(() => import('@/pages/certificados/CertificadosPage'))
+const ModelosCertificadosPage = lazy(() => import('@/pages/certificados/ModelosCertificadosPage'))
+const ValidacaoCertificadoPage = lazy(() => import('@/pages/certificados/ValidacaoCertificadoPage'))
+const HistoricoCertificadosPage = lazy(() => import('@/pages/certificados/HistoricoCertificadosPage'))
 const MatriculasPage = lazy(() => import('@/pages/matriculas/MatriculasPage'))
 const DiariosPage    = lazy(() => import('@/pages/diarios/DiariosPage'))
 const DiarioDetailPage = lazy(() => import('@/pages/diarios/DiarioDetailPage'))
@@ -41,6 +46,9 @@ const TurmasPage     = lazy(() => import('@/pages/turmas/TurmasPage'))
 const TurmaCreatePage = lazy(() => import('@/pages/turmas/TurmaCreatePage'))
 const ProcessosPage  = lazy(() => import('@/pages/processos/ProcessosPage'))
 const ProcessoCreatePage = lazy(() => import('@/pages/processos/ProcessoCreatePage'))
+const PedagogiaPage = lazy(() => import('@/pages/pedagogia/PedagogiaPage'))
+const SicaPage = lazy(() => import('@/pages/sica/SicaPage'))
+const ConfigurarCursoWizardPage = lazy(() => import('@/modules/configurar-curso/pages/ConfigurarCursoWizardPage'))
 const CatalogoCursosTecnicosPage = lazy(() => import('@/pages/cursos/CatalogoCursosTecnicosPage'))
 const CursosIniciaisPage = lazy(() => import('@/pages/cursos/CursosIniciaisPage'))
 const CursoEditPage = lazy(() => import('@/pages/cursos/CursoEditPage'))
@@ -222,6 +230,8 @@ export default function App() {
               {/* ── Auth ────────────────────────────────── */}
               <Route path="/login" element={<RouteShell><LoginPage /></RouteShell>} />
               <Route path="/accounts/login" element={<Navigate to="/login" replace />} />
+              <Route path="/validar-certificado" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
+              <Route path="/validar-certificado/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
 
               {/* ── Painel interno (JWT obrigatório) ─────── */}
               <Route element={<ProtectedRoute />}>
@@ -235,6 +245,14 @@ export default function App() {
                   <Route path="/documentos/historicos-digitais" element={<RouteShell><HistoricosDigitaisPage /></RouteShell>} />
                   <Route path="/documentos/guias" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/documentos/guias/nova" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
+                  <Route path="/documentos/hipoteses-legais" element={<RouteShell><HipotesesLegaisPage /></RouteShell>} />
+                  <Route path="/hipoteses-legais" element={<Navigate to="/documentos/hipoteses-legais" replace />} />
+                  <Route path="/documentos/hipoteses_legais" element={<Navigate to="/documentos/hipoteses-legais" replace />} />
+                  <Route path="/certificados" element={<RouteShell><CertificadosPage /></RouteShell>} />
+                  <Route path="/ensino/certificados" element={<Navigate to="/certificados" replace />} />
+                  <Route path="/certificados/modelos" element={<RouteShell><ModelosCertificadosPage /></RouteShell>} />
+                  <Route path="/certificados/historico" element={<RouteShell><HistoricoCertificadosPage /></RouteShell>} />
+                  <Route path="/certificados/validacao" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
                   <Route path="/matriculas" element={<RouteShell><MatriculasPage /></RouteShell>} />
                   <Route path="/matriculas/nova" element={<RouteShell><MatriculasPage /></RouteShell>} />
                   <Route path="/diarios" element={<RouteShell><DiariosPage /></RouteShell>} />
@@ -348,6 +366,14 @@ export default function App() {
                   <Route path="/componentes/:componenteId/vinculacao/" element={<RouteShell><ComponenteVinculacaoPage /></RouteShell>} />
                   <Route path="/alunos"     element={<RouteShell><AlunosPage /></RouteShell>} />
                   <Route path="/alunos/novo" element={<RouteShell><AlunosPage /></RouteShell>} />
+                  <Route path="/pedagogia" element={<RouteShell><PedagogiaPage /></RouteShell>} />
+                  <Route path="/pedagogia/" element={<RouteShell><PedagogiaPage /></RouteShell>} />
+                  <Route path="/sica" element={<RouteShell><SicaPage /></RouteShell>} />
+                  <Route path="/sica/" element={<RouteShell><SicaPage /></RouteShell>} />
+                  <Route path="/ensino/configurar-curso" element={<RouteShell><ConfigurarCursoWizardPage /></RouteShell>} />
+                  <Route path="/ensino/configurar-curso/" element={<RouteShell><ConfigurarCursoWizardPage /></RouteShell>} />
+                  <Route path="/configurar-curso" element={<RouteShell><ConfigurarCursoWizardPage /></RouteShell>} />
+                  <Route path="/configurar-curso/" element={<RouteShell><ConfigurarCursoWizardPage /></RouteShell>} />
                   <Route path="/servidores" element={<Navigate to="/rh/servidores" replace />} />
                   <Route path="/setores"    element={<Navigate to="/rh/setores" replace />} />
                   <Route path="/usuarios"   element={<RouteShell><UsuariosPage /></RouteShell>} />
@@ -414,6 +440,8 @@ export default function App() {
                   <Route path="/app/turmas"     element={<Navigate to="/turmas" replace />} />
                   <Route path="/app/cursos"     element={<Navigate to="/ensino/cursoinicial/" replace />} />
                   <Route path="/app/alunos"     element={<Navigate to="/alunos" replace />} />
+                  <Route path="/app/pedagogia"  element={<Navigate to="/pedagogia" replace />} />
+                  <Route path="/app/sica"       element={<Navigate to="/sica" replace />} />
                   <Route path="/app/servidores" element={<Navigate to="/rh/servidores" replace />} />
                   <Route path="/app/setores"    element={<Navigate to="/rh/setores" replace />} />
                   <Route path="/app/usuarios"   element={<Navigate to="/usuarios" replace />} />

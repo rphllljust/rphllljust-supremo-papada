@@ -20,10 +20,14 @@ class TransferenciaSerializer(serializers.ModelSerializer):
             "tipo_display",
             "status",
             "status_display",
-            "numero_guia",
             "escola_origem",
             "escola_destino",
+            "data_solicitacao",
+            "data_transferencia",
+            "numero_guia",
+            "observacao",
         ]
+        read_only_fields = ["data_solicitacao"]
 
     def get_aluno_nome(self, obj):
         aluno = obj.matricula.aluno

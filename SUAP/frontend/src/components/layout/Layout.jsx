@@ -14,6 +14,7 @@ const BREADCRUMB_LABELS = {
   declaracoes: 'Declaracoes',
   historicos: 'Historicos',
   guias: 'Guias de Transferencia',
+  'hipoteses-legais': 'Hipoteses Legais',
   matriculas: 'Matriculas',
   notas: 'Notas',
   frequencia: 'Frequencia',

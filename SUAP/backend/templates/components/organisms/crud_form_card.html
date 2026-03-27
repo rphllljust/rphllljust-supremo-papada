@@ -6,7 +6,7 @@
 <section class="card">
   <h1 class="crud-title">{% block form_title %}{{ page_title }}{% endblock %}</h1>
 
-  <form method="post" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
     {% include "components/molecules/form_fields.html" with form=form %}
     {% block form_actions %}
