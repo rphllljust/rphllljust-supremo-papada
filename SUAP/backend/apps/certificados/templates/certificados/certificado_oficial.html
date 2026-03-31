@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>Certificado {{ certificado.numero_certificado }}</title>
+    <title>{{ certificado.tipo_documento_display|default:"Documento" }} {{ certificado.numero_registro|default:certificado.numero_certificado }}</title>
     <style>{{ stylesheet_css|safe }}</style>
   </head>
   <body>
@@ -19,28 +19,69 @@
           <div class="wm wm--b"></div>
 
           <header class="cert-idep__header">
-            <img
-              class="cert-idep__brasao"
-              src="{{ brasao_rondonia_data_uri }}"
-              alt="Brasao do Estado de Rondonia"
-            />
-            <h1 class="cert-idep__titulo">CERTIFICADO</h1>
-            <p class="cert-idep__subtitulo">
-              Em nome do Governo de Rondonia concede este certificado a familia de
-            </p>
+            <img class="cert-idep__brasao" src="{{ brasao_rondonia_data_uri }}" alt="Brasao do Estado de Rondonia" />
+            <h1 class="cert-idep__titulo">{{ certificado.tipo_documento_display|default:"DIPLOMA"|upper }}</h1>
+            <p class="cert-idep__subtitulo">Documento oficial emitido institucionalmente</p>
           </header>
 
-          <h2 class="cert-idep__nome">
-            {{ certificado.nome_aluno|default:"Nome do(a) Aluno(a)" }}
-          </h2>
+          <h2 class="cert-idep__nome">{{ certificado.nome_aluno|default:"Nome do(a) Aluno(a)" }}</h2>
 
-          <p class="cert-idep__texto">
-            {{ certificado.texto_certificado }}
-          </p>
+          <p class="cert-idep__texto">{{ certificado.texto_certificado }}</p>
 
-          <p class="cert-idep__data">
-            {{ certificado.cidade }}, {{ certificado.data_emissao }}
-          </p>
+          <section class="cert-idep__metadata">
+            <div><strong>CPF:</strong> {{ certificado.cpf_aluno|default:"-" }}</div>
+            <div><strong>Curso:</strong> {{ certificado.curso_nome|default:"-" }}</div>
+            <div><strong>Carga horaria:</strong> {{ certificado.carga_horaria|default:"-" }}h</div>
+            <div><strong>Conclusao:</strong> {{ certificado.data_conclusao|default:"-" }}</div>
+            <div><strong>Registro:</strong> {{ certificado.numero_registro|default:certificado.numero_certificado|default:"-" }}</div>
+            <div><strong>Livro/Folha/Pagina:</strong> {{ certificado.livro|default:"-" }} / {{ certificado.folha|default:"-" }} / {{ certificado.pagina|default:"-" }}</div>
+            <div><strong>Emissao:</strong> {{ certificado.data_emissao|default:"-" }}</div>
+            <div><strong>Registro em:</strong> {{ certificado.data_registro|default:"-" }}</div>
+          </section>
+
+          {% if certificado.tipo_documento == "HISTORICO" %}
+            <section class="cert-idep__historico">
+              <h3>Consolidacao do Historico Escolar</h3>
+              <div class="cert-idep__historico-resumo">
+                <span><strong>Media final:</strong> {{ certificado.media_final|default:"-" }}</span>
+                <span><strong>Frequencia final:</strong> {{ certificado.frequencia_final|default:"-" }}</span>
+                <span><strong>Situacao:</strong> {{ certificado.situacao_final_display|default:certificado.situacao_final|default:"-" }}</span>
+              </div>
+
+              <table class="cert-idep__historico-table" role="table" aria-label="Disciplinas e desempenho">
+                <thead>
+                  <tr>
+                    <th>Disciplina</th>
+                    <th>Nota</th>
+                    <th>Peso</th>
+                    <th>Data</th>
+                    <th>Situacao</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for disciplina in certificado.disciplinas|slice:":12" %}
+                    <tr>
+                      <td>{{ disciplina.descricao|default:"-" }}</td>
+                      <td>{{ disciplina.nota|default:"-" }}</td>
+                      <td>{{ disciplina.peso|default:"-" }}</td>
+                      <td>{{ disciplina.data_lancamento|default:"-" }}</td>
+                      <td>{{ disciplina.situacao|default:"-" }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="5">Nenhuma disciplina consolidada encontrada para esta matricula.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              {% if certificado.quantidade_disciplinas > 12 %}
+                <p class="cert-idep__historico-footnote">
+                  Exibicao parcial de disciplinas no layout principal ({{ certificado.quantidade_disciplinas }} itens registrados).
+                </p>
+              {% endif %}
+            </section>
+          {% endif %}
 
           <section class="cert-idep__assinaturas">
             <div class="assinatura">
@@ -55,6 +96,19 @@
             </div>
           </section>
 
+          <section class="cert-idep__verification">
+            <div class="cert-idep__qr">
+              {% if certificado.qr_code_data_uri %}
+                <img src="{{ certificado.qr_code_data_uri }}" alt="QR Code de validacao" />
+              {% endif %}
+            </div>
+            <div class="cert-idep__verification-text">
+              <p><strong>Codigo de validacao:</strong> {{ certificado.codigo_validacao|default:"-" }}</p>
+              <p><strong>URL de verificacao:</strong> {{ certificado.url_validacao|default:certificado.qr_code_validacao|default:"-" }}</p>
+              <p><strong>Hash de integridade:</strong> {{ certificado.hash_integridade|default:"-" }}</p>
+            </div>
+          </section>
+
           <section class="cert-idep__logos">
             {% if certificado.logos_rodape %}
               {% for logo in certificado.logos_rodape %}
@@ -64,14 +118,11 @@
               <span>LOGO1</span>
               <span>LOGO2</span>
               <span>LOGO3</span>
-              <span>LOGO4</span>
-              <span>LOGO5</span>
             {% endif %}
           </section>
 
           <p class="cert-idep__controle">
-            Certificado {{ certificado.numero_certificado }} |
-            Codigo {{ certificado.codigo_validacao }}
+            {{ certificado.tipo_documento_display|default:"Documento" }} {{ certificado.numero_registro|default:certificado.numero_certificado }}
           </p>
         </section>
       </div>

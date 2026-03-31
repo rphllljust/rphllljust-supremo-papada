@@ -71,7 +71,9 @@ function Select-Action {
 function Invoke-InitialAdminBootstrap {
     param(
         [Parameter(Mandatory = $true)]
-        [string[]]$ComposeArgs
+        [string[]]$ComposeArgs,
+        [Parameter(Mandatory = $true)]
+        [string]$SelectedEnvironment
     )
 
     $maxAttempts = 12
@@ -80,8 +82,17 @@ function Invoke-InitialAdminBootstrap {
     Write-Host "Verificando bootstrap automatico do administrador inicial..." -ForegroundColor Cyan
 
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-        $bootstrapOutput = & docker @ComposeArgs exec -T backend python manage.py bootstrap_initial_admin 2>&1
+        $bootstrapArgs = @($ComposeArgs + @("exec", "-T", "backend", "python", "manage.py", "bootstrap_initial_admin"))
+        if ($SelectedEnvironment -eq "development") {
+            $bootstrapArgs += "--generate-random-credentials"
+        }
+
+        $bootstrapOutput = & docker @bootstrapArgs 2>&1
         if ($LASTEXITCODE -eq 0) {
+            $bootstrapMessage = ($bootstrapOutput | Out-String).Trim()
+            if ($bootstrapMessage) {
+                Write-Host $bootstrapMessage -ForegroundColor Green
+            }
             return
         }
 
@@ -185,7 +196,7 @@ try {
                 exit $LASTEXITCODE
             }
 
-            Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs
+            Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
             Invoke-DevelopmentSeed -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
         }
         "up" {
@@ -200,7 +211,7 @@ try {
                 exit $LASTEXITCODE
             }
 
-            Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs
+            Invoke-InitialAdminBootstrap -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
             Invoke-DevelopmentSeed -ComposeArgs $composeArgs -SelectedEnvironment $selectedEnvironment
         }
         "down" {

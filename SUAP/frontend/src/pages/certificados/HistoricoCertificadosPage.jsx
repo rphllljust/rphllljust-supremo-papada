@@ -8,10 +8,13 @@ const ACAO_OPTIONS = [
   { value: '', label: 'Todas as acoes' },
   { value: 'EMISSAO', label: 'Emissao' },
   { value: 'EMISSAO_LOTE', label: 'Emissao em lote' },
+  { value: 'REEMISSAO', label: 'Reemissao' },
   { value: 'PREVIEW', label: 'Preview' },
   { value: 'GERACAO_PDF', label: 'Geracao de PDF' },
   { value: 'REIMPRESSAO', label: 'Reimpressao' },
+  { value: 'CANCELAMENTO', label: 'Cancelamento' },
   { value: 'VALIDACAO_PUBLICA', label: 'Validacao publica' },
+  { value: 'VALIDACAO_STATUS', label: 'Consulta status validacao' },
   { value: 'ALTERACAO_MODELO', label: 'Alteracao de modelo' },
   { value: 'ALTERACAO_STATUS', label: 'Alteracao de status' },
 ]
@@ -34,11 +37,20 @@ export default function HistoricoCertificadosPage() {
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ acao: '' })
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['certificados-historico', { search, page, filters }],
     queryFn: () => certificadosApi.historico({ search, page, ...filters }).then((response) => response.data),
     staleTime: 15_000,
   })
+
+  const errorMessage = (() => {
+    const payload = error?.response?.data
+    if (!payload) return 'Nao foi possivel carregar o historico de certificados.'
+    if (typeof payload.detail === 'string') return payload.detail
+    const firstValue = Object.values(payload)[0]
+    if (Array.isArray(firstValue)) return firstValue[0]
+    return firstValue || 'Nao foi possivel carregar o historico de certificados.'
+  })()
 
   const rows = useMemo(() => {
     const results = data?.results || []
@@ -81,7 +93,7 @@ export default function HistoricoCertificadosPage() {
         </div>
       </section>
 
-      {isError ? <div className="alert alert--error">Nao foi possivel carregar o historico de certificados.</div> : null}
+      {isError ? <div className="alert alert--error">{errorMessage}</div> : null}
 
       <DataTable
         columns={COLUMNS}

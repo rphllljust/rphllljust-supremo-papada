@@ -156,11 +156,11 @@ ACCESS_MATRIX = {
     },
     "certificados": {
         "web": {
-            "view": STAFF_VIEW,
+            "view": TEACHING_VIEW,
             "manage": STAFF_MANAGE,
         },
         "api": {
-            "view": STAFF_VIEW,
+            "view": TEACHING_VIEW,
             "manage": STAFF_MANAGE,
         },
     },

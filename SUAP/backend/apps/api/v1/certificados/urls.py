@@ -3,11 +3,15 @@ from django.urls import path
 from .views import (
     AssinaturaCertificadoDetailApiView,
     AssinaturaCertificadoListCreateApiView,
+    CertificadoCancelarApiView,
     CertificadoEmitidoDetailApiView,
     CertificadoEmitidoListApiView,
     CertificadoPdfApiView,
     CertificadoPreviewApiView,
+    CertificadoQrCodeApiView,
+    CertificadoReemitirApiView,
     CertificadoReimprimirApiView,
+    CertificadoStatusValidacaoApiView,
     CertificadoValidarPublicoApiView,
     ConfiguracaoVisualCertificadoDetailApiView,
     ConfiguracaoVisualCertificadoListCreateApiView,
@@ -36,6 +40,10 @@ urlpatterns = [
     path("emitidos/<int:pk>/preview/", CertificadoPreviewApiView.as_view(), name="emitidos-preview"),
     path("emitidos/<int:pk>/pdf/", CertificadoPdfApiView.as_view(), name="emitidos-pdf"),
     path("emitidos/<int:pk>/reimprimir/", CertificadoReimprimirApiView.as_view(), name="emitidos-reimprimir"),
+    path("emitidos/<int:pk>/reemitir/", CertificadoReemitirApiView.as_view(), name="emitidos-reemitir"),
+    path("emitidos/<int:pk>/cancelar/", CertificadoCancelarApiView.as_view(), name="emitidos-cancelar"),
+    path("emitidos/<int:pk>/qrcode/", CertificadoQrCodeApiView.as_view(), name="emitidos-qrcode"),
+    path("emitidos/<int:pk>/status-validacao/", CertificadoStatusValidacaoApiView.as_view(), name="emitidos-status-validacao"),
 
     path("emitir/", EmitirCertificadoApiView.as_view(), name="emitir"),
     path("emitir-lote/", EmitirCertificadoLoteApiView.as_view(), name="emitir-lote"),
@@ -44,4 +52,3 @@ urlpatterns = [
     path("validar/<str:codigo_validacao>/", CertificadoValidarPublicoApiView.as_view(), name="validar-publico"),
     path("historico/", HistoricoEmissaoCertificadoListApiView.as_view(), name="historico"),
 ]
-

@@ -155,6 +155,8 @@ class ModeloCertificadoSerializer(serializers.ModelSerializer):
 
 class CertificadoEmitidoSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
+    status_documento_display = serializers.CharField(source="get_status_documento_display", read_only=True)
+    tipo_documento_display = serializers.CharField(source="get_tipo_documento_display", read_only=True)
     modelo_nome = serializers.CharField(source="modelo.nome", read_only=True)
     aluno_nome = serializers.CharField(source="nome_aluno_snapshot", read_only=True)
     curso_nome = serializers.CharField(source="curso_nome_snapshot", read_only=True)
@@ -176,15 +178,24 @@ class CertificadoEmitidoSerializer(serializers.ModelSerializer):
             "unidade_nome",
             "usuario_emissor",
             "usuario_emissor_nome",
+            "tipo_documento",
+            "tipo_documento_display",
             "numero_certificado",
+            "numero_registro",
             "livro",
             "folha",
+            "pagina",
             "termo",
             "codigo_validacao",
+            "hash_integridade",
+            "url_validacao",
             "qr_code_validacao",
+            "qr_code_image",
             "qr_code_data_uri",
             "status",
             "status_display",
+            "status_documento",
+            "status_documento_display",
             "data_inicio",
             "data_fim",
             "data_conclusao",
@@ -193,11 +204,13 @@ class CertificadoEmitidoSerializer(serializers.ModelSerializer):
             "data_entrega",
             "cidade",
             "estado",
+            "observacoes",
             "aluno_nome",
             "curso_nome",
             "cpf_aluno_snapshot",
             "texto_certificado_snapshot",
             "dados_dinamicos",
+            "reemitido_de",
             "reimpressoes",
             "ultima_reimpressao_em",
             "pdf_arquivo",
@@ -207,8 +220,12 @@ class CertificadoEmitidoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "numero_certificado",
+            "numero_registro",
             "codigo_validacao",
+            "hash_integridade",
+            "url_validacao",
             "qr_code_validacao",
+            "qr_code_image",
             "qr_code_data_uri",
             "usuario_emissor",
             "reimpressoes",
@@ -282,6 +299,7 @@ class EmitirCertificadoSerializer(serializers.Serializer):
     modelo_id = serializers.IntegerField()
     matricula_id = serializers.IntegerField(required=False)
     turma_id = serializers.IntegerField(required=False)
+    tipo_documento = serializers.ChoiceField(choices=CertificadoEmitido.TIPO_DOCUMENTO_CHOICES, default="DIPLOMA")
     sobrescritas = serializers.JSONField(required=False)
     gerar_pdf = serializers.BooleanField(default=True)
 
@@ -294,6 +312,7 @@ class EmitirCertificadoSerializer(serializers.Serializer):
 class PreviewRascunhoCertificadoSerializer(serializers.Serializer):
     modelo_id = serializers.IntegerField()
     matricula_id = serializers.IntegerField(required=False)
+    tipo_documento = serializers.ChoiceField(choices=CertificadoEmitido.TIPO_DOCUMENTO_CHOICES, default="DIPLOMA")
     sobrescritas = serializers.JSONField(required=False)
 
 

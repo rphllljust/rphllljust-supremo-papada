@@ -293,6 +293,10 @@ DOCUMENTOS_VALIDATION_BASE_URL = env_str(
     "DOCUMENTOS_VALIDATION_BASE_URL",
     default="http://localhost:8000/api/v1/historicos-digitais/validar-publico/",
 )
+CERTIFICADOS_VALIDATION_FRONTEND_BASE_URL = env_str(
+    "CERTIFICADOS_VALIDATION_FRONTEND_BASE_URL",
+    default=env_default("http://localhost:5175", homolog="", production=""),
+)
 DOCUMENTOS_XMLDSIG_ENABLED = env_bool("DOCUMENTOS_XMLDSIG_ENABLED", default=False)
 DOCUMENTOS_XMLDSIG_PRIVATE_KEY_PATH = env_str("DOCUMENTOS_XMLDSIG_PRIVATE_KEY_PATH", default="")
 DOCUMENTOS_XMLDSIG_CERT_PATH = env_str("DOCUMENTOS_XMLDSIG_CERT_PATH", default="")

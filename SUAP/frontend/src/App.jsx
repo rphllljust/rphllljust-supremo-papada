@@ -232,6 +232,8 @@ export default function App() {
               <Route path="/accounts/login" element={<Navigate to="/login" replace />} />
               <Route path="/validar-certificado" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
               <Route path="/validar-certificado/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
+              <Route path="/validar-documento" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
+              <Route path="/validar-documento/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
 
               {/* ── Painel interno (JWT obrigatório) ─────── */}
               <Route element={<ProtectedRoute />}>

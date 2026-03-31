@@ -3,12 +3,15 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
+from apps.api.v1.certificados.views import CertificadoValidarPublicoApiView
+
 handler403 = "apps.access.views.acesso_negado"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("academico/", include("historico_digital.urls")),
     path("api/v1/", include("apps.api.v1.urls")),
+    path("api/publico/validar-documento/<str:codigo_validacao>/", CertificadoValidarPublicoApiView.as_view(), name="publico-validar-documento"),
     path("ensino/", include(("apps.core.urls", "core"), namespace="core")),
     path("", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
     path("accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")),

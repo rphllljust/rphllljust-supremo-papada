@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+﻿import { X } from 'lucide-react'
 
 export default function EmitirCertificadoModal({
   isOpen,
@@ -25,12 +25,12 @@ export default function EmitirCertificadoModal({
         className="certificados-modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Emissao de certificados"
+        aria-label="Emissao de documentos com QR Code"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="certificados-modal__header">
           <div>
-            <h2 className="certificados-modal__title">Emissao de certificados</h2>
+            <h2 className="certificados-modal__title">Emissao de diploma e historico</h2>
             <p className="certificados-modal__subtitle">
               Emissao individual por matricula ou emissao em lote por turma.
             </p>
@@ -60,6 +60,18 @@ export default function EmitirCertificadoModal({
                 {modelos.map((modelo) => (
                   <option key={modelo.id} value={modelo.id}>{modelo.nome}</option>
                 ))}
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label>Tipo de documento</label>
+              <select
+                className="select"
+                value={emissao.tipo_documento}
+                onChange={(event) => setEmissao((current) => ({ ...current, tipo_documento: event.target.value }))}
+              >
+                <option value="DIPLOMA">Diploma</option>
+                <option value="HISTORICO">Historico Escolar</option>
               </select>
             </div>
 
@@ -195,6 +207,18 @@ export default function EmitirCertificadoModal({
             </div>
 
             <div className="form-field">
+              <label>Pagina</label>
+              <input
+                type="text"
+                value={emissao.sobrescritas.pagina || ''}
+                onChange={(event) => setEmissao((current) => ({
+                  ...current,
+                  sobrescritas: { ...current.sobrescritas, pagina: event.target.value },
+                }))}
+              />
+            </div>
+
+            <div className="form-field">
               <label>Gerar PDF na emissao</label>
               <select
                 className="select"
@@ -204,6 +228,18 @@ export default function EmitirCertificadoModal({
                 <option value="true">Sim</option>
                 <option value="false">Nao</option>
               </select>
+            </div>
+
+            <div className="form-field form-field--full">
+              <label>Observacoes</label>
+              <textarea
+                rows="2"
+                value={emissao.sobrescritas.observacoes || ''}
+                onChange={(event) => setEmissao((current) => ({
+                  ...current,
+                  sobrescritas: { ...current.sobrescritas, observacoes: event.target.value },
+                }))}
+              />
             </div>
 
             <div className="form-field form-field--full">
@@ -224,7 +260,7 @@ export default function EmitirCertificadoModal({
               {isPreviewPending ? 'Gerando preview...' : 'Preview'}
             </button>
             <button type="submit" className="btn btn--primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Emitindo...' : (emissao.tipo === 'lote' ? 'Emitir lote' : 'Emitir certificado')}
+              {isSubmitting ? 'Emitindo...' : (emissao.tipo === 'lote' ? 'Emitir lote' : 'Emitir documento')}
             </button>
           </footer>
         </form>
@@ -232,4 +268,3 @@ export default function EmitirCertificadoModal({
     </div>
   )
 }
-

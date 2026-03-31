@@ -1,3 +1,4 @@
+import re
 from io import StringIO
 from unittest.mock import patch
 
@@ -156,3 +157,49 @@ class BootstrapInitialAdminCommandTests(TestCase):
                 "Informe o CPF do administrador inicial via --cpf ou pela variavel de ambiente INITIAL_ADMIN_CPF.",
             ):
                 call_command("bootstrap_initial_admin")
+
+    @override_settings(
+        INITIAL_ADMIN_CPF="",
+        INITIAL_ADMIN_PASSWORD="",
+        INITIAL_ADMIN_FIRST_NAME="Administrador",
+        INITIAL_ADMIN_LAST_NAME="Inicial",
+    )
+    def test_bootstrap_generates_random_credentials_when_flag_is_enabled(self):
+        stdout = StringIO()
+
+        call_command("bootstrap_initial_admin", "--generate-random-credentials", stdout=stdout)
+
+        output = stdout.getvalue()
+        match = re.search(r"cpf=(\d{11}) senha=([A-Za-z0-9]{16})", output)
+
+        self.assertIsNotNone(match, msg=output)
+        cpf, password = match.groups()
+
+        usuario = Usuario.objects.get(cpf=cpf)
+        self.assertEqual(usuario.tipo, PerfilUsuario.ADMIN)
+        self.assertTrue(usuario.check_password(password))
+        self.assertTrue(usuario.must_change_password)
+
+    def test_bootstrap_random_credentials_reuses_existing_admin_cpf(self):
+        admin_cpf = gerar_cpf(111222333)
+        existing_admin = Usuario.objects.create_user(
+            username=admin_cpf,
+            cpf=admin_cpf,
+            tipo=PerfilUsuario.ADMIN,
+            password="senha_antiga",
+            is_staff=True,
+            is_superuser=True,
+        )
+
+        stdout = StringIO()
+        call_command("bootstrap_initial_admin", "--generate-random-credentials", stdout=stdout)
+
+        output = stdout.getvalue()
+        match = re.search(r"cpf=(\d{11}) senha=([A-Za-z0-9]{16})", output)
+
+        self.assertIsNotNone(match, msg=output)
+        cpf, password = match.groups()
+        self.assertEqual(cpf, admin_cpf)
+
+        existing_admin.refresh_from_db()
+        self.assertTrue(existing_admin.check_password(password))

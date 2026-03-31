@@ -18,7 +18,7 @@ export default function ValidacaoCertificadoPage() {
   const { codigo: codigoParam } = useParams()
   const location = useLocation()
   const isPublicRoute = useMemo(
-    () => location.pathname.startsWith('/validar-certificado'),
+    () => location.pathname.startsWith('/validar-certificado') || location.pathname.startsWith('/validar-documento'),
     [location.pathname],
   )
 
@@ -33,7 +33,7 @@ export default function ValidacaoCertificadoPage() {
     },
     onError: (error) => {
       setResultado(null)
-      toast.error(getErrorMessage(error, 'Nao foi possivel validar o certificado.'))
+      toast.error(getErrorMessage(error, 'Nao foi possivel validar o documento.'))
     },
   })
 
@@ -45,12 +45,14 @@ export default function ValidacaoCertificadoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [codigoParam])
 
+  const autenticidadeValida = resultado?.autenticidade === 'valido' || resultado?.valido
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Validacao Publica de Certificado</h1>
-          <p className="page-subtitle">Consulta por codigo unico e QR Code institucional.</p>
+          <h1 className="page-title">Validacao Publica de Documento</h1>
+          <p className="page-subtitle">Consulta de autenticidade de diploma e historico escolar via QR Code ou codigo.</p>
         </div>
         {!isPublicRoute ? (
           <div className="page-header__actions">
@@ -85,7 +87,7 @@ export default function ValidacaoCertificadoPage() {
             </div>
             <div className="form-field form-field--full">
               <button type="submit" className="btn btn--primary" disabled={validarMutation.isPending}>
-                {validarMutation.isPending ? 'Validando...' : 'Validar certificado'}
+                {validarMutation.isPending ? 'Validando...' : 'Validar documento'}
               </button>
             </div>
           </form>
@@ -94,17 +96,26 @@ export default function ValidacaoCertificadoPage() {
 
       {resultado ? (
         <EntityDetailsPanel
-          title={`Certificado ${resultado.numero_certificado || ''}`}
-          subtitle={`Status de validade: ${resultado.status_validade || ''}`}
+          title={`${resultado.tipo_documento_display || 'Documento'} ${resultado.numero_registro || ''}`}
+          subtitle={`Autenticidade: ${autenticidadeValida ? 'Valido' : 'Invalido'}`}
           fields={[
-            { label: 'Valido', value: resultado.valido ? 'Sim' : 'Nao' },
+            { label: 'Status', value: autenticidadeValida ? 'Valido' : 'Invalido' },
+            { label: 'Tipo de documento', value: resultado.tipo_documento_display || resultado.tipo_documento },
             { label: 'Aluno', value: resultado.nome_aluno || '-' },
             { label: 'Curso', value: resultado.curso || '-' },
-            { label: 'Numero', value: resultado.numero_certificado || '-' },
-            { label: 'Codigo', value: resultado.codigo_validacao || '-' },
-            { label: 'Data de conclusao', value: resultado.data_conclusao || '-' },
+            { label: 'Situacao do documento', value: resultado.situacao_documento_display || resultado.situacao_documento || '-' },
+            { label: 'Numero de registro', value: resultado.numero_registro || '-' },
+            { label: 'Livro', value: resultado.livro || '-' },
+            { label: 'Folha', value: resultado.folha || '-' },
+            { label: 'Pagina', value: resultado.pagina || '-' },
             { label: 'Data de emissao', value: resultado.data_emissao || '-' },
-            { label: 'Instituicao emissora', value: resultado.instituicao_emissora || '-' },
+            { label: 'Data de registro', value: resultado.data_registro || '-' },
+            { label: 'Hash resumido', value: resultado.hash_resumido || '-' },
+            { label: 'Media final', value: resultado.media_final || '-' },
+            { label: 'Frequencia final', value: resultado.frequencia_final || '-' },
+            { label: 'Situacao final', value: resultado.situacao_final_display || resultado.situacao_final || '-' },
+            { label: 'Mensagem institucional', value: autenticidadeValida ? 'Documento autentico e valido na base institucional.' : 'Documento invalido ou cancelado na base institucional.' },
+            { label: 'Observacoes', value: resultado.observacoes_publicas || '-' },
           ]}
           onClose={() => setResultado(null)}
         />

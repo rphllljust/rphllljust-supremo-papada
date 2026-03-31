@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Eye, FileDown, Plus, Printer } from 'lucide-react'
+import { Ban, Eye, FileDown, KeyRound, Plus, Printer, QrCode, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 
@@ -8,23 +8,30 @@ import { certificadosApi, cursosApi, matriculasApi, turmasApi } from '@/api/endp
 import CertificadoPreview from '@/components/certificados/CertificadoPreview'
 import EmitirCertificadoModal from '@/components/certificados/EmitirCertificadoModal'
 import DataTable from '@/components/ui/DataTable'
+import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 
 const COLUMNS = [
-  { key: 'numero_certificado', label: 'Numero' },
+  { key: 'tipo_documento_display', label: 'Documento' },
+  { key: 'numero_registro', label: 'Registro' },
   { key: 'aluno_nome', label: 'Aluno' },
   { key: 'curso_nome', label: 'Curso' },
-  { key: 'status_display', label: 'Status' },
+  { key: 'status_documento_display', label: 'Situacao' },
   { key: 'data_emissao', label: 'Emissao' },
-  { key: 'codigo_validacao', label: 'Codigo de validacao' },
+  { key: 'codigo_validacao', label: 'Codigo validacao' },
 ]
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos os status' },
-  { value: 'DIPLOMA_EM_PREPARACAO', label: 'Diploma em preparacao' },
-  { value: 'DIPLOMA_REGISTRADO', label: 'Diploma registrado' },
-  { value: 'DIPLOMA_DISPONIVEL_RETIRADA', label: 'Diploma disponivel para retirada' },
-  { value: 'DIPLOMA_ENTREGUE', label: 'Diploma entregue' },
-  { value: 'CERTIFICADO_CANCELADO', label: 'Certificado cancelado' },
+const STATUS_DOCUMENTO_OPTIONS = [
+  { value: '', label: 'Todos os status documentais' },
+  { value: 'RASCUNHO', label: 'Rascunho' },
+  { value: 'EMITIDO', label: 'Emitido' },
+  { value: 'CANCELADO', label: 'Cancelado' },
+  { value: 'REEMITIDO', label: 'Reemitido' },
+]
+
+const DOCUMENTO_OPTIONS = [
+  { value: '', label: 'Todos os documentos' },
+  { value: 'DIPLOMA', label: 'Diploma' },
+  { value: 'HISTORICO', label: 'Historico Escolar' },
 ]
 
 function getErrorMessage(error, fallback) {
@@ -35,8 +42,9 @@ function getErrorMessage(error, fallback) {
   return Array.isArray(firstValue) ? firstValue[0] : (firstValue || fallback)
 }
 
-function abrirBlobPdf(blob, nome = 'certificado.pdf') {
-  const url = URL.createObjectURL(blob)
+function abrirBlob(blob, mimeType = 'application/octet-stream', nome = 'arquivo.bin') {
+  const blobValue = blob instanceof Blob ? blob : new Blob([blob], { type: mimeType })
+  const url = URL.createObjectURL(blobValue)
   const win = window.open(url, '_blank', 'noopener,noreferrer')
   if (!win) {
     const link = document.createElement('a')
@@ -51,6 +59,7 @@ function buildInitialEmissao() {
   return {
     modelo_id: '',
     tipo: 'individual',
+    tipo_documento: 'DIPLOMA',
     matricula_id: '',
     turma_id: '',
     sobrescritas: {
@@ -61,6 +70,8 @@ function buildInitialEmissao() {
       estado: '',
       livro: '',
       folha: '',
+      pagina: '',
+      observacoes: '',
       texto_certificado: '',
       somente_concluintes: true,
     },
@@ -73,14 +84,42 @@ export default function CertificadosPage() {
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState({ status: '', curso: '', turma: '', periodo: '' })
+  const [filters, setFilters] = useState({
+    tipo_documento: '',
+    status_documento: '',
+    curso: '',
+    turma: '',
+    matricula: '',
+    livro: '',
+    folha: '',
+    pagina: '',
+    numero_registro: '',
+    periodo: '',
+  })
   const [previewHtml, setPreviewHtml] = useState('')
   const [showEmissionModal, setShowEmissionModal] = useState(false)
   const [emissao, setEmissao] = useState(buildInitialEmissao)
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null)
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['certificados-emitidos', { search, page, filters }],
     queryFn: () => certificadosApi.emitidos.list({ search, page, ...filters }).then((response) => response.data),
+    staleTime: 15_000,
+  })
+
+  const listErrorMessage = (() => {
+    const payload = error?.response?.data
+    if (!payload) return 'Nao foi possivel carregar os documentos emitidos.'
+    if (typeof payload.detail === 'string') return payload.detail
+    const firstValue = Object.values(payload)[0]
+    if (Array.isArray(firstValue)) return firstValue[0]
+    return firstValue || 'Nao foi possivel carregar os documentos emitidos.'
+  })()
+
+  const { data: documentoDetalhe, isLoading: isLoadingDetalhe } = useQuery({
+    queryKey: ['certificado-detalhe', selectedDocumentId],
+    queryFn: () => certificadosApi.emitidos.get(selectedDocumentId).then((response) => response.data),
+    enabled: Boolean(selectedDocumentId),
     staleTime: 15_000,
   })
 
@@ -91,7 +130,7 @@ export default function CertificadosPage() {
   })
 
   const { data: matriculasData } = useQuery({
-    queryKey: ['certificados-matriculas'],
+    queryKey: ['certificados-matriculas', search],
     queryFn: () => matriculasApi.list({ page_size: 200, search: search || undefined }).then((response) => response.data),
     staleTime: 30_000,
   })
@@ -124,12 +163,12 @@ export default function CertificadosPage() {
       if (payload.tipo === 'lote') {
         toast.success(`Emissao em lote concluida (${response.data.total_emitidos} emitidos).`)
       } else {
-        toast.success('Certificado emitido com sucesso.')
+        toast.success(`${payload.data.tipo_documento === 'HISTORICO' ? 'Historico' : 'Diploma'} emitido com sucesso.`)
       }
       setShowEmissionModal(false)
       setEmissao(buildInitialEmissao())
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel emitir o certificado.')),
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel emitir o documento.')),
   })
 
   const previewRascunhoMutation = useMutation({
@@ -144,16 +183,25 @@ export default function CertificadosPage() {
   const previewEmitidoMutation = useMutation({
     mutationFn: (id) => certificadosApi.emitidos.preview(id),
     onSuccess: (response) => setPreviewHtml(response.data.html || ''),
-    onError: (error) => toast.error(getErrorMessage(error, 'Falha ao abrir preview do certificado.')),
+    onError: (error) => toast.error(getErrorMessage(error, 'Falha ao abrir preview do documento.')),
   })
 
   const pdfMutation = useMutation({
     mutationFn: ({ id, numero }) => certificadosApi.emitidos.pdf(id).then((response) => ({ blob: response.data, numero })),
     onSuccess: ({ blob, numero }) => {
-      abrirBlobPdf(blob, `${numero || 'certificado'}.pdf`)
-      toast.success('PDF gerado com sucesso.')
+      abrirBlob(blob, 'application/pdf', `${numero || 'documento'}.pdf`)
+      toast.success('PDF pronto para visualizacao.')
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel gerar o PDF.')),
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel gerar/baixar o PDF.')),
+  })
+
+  const qrcodeMutation = useMutation({
+    mutationFn: ({ id, numero }) => certificadosApi.emitidos.qrcode(id).then((response) => ({ blob: response.data, numero })),
+    onSuccess: ({ blob, numero }) => {
+      abrirBlob(blob, 'image/png', `qrcode-${numero || 'documento'}.png`)
+      toast.success('QR Code aberto com sucesso.')
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel obter o QR Code.')),
   })
 
   const reimprimirMutation = useMutation({
@@ -165,9 +213,43 @@ export default function CertificadosPage() {
     onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel registrar reimpressao.')),
   })
 
+  const cancelarMutation = useMutation({
+    mutationFn: ({ id, motivo }) => certificadosApi.emitidos.cancelar(id, { motivo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificados-emitidos'] })
+      if (selectedDocumentId) {
+        queryClient.invalidateQueries({ queryKey: ['certificado-detalhe', selectedDocumentId] })
+      }
+      toast.success('Documento cancelado com sucesso.')
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel cancelar o documento.')),
+  })
+
+  const reemitirMutation = useMutation({
+    mutationFn: (id) => certificadosApi.emitidos.reemitir(id, { gerar_pdf: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificados-emitidos'] })
+      toast.success('Documento reemitido com sucesso.')
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel reemitir o documento.')),
+  })
+
+  const statusValidacaoMutation = useMutation({
+    mutationFn: (id) => certificadosApi.emitidos.statusValidacao(id),
+    onSuccess: (response) => {
+      const statusLabel = response.data?.autenticidade === 'valido' ? 'VALIDO' : 'INVALIDO'
+      toast.success(`Status de validacao: ${statusLabel}`)
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel consultar o status de validacao.')),
+  })
+
   const validarFormularioEmissao = () => {
     if (!emissao.modelo_id) {
       toast.error('Selecione um modelo.')
+      return false
+    }
+    if (!emissao.tipo_documento) {
+      toast.error('Selecione o tipo de documento.')
       return false
     }
     if (emissao.tipo === 'individual' && !emissao.matricula_id) {
@@ -188,6 +270,7 @@ export default function CertificadosPage() {
       tipo: emissao.tipo,
       data: {
         modelo_id: Number(emissao.modelo_id),
+        tipo_documento: emissao.tipo_documento,
         matricula_id: emissao.tipo === 'individual' ? Number(emissao.matricula_id) : undefined,
         turma_id: emissao.tipo === 'lote' ? Number(emissao.turma_id) : undefined,
         sobrescritas: emissao.sobrescritas,
@@ -208,44 +291,141 @@ export default function CertificadosPage() {
 
     previewRascunhoMutation.mutate({
       modelo_id: Number(emissao.modelo_id),
+      tipo_documento: emissao.tipo_documento,
       matricula_id: emissao.tipo === 'individual' ? Number(emissao.matricula_id) : undefined,
       sobrescritas: emissao.sobrescritas,
     })
+  }
+
+  const abrirEmissao = (tipoDocumento) => {
+    setEmissao((current) => ({ ...current, tipo_documento: tipoDocumento }))
+    setShowEmissionModal(true)
+  }
+
+  const counts = useMemo(() => {
+    const rows = data?.results || []
+    const diplomas = rows.filter((row) => row.tipo_documento === 'DIPLOMA').length
+    const historicos = rows.filter((row) => row.tipo_documento === 'HISTORICO').length
+    return { diplomas, historicos }
+  }, [data])
+
+  const detalhesHistorico = documentoDetalhe?.dados_dinamicos || {}
+  const disciplinasResumo = Array.isArray(detalhesHistorico.disciplinas)
+    ? detalhesHistorico.disciplinas
+      .slice(0, 5)
+      .map((item) => `${item.descricao || '-'} (${item.nota || '-'})`)
+      .join(' | ')
+    : ''
+  const detailsFields = [
+    { label: 'Aluno', value: documentoDetalhe?.aluno_nome },
+    { label: 'CPF', value: documentoDetalhe?.cpf_aluno_snapshot },
+    { label: 'Curso', value: documentoDetalhe?.curso_nome },
+    { label: 'Tipo', value: documentoDetalhe?.tipo_documento_display },
+    { label: 'Numero registro', value: documentoDetalhe?.numero_registro },
+    { label: 'Livro', value: documentoDetalhe?.livro },
+    { label: 'Folha', value: documentoDetalhe?.folha },
+    { label: 'Pagina', value: documentoDetalhe?.pagina },
+    { label: 'Data emissao', value: documentoDetalhe?.data_emissao },
+    { label: 'Data registro', value: documentoDetalhe?.data_registro },
+    { label: 'Codigo validacao', value: documentoDetalhe?.codigo_validacao },
+    { label: 'Hash integridade', value: documentoDetalhe?.hash_integridade },
+    { label: 'URL validacao', value: documentoDetalhe?.url_validacao },
+    { label: 'Observacoes', value: documentoDetalhe?.observacoes },
+  ]
+
+  if (documentoDetalhe?.tipo_documento === 'HISTORICO') {
+    detailsFields.push(
+      { label: 'Media final', value: detalhesHistorico.media_final || '-' },
+      { label: 'Frequencia final', value: detalhesHistorico.frequencia_final || '-' },
+      { label: 'Situacao final', value: detalhesHistorico.situacao_final_display || detalhesHistorico.situacao_final || '-' },
+      { label: 'Qtd. disciplinas', value: detalhesHistorico.quantidade_disciplinas || 0 },
+      { label: 'Disciplinas (resumo)', value: disciplinasResumo || '-' },
+    )
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Certificados</h1>
-          <p className="page-subtitle">Listagem, emissao, preview e impressao de certificados institucionais.</p>
+          <h1 className="page-title">Documentos com QR Code</h1>
+          <p className="page-subtitle">Emissao, validacao, reemissao e cancelamento de diplomas e historicos escolares.</p>
         </div>
 
         <div className="page-header__actions">
           <Link to="/certificados/modelos" className="btn btn--outline">Modelos</Link>
-          <button type="button" className="btn btn--primary" onClick={() => setShowEmissionModal(true)}>
-            <Plus size={16} /> Emitir certificado
+          <button type="button" className="btn btn--outline" onClick={() => abrirEmissao('HISTORICO')}>
+            <Plus size={16} /> Emitir historico
+          </button>
+          <button type="button" className="btn btn--primary" onClick={() => abrirEmissao('DIPLOMA')}>
+            <Plus size={16} /> Emitir diploma
           </button>
         </div>
       </div>
 
       <section className="form-panel" style={{ marginTop: 20 }}>
         <div className="form-panel__body">
+          <div className="table-actions" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className={`btn ${filters.tipo_documento === 'DIPLOMA' ? 'btn--primary' : 'btn--outline'}`}
+              onClick={() => {
+                setFilters((current) => ({ ...current, tipo_documento: 'DIPLOMA' }))
+                setPage(1)
+              }}
+            >
+              Diplomas ({counts.diplomas})
+            </button>
+            <button
+              type="button"
+              className={`btn ${filters.tipo_documento === 'HISTORICO' ? 'btn--primary' : 'btn--outline'}`}
+              onClick={() => {
+                setFilters((current) => ({ ...current, tipo_documento: 'HISTORICO' }))
+                setPage(1)
+              }}
+            >
+              Historicos ({counts.historicos})
+            </button>
+            <button
+              type="button"
+              className={`btn ${filters.tipo_documento === '' ? 'btn--secondary' : 'btn--outline'}`}
+              onClick={() => {
+                setFilters((current) => ({ ...current, tipo_documento: '' }))
+                setPage(1)
+              }}
+            >
+              Todos
+            </button>
+          </div>
+
           <div className="form-panel__grid">
             <div className="form-field">
-              <label>Status</label>
+              <label>Tipo documento</label>
               <select
                 className="select"
-                value={filters.status}
+                value={filters.tipo_documento}
                 onChange={(event) => {
-                  setFilters((current) => ({ ...current, status: event.target.value }))
+                  setFilters((current) => ({ ...current, tipo_documento: event.target.value }))
                   setPage(1)
                 }}
               >
-                {STATUS_OPTIONS.map((statusOption) => (
-                  <option key={statusOption.value || 'todos'} value={statusOption.value}>
-                    {statusOption.label}
-                  </option>
+                {DOCUMENTO_OPTIONS.map((option) => (
+                  <option key={option.value || 'todos'} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label>Status documento</label>
+              <select
+                className="select"
+                value={filters.status_documento}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, status_documento: event.target.value }))
+                  setPage(1)
+                }}
+              >
+                {STATUS_DOCUMENTO_OPTIONS.map((statusOption) => (
+                  <option key={statusOption.value || 'todos'} value={statusOption.value}>{statusOption.label}</option>
                 ))}
               </select>
             </div>
@@ -285,6 +465,71 @@ export default function CertificadosPage() {
             </div>
 
             <div className="form-field">
+              <label>Matricula</label>
+              <select
+                className="select"
+                value={filters.matricula}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, matricula: event.target.value }))
+                  setPage(1)
+                }}
+              >
+                <option value="">Todas</option>
+                {matriculas.map((matricula) => (
+                  <option key={matricula.id} value={matricula.id}>{matricula.numero_matricula} - {matricula.aluno_nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label>Numero registro</label>
+              <input
+                type="text"
+                value={filters.numero_registro}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, numero_registro: event.target.value }))
+                  setPage(1)
+                }}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>Livro</label>
+              <input
+                type="text"
+                value={filters.livro}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, livro: event.target.value }))
+                  setPage(1)
+                }}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>Folha</label>
+              <input
+                type="text"
+                value={filters.folha}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, folha: event.target.value }))
+                  setPage(1)
+                }}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>Pagina</label>
+              <input
+                type="text"
+                value={filters.pagina}
+                onChange={(event) => {
+                  setFilters((current) => ({ ...current, pagina: event.target.value }))
+                  setPage(1)
+                }}
+              />
+            </div>
+
+            <div className="form-field">
               <label>Periodo (ano)</label>
               <input
                 type="number"
@@ -300,7 +545,7 @@ export default function CertificadosPage() {
         </div>
       </section>
 
-      {isError ? <div className="alert alert--error">Nao foi possivel carregar os certificados emitidos.</div> : null}
+      {isError ? <div className="alert alert--error">{listErrorMessage}</div> : null}
 
       <DataTable
         columns={COLUMNS}
@@ -310,19 +555,45 @@ export default function CertificadosPage() {
           setSearch(value)
           setPage(1)
         }}
-        searchPlaceholder="Buscar por numero, aluno, curso, matricula ou codigo de validacao..."
-        emptyMessage="Nenhum certificado encontrado."
+        searchPlaceholder="Buscar por aluno, matricula, curso, registro, livro, folha, pagina ou codigo..."
+        emptyMessage="Nenhum documento encontrado."
         rowActions={(row) => (
           <div className="table-actions">
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedDocumentId(row.id)}>
+              <Eye size={14} /> Detalhes
+            </button>
             <button type="button" className="btn btn--outline btn--sm" onClick={() => previewEmitidoMutation.mutate(row.id)}>
               <Eye size={14} /> Preview
             </button>
             <button
               type="button"
               className="btn btn--secondary btn--sm"
-              onClick={() => pdfMutation.mutate({ id: row.id, numero: row.numero_certificado })}
+              onClick={() => pdfMutation.mutate({ id: row.id, numero: row.numero_registro || row.numero_certificado })}
             >
               <FileDown size={14} /> PDF
+            </button>
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => qrcodeMutation.mutate({ id: row.id, numero: row.numero_registro || row.numero_certificado })}
+            >
+              <QrCode size={14} /> QR
+            </button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => statusValidacaoMutation.mutate(row.id)}>
+              <KeyRound size={14} /> Status
+            </button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => reemitirMutation.mutate(row.id)}>
+              <RefreshCw size={14} /> Reemitir
+            </button>
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => {
+                const motivo = window.prompt('Motivo do cancelamento (opcional):', '') || ''
+                cancelarMutation.mutate({ id: row.id, motivo })
+              }}
+            >
+              <Ban size={14} /> Cancelar
             </button>
             <button type="button" className="btn btn--secondary btn--sm" onClick={() => reimprimirMutation.mutate(row.id)}>
               <Printer size={14} /> Reimprimir
@@ -361,6 +632,16 @@ export default function CertificadosPage() {
         <CertificadoPreview
           html={previewHtml}
           onClose={() => setPreviewHtml('')}
+        />
+      ) : null}
+
+      {selectedDocumentId ? (
+        <EntityDetailsPanel
+          title={`Documento ${documentoDetalhe?.numero_registro || documentoDetalhe?.numero_certificado || ''}`}
+          subtitle={`${documentoDetalhe?.tipo_documento_display || ''} - ${documentoDetalhe?.status_documento_display || ''}`}
+          isLoading={isLoadingDetalhe}
+          onClose={() => setSelectedDocumentId(null)}
+          fields={detailsFields}
         />
       ) : null}
     </div>

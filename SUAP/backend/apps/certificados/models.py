@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 
 from django.conf import settings
 from django.db import models
@@ -8,9 +8,9 @@ from django.utils import timezone
 
 TEXTO_PADRAO_CERTIFICADO = (
     "O(a) [nome_da_instituicao] certifica que [nome_aluno], portador(a) do CPF [cpf_aluno], "
-    "concluiu com êxito o curso [curso_nome], pertencente ao eixo tecnológico [eixo_tecnologico], "
-    "com carga horária total de [carga_horaria] horas, realizado no período de [data_inicio] a [data_fim], "
-    "com conclusão em [data_conclusao]."
+    "concluiu com exito o curso [curso_nome], pertencente ao eixo tecnologico [eixo_tecnologico], "
+    "com carga horaria total de [carga_horaria] horas, realizado no periodo de [data_inicio] a [data_fim], "
+    "com conclusao em [data_conclusao]."
 )
 
 CAMPO_DINAMICO_OBRIGATORIO = [
@@ -33,8 +33,10 @@ CAMPO_DINAMICO_OBRIGATORIO = [
     "estado",
     "data_emissao",
     "numero_certificado",
+    "numero_registro",
     "livro",
     "folha",
+    "pagina",
     "codigo_validacao",
     "qr_code_validacao",
     "texto_certificado",
@@ -55,7 +57,7 @@ class ModeloCertificado(models.Model):
     TIPO_CHOICES = (
         ("CERTIFICADO", "Certificado"),
         ("DIPLOMA", "Diploma"),
-        ("CERTIFICADO_CONCLUSAO", "Certificado de Conclusão"),
+        ("CERTIFICADO_CONCLUSAO", "Certificado de Conclusao"),
     )
 
     nome = models.CharField(max_length=160, unique=True)
@@ -125,7 +127,7 @@ class ConfiguracaoVisualCertificado(models.Model):
         on_delete=models.CASCADE,
         related_name="configuracao_visual",
     )
-    nome_da_instituicao = models.CharField(max_length=220, default="Instituto Estadual de Desenvolvimento da Educação Profissional de Rondônia")
+    nome_da_instituicao = models.CharField(max_length=220, default="Instituto Estadual de Desenvolvimento da Educacao Profissional de Rondonia")
     sigla_instituicao = models.CharField(max_length=20, default="IDEP")
     brasao_instituicao = models.URLField(blank=True, default="")
     logo_instituicao = models.URLField(blank=True, default="")
@@ -140,8 +142,8 @@ class ConfiguracaoVisualCertificado(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Configuração Visual de Certificado"
-        verbose_name_plural = "Configurações Visuais de Certificados"
+        verbose_name = "Configuracao Visual de Certificado"
+        verbose_name_plural = "Configuracoes Visuais de Certificados"
 
     def __str__(self):
         return f"Visual {self.modelo.nome}"
@@ -173,12 +175,24 @@ class AssinaturaCertificado(models.Model):
 
 
 class CertificadoEmitido(models.Model):
+    TIPO_DOCUMENTO_CHOICES = (
+        ("DIPLOMA", "Diploma"),
+        ("HISTORICO", "Historico Escolar"),
+    )
+
     STATUS_CHOICES = (
-        ("DIPLOMA_EM_PREPARACAO", "diploma em preparação"),
+        ("DIPLOMA_EM_PREPARACAO", "diploma em preparacao"),
         ("DIPLOMA_REGISTRADO", "diploma registrado"),
-        ("DIPLOMA_DISPONIVEL_RETIRADA", "diploma disponível para retirada"),
+        ("DIPLOMA_DISPONIVEL_RETIRADA", "diploma disponivel para retirada"),
         ("DIPLOMA_ENTREGUE", "diploma entregue"),
         ("CERTIFICADO_CANCELADO", "certificado cancelado"),
+    )
+
+    STATUS_DOCUMENTO_CHOICES = (
+        ("RASCUNHO", "rascunho"),
+        ("EMITIDO", "emitido"),
+        ("CANCELADO", "cancelado"),
+        ("REEMITIDO", "reemitido"),
     )
 
     modelo = models.ForeignKey(
@@ -228,15 +242,30 @@ class CertificadoEmitido(models.Model):
         blank=True,
         related_name="certificados_emitidos_institucionais",
     )
+    reemitido_de = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reemissoes",
+    )
 
+    tipo_documento = models.CharField(max_length=20, choices=TIPO_DOCUMENTO_CHOICES, default="DIPLOMA")
     numero_certificado = models.CharField(max_length=40, unique=True, editable=False)
+    numero_registro = models.CharField(max_length=40, unique=True, editable=False, null=True, blank=True)
     livro = models.CharField(max_length=20, blank=True, default="")
     folha = models.CharField(max_length=20, blank=True, default="")
+    pagina = models.CharField(max_length=20, blank=True, default="")
     termo = models.CharField(max_length=20, blank=True, default="")
     codigo_validacao = models.CharField(max_length=40, unique=True, editable=False)
+    hash_integridade = models.CharField(max_length=64, blank=True, default="")
+    url_validacao = models.URLField(max_length=800, blank=True, default="")
     qr_code_validacao = models.URLField(max_length=800, blank=True, default="")
+    qr_code_image = models.ImageField(upload_to="certificados/qrcodes/", null=True, blank=True)
     qr_code_data_uri = models.TextField(blank=True, default="")
     status = models.CharField(max_length=40, choices=STATUS_CHOICES, default="DIPLOMA_EM_PREPARACAO")
+    status_documento = models.CharField(max_length=20, choices=STATUS_DOCUMENTO_CHOICES, default="RASCUNHO")
+    observacoes = models.TextField(blank=True, default="")
 
     data_inicio = models.DateField(null=True, blank=True)
     data_fim = models.DateField(null=True, blank=True)
@@ -264,6 +293,11 @@ class CertificadoEmitido(models.Model):
         ordering = ["-criado_em", "-id"]
         verbose_name = "Certificado Emitido"
         verbose_name_plural = "Certificados Emitidos"
+        indexes = [
+            models.Index(fields=["tipo_documento", "status_documento"]),
+            models.Index(fields=["numero_registro"]),
+            models.Index(fields=["livro", "folha", "pagina"]),
+        ]
 
     def __str__(self):
         return f"{self.numero_certificado} - {self.nome_aluno_snapshot or 'Aluno'}"
@@ -287,6 +321,25 @@ class CertificadoEmitido(models.Model):
         return f"{prefixo}{sequencial:06d}"
 
     @classmethod
+    def gerar_numero_registro(cls, tipo_documento="DIPLOMA"):
+        ano = timezone.now().year
+        prefixo_tipo = "DIP" if tipo_documento == "DIPLOMA" else "HIS"
+        prefixo = f"{prefixo_tipo}-{ano}-"
+        ultimo = (
+            cls.objects
+            .filter(numero_registro__startswith=prefixo)
+            .order_by("-numero_registro")
+            .first()
+        )
+        sequencial = 1
+        if ultimo and ultimo.numero_registro:
+            try:
+                sequencial = int(ultimo.numero_registro.split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                sequencial = cls.objects.filter(numero_registro__startswith=prefixo).count() + 1
+        return f"{prefixo}{sequencial:06d}"
+
+    @classmethod
     def gerar_codigo_validacao(cls):
         while True:
             codigo = uuid.uuid4().hex[:20].upper()
@@ -296,6 +349,8 @@ class CertificadoEmitido(models.Model):
     def save(self, *args, **kwargs):
         if not self.numero_certificado:
             self.numero_certificado = self.gerar_numero_certificado()
+        if not self.numero_registro:
+            self.numero_registro = self.gerar_numero_registro(self.tipo_documento)
         if not self.codigo_validacao:
             self.codigo_validacao = self.gerar_codigo_validacao()
         super().save(*args, **kwargs)
@@ -303,14 +358,17 @@ class CertificadoEmitido(models.Model):
 
 class HistoricoEmissaoCertificado(models.Model):
     ACAO_CHOICES = (
-        ("EMISSAO", "Emissão"),
-        ("EMISSAO_LOTE", "Emissão em lote"),
-        ("PREVIEW", "Pré-visualização"),
-        ("GERACAO_PDF", "Geração de PDF"),
-        ("REIMPRESSAO", "Reimpressão"),
-        ("VALIDACAO_PUBLICA", "Validação pública"),
-        ("ALTERACAO_MODELO", "Alteração de modelo"),
-        ("ALTERACAO_STATUS", "Alteração de status"),
+        ("EMISSAO", "Emissao"),
+        ("EMISSAO_LOTE", "Emissao em lote"),
+        ("REEMISSAO", "Reemissao"),
+        ("PREVIEW", "Pre-visualizacao"),
+        ("GERACAO_PDF", "Geracao de PDF"),
+        ("REIMPRESSAO", "Reimpressao"),
+        ("CANCELAMENTO", "Cancelamento"),
+        ("VALIDACAO_PUBLICA", "Validacao publica"),
+        ("VALIDACAO_STATUS", "Consulta de status de validacao"),
+        ("ALTERACAO_MODELO", "Alteracao de modelo"),
+        ("ALTERACAO_STATUS", "Alteracao de status"),
     )
 
     certificado = models.ForeignKey(
@@ -342,8 +400,8 @@ class HistoricoEmissaoCertificado(models.Model):
 
     class Meta:
         ordering = ["-criado_em", "-id"]
-        verbose_name = "Histórico de Emissão de Certificado"
-        verbose_name_plural = "Históricos de Emissão de Certificados"
+        verbose_name = "Historico de Emissao de Certificado"
+        verbose_name_plural = "Historicos de Emissao de Certificados"
 
     def __str__(self):
         return f"{self.get_acao_display()} em {self.criado_em:%d/%m/%Y %H:%M}"

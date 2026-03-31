@@ -86,11 +86,15 @@ export const certificadosApi = {
     preview: (id) => client.get(`/certificados/emitidos/${id}/preview/`),
     pdf: (id) => client.get(`/certificados/emitidos/${id}/pdf/`, { responseType: 'blob' }),
     reimprimir: (id) => client.post(`/certificados/emitidos/${id}/reimprimir/`),
+    reemitir: (id, data = {}) => client.post(`/certificados/emitidos/${id}/reemitir/`, data),
+    cancelar: (id, data = {}) => client.post(`/certificados/emitidos/${id}/cancelar/`, data),
+    qrcode: (id) => client.get(`/certificados/emitidos/${id}/qrcode/`, { responseType: 'blob' }),
+    statusValidacao: (id) => client.get(`/certificados/emitidos/${id}/status-validacao/`),
   },
   emitir: (data) => client.post('/certificados/emitir/', data),
   emitirLote: (data) => client.post('/certificados/emitir-lote/', data),
   previewRascunho: (data) => client.post('/certificados/preview/', data),
-  validarPublico: (codigo) => publicClient.get(`/certificados/validar/${encodeURIComponent(codigo)}/`),
+  validarPublico: (codigo) => axios.get(`/api/publico/validar-documento/${encodeURIComponent(codigo)}/`),
   historico: (params) => client.get('/certificados/historico/', { params }),
 }
 export const historicosDigitaisApi = {
