@@ -12,6 +12,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$DevAdminCpf = "90000010057"
+$DevAdminPassword = "admin"
+
 function Select-Environment {
     param(
         [string]$CurrentValue
@@ -84,7 +87,12 @@ function Invoke-InitialAdminBootstrap {
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         $bootstrapArgs = @($ComposeArgs + @("exec", "-T", "backend", "python", "manage.py", "bootstrap_initial_admin"))
         if ($SelectedEnvironment -eq "development") {
-            $bootstrapArgs += "--generate-random-credentials"
+            $bootstrapArgs += @(
+                "--cpf", $DevAdminCpf,
+                "--password", $DevAdminPassword,
+                "--force",
+                "--no-force-password-change"
+            )
         }
 
         $bootstrapOutput = & docker @bootstrapArgs 2>&1

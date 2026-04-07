@@ -1,189 +1,159 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Eye, FileDown, FilePlus2, RefreshCcw, ShieldX } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { historicosApi, historicosDigitaisApi, matriculasApi } from '@/api/endpoints'
+import { historicosApi, matriculasApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
 import SearchableRemoteSelect from '@/components/ui/SearchableRemoteSelect'
 
 const COLUMNS = [
-  { key: 'numero_protocolo', label: 'Protocolo' },
-  { key: 'tipo_display', label: 'Tipo' },
-  { key: 'assunto', label: 'Assunto' },
-  { key: 'matricula_numero', label: 'Matricula' },
+  { key: 'numero_registro', label: 'Registro' },
   { key: 'aluno_nome', label: 'Aluno' },
-  { key: 'periodo_ref', label: 'Periodo' },
+  { key: 'cpf_aluno', label: 'CPF' },
+  { key: 'matricula_numero', label: 'Matricula' },
+  { key: 'curso_nome', label: 'Curso' },
+  { key: 'versao', label: 'Versao' },
+  { key: 'status_display', label: 'Status' },
+  { key: 'data_emissao', label: 'Emissao' },
 ]
 
-const TIPO_OPTIONS = [
-  { value: 'COMPLETO', label: 'Historico Completo' },
-  { value: 'PARCIAL', label: 'Historico Parcial' },
-]
+function formatDateTime(value) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+}
 
-const DEFAULT_FORM = { tipo: 'COMPLETO', assunto: '', matricula: '', periodo_ref: '', observacao: '' }
+function formatDate(value) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date)
+}
 
-function getErrorMessage(error, fallback) {
-  const data = error?.response?.data
-  if (!data) return fallback
-  if (typeof data.detail === 'string') return data.detail
-  const firstValue = Object.values(data)[0]
-  return Array.isArray(firstValue) ? firstValue[0] : (firstValue || fallback)
+function getApiError(error, fallback) {
+  return error?.response?.data?.detail || fallback
 }
 
 export default function HistoricosPage() {
-  const location = useLocation()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(null)
-  const [editingId, setEditingId] = useState(null)
-  const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [emissaoOpen, setEmissaoOpen] = useState(false)
   const [matriculaSearch, setMatriculaSearch] = useState('')
-  const isCreatePage = location.pathname.endsWith('/documentos/historicos/novo')
+  const [matriculaId, setMatriculaId] = useState('')
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['historicos', { search, page }],
-    queryFn: () => historicosApi.list({ search, page }).then((response) => response.data),
+    queryKey: ['historicos-tecnicos', { search, statusFilter, page }],
+    queryFn: () =>
+      historicosApi
+        .list({ search: search || undefined, status: statusFilter || undefined, page })
+        .then((response) => response.data),
     staleTime: 30_000,
+  })
+
+  const { data: selectedItem, isLoading: selectedLoading } = useQuery({
+    queryKey: ['historico-tecnico', selectedId],
+    queryFn: () => historicosApi.get(selectedId).then((response) => response.data),
+    enabled: Boolean(selectedId),
   })
 
   const { data: matriculasData } = useQuery({
-    queryKey: ['matriculas', 'historico-options', matriculaSearch],
-    queryFn: () => matriculasApi.list({ page_size: 10, search: matriculaSearch || undefined }).then((response) => response.data),
+    queryKey: ['historico-matriculas-opcoes', matriculaSearch],
+    queryFn: () =>
+      matriculasApi
+        .list({ search: matriculaSearch || undefined, page_size: 12 })
+        .then((response) => response.data),
     staleTime: 60_000,
   })
 
-  const { data: selectedItem, isLoading: isLoadingDetails, isError: isErrorDetails } = useQuery({
-    queryKey: ['historico', selectedId],
-    queryFn: () => historicosApi.get(selectedId).then((response) => response.data),
-    enabled: Boolean(selectedId),
-    staleTime: 30_000,
+  const { data: previewData, isFetching: previewLoading } = useQuery({
+    queryKey: ['historico-preview-emissao', matriculaId],
+    queryFn: () => historicosApi.previewEmissao({ matricula_id: matriculaId }).then((response) => response.data),
+    enabled: emissaoOpen && Boolean(matriculaId),
+    retry: false,
   })
 
-  const { data: editingItem } = useQuery({
-    queryKey: ['historico-edit', editingId],
-    queryFn: () => historicosApi.get(editingId).then((response) => response.data),
-    enabled: Boolean(editingId),
-    staleTime: 0,
-  })
-
-  useEffect(() => {
-    if (!editingItem) return
-    setFormData({
-      tipo: editingItem.tipo || 'COMPLETO',
-      assunto: editingItem.assunto || '',
-      matricula: editingItem.matricula ? String(editingItem.matricula) : '',
-      periodo_ref: editingItem.periodo_ref || '',
-      observacao: editingItem.observacao || '',
-    })
-  }, [editingItem])
-
-  const saveMutation = useMutation({
-    mutationFn: ({ id, payload }) => (id ? historicosApi.update(id, payload) : historicosApi.create(payload)),
+  const emitirMutation = useMutation({
+    mutationFn: (payload) => historicosApi.emitir(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['historicos'] })
-      toast.success(editingId ? 'Historico atualizado com sucesso.' : 'Historico emitido com sucesso.')
-      setEditingId(null)
-      setFormData(DEFAULT_FORM)
-      if (!editingId) {
-        navigate('/documentos/historicos')
-      }
+      queryClient.invalidateQueries({ queryKey: ['historicos-tecnicos'] })
+      toast.success('Historico emitido com sucesso.')
+      setEmissaoOpen(false)
+      setMatriculaId('')
+      setMatriculaSearch('')
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar o historico.')),
+    onError: (error) => toast.error(getApiError(error, 'Falha ao emitir historico.')),
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => historicosApi.remove(id),
+  const reemitirMutation = useMutation({
+    mutationFn: ({ id, motivo }) => historicosApi.reemitir(id, { motivo }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['historicos'] })
+      queryClient.invalidateQueries({ queryKey: ['historicos-tecnicos'] })
+      toast.success('Historico reemitido com sucesso.')
+    },
+    onError: (error) => toast.error(getApiError(error, 'Falha ao reemitir historico.')),
+  })
+
+  const cancelarMutation = useMutation({
+    mutationFn: ({ id, motivo }) => historicosApi.cancelar(id, { motivo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['historicos-tecnicos'] })
+      toast.success('Historico cancelado com sucesso.')
       setSelectedId(null)
-      toast.success('Historico excluido com sucesso.')
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel excluir o historico.')),
+    onError: (error) => toast.error(getApiError(error, 'Falha ao cancelar historico.')),
   })
 
-  const emitirDigitalMutation = useMutation({
-    mutationFn: ({ historicoId, tipo_documento }) => historicosDigitaisApi.emitir(historicoId, { tipo_documento, assinar_xml: false }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['historicos'] })
-      const documento = response?.data?.documento
-      if (response?.data?.created) {
-        toast.success(`Historico digital emitido (${documento?.numero_unico || 'ok'})`)
-      } else {
-        toast.success(`Historico digital ja existente (${documento?.numero_unico || 'ok'})`)
-      }
-    },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel emitir o historico digital.')),
-  })
+  const matriculaOptions = useMemo(() => matriculasData?.results || [], [matriculasData])
 
-  const matriculas = matriculasData?.results || []
-  const selectedMatriculaOption = formData.matricula && editingItem ? {
-    id: editingItem.matricula,
-    numero_matricula: editingItem.matricula_numero,
-    aluno_nome: editingItem.aluno_nome,
-  } : null
-
-  if (isCreatePage) {
-    return (
-      <div className="page page--wide">
-        <nav className="profile-breadcrumb">
-          <Link to="/dashboard">Início</Link>
-          <span className="profile-breadcrumb__sep">&gt;</span>
-          <Link to="/documentos/historicos">Históricos</Link>
-          <span className="profile-breadcrumb__sep">&gt;</span>
-          <span>Novo Histórico</span>
-        </nav>
-
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Novo histórico</h1>
-            <p className="page-subtitle">A emissão agora acontece em uma página separada da listagem.</p>
-          </div>
-          <div className="page-header__actions">
-            <button type="button" className="btn btn--outline" onClick={() => navigate('/documentos/historicos')}>
-              Voltar para históricos
-            </button>
-          </div>
-        </div>
-
-        <EntityFormPanel
-          title="Emitir historico"
-          subtitle="Preencha os dados do historico escolar."
-          onSubmit={(event) => {
-            event.preventDefault()
-            saveMutation.mutate({ payload: { ...formData, matricula: Number(formData.matricula) } })
-          }}
-          onCancel={() => navigate('/documentos/historicos')}
-          submitLabel="Emitir historico"
-          isSubmitting={saveMutation.isPending}
-        >
-          <div className="form-field"><label>Tipo</label><select className="select" value={formData.tipo} onChange={(event) => setFormData((current) => ({ ...current, tipo: event.target.value }))}>{TIPO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-          <div className="form-field form-field--full"><label>Assunto</label><input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} /></div>
-          <SearchableRemoteSelect id="historico-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
-          <div className="form-field"><label>Periodo de referencia</label><input type="text" value={formData.periodo_ref} onChange={(event) => setFormData((current) => ({ ...current, periodo_ref: event.target.value }))} /></div>
-          <div className="form-field form-field--full"><label>Observacao</label><textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} /></div>
-        </EntityFormPanel>
-      </div>
-    )
+  const downloadPdf = async (id) => {
+    try {
+      const response = await historicosApi.pdf(id)
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `historico-${id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(getApiError(error, 'Nao foi possivel baixar o PDF.'))
+    }
   }
 
   return (
-    <div className="page">
+    <div className="page page--wide">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Historicos Escolares</h1>
-          <p className="page-subtitle">Documentos eletronicos</p>
+          <h1 className="page-title">Historico Escolar Tecnico</h1>
+          <p className="page-subtitle">Emissao, versionamento, validacao e auditoria de historicos oficiais.</p>
         </div>
         <div className="page-header__actions">
-          <button type="button" className="btn btn--primary" onClick={() => navigate('/documentos/historicos/novo')}>
-            <Plus size={16} /> Novo Historico
+          <button type="button" className="btn btn--primary" onClick={() => setEmissaoOpen(true)}>
+            <FilePlus2 size={16} /> Emitir historico
           </button>
         </div>
+      </div>
+
+      <div className="table-toolbar" style={{ marginBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <label style={{ display: 'grid', gap: '0.35rem' }}>
+          <span>Status</span>
+          <select className="select" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1) }}>
+            <option value="">Todos</option>
+            <option value="RASCUNHO">Rascunho</option>
+            <option value="EMITIDO">Emitido</option>
+            <option value="CANCELADO">Cancelado</option>
+            <option value="SUBSTITUIDO">Substituido</option>
+          </select>
+        </label>
       </div>
 
       {isError ? <div className="alert alert--error">Nao foi possivel carregar os historicos.</div> : null}
@@ -192,100 +162,128 @@ export default function HistoricosPage() {
         columns={COLUMNS}
         data={data}
         isLoading={isLoading}
-        onSearch={(value) => { setSearch(value); setPage(1) }}
-        searchPlaceholder="Buscar por protocolo, assunto, periodo, aluno ou matricula..."
+        onSearch={(value) => {
+          setSearch(value)
+          setPage(1)
+        }}
+        searchPlaceholder="Buscar por aluno, CPF, matricula, curso ou numero de registro..."
         emptyMessage="Nenhum historico encontrado."
         rowActions={(row) => (
           <div className="table-actions">
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}><Eye size={14} /> Visualizar</button>
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => { setSelectedId(null); setEditingId(row.id) }}><Pencil size={14} /> Editar</button>
+            <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedId(row.id)}>
+              <Eye size={14} /> Visualizar
+            </button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => downloadPdf(row.id)}>
+              <FileDown size={14} /> Gerar PDF
+            </button>
             <button
               type="button"
               className="btn btn--secondary btn--sm"
-              disabled={emitirDigitalMutation.isPending}
               onClick={() => {
-                const tipoDocumento = window.prompt(
-                  'Tipo digital MEC (PARCIAL, FINAL, SEGUNDA_VIA_NATO_FISICO):',
-                  row.tipo === 'PARCIAL' ? 'PARCIAL' : 'FINAL',
-                )
-                if (!tipoDocumento) return
-                emitirDigitalMutation.mutate({ historicoId: row.id, tipo_documento: tipoDocumento.trim().toUpperCase() })
+                const motivo = window.prompt('Motivo da reemissao:')
+                if (!motivo) return
+                reemitirMutation.mutate({ id: row.id, motivo })
               }}
+              disabled={reemitirMutation.isPending}
             >
-              Emitir digital
+              <RefreshCcw size={14} /> Reemitir
             </button>
-            <button type="button" className="btn btn--danger btn--sm" onClick={() => window.confirm(`Excluir o historico ${row.numero_protocolo}?`) && deleteMutation.mutate(row.id)}><Trash2 size={14} /> Excluir</button>
+            <button
+              type="button"
+              className="btn btn--danger btn--sm"
+              onClick={() => {
+                const motivo = window.prompt('Motivo do cancelamento:')
+                if (!motivo) return
+                cancelarMutation.mutate({ id: row.id, motivo })
+              }}
+              disabled={cancelarMutation.isPending}
+            >
+              <ShieldX size={14} /> Cancelar
+            </button>
           </div>
         )}
       />
 
+      {data ? (
+        <div className="pagination">
+          <button className="btn btn--secondary" disabled={!data.previous} onClick={() => setPage((current) => current - 1)}>Anterior</button>
+          <span className="pagination__info">Pagina {page} - {data.count} registros</span>
+          <button className="btn btn--secondary" disabled={!data.next} onClick={() => setPage((current) => current + 1)}>Proxima</button>
+        </div>
+      ) : null}
+
       {selectedId ? (
         <EntityDetailsPanel
           title="Detalhes do historico"
-          subtitle={selectedItem?.assunto || 'Consultando historico selecionado'}
-          fields={selectedItem ? [
-            { label: 'Protocolo', value: selectedItem.numero_protocolo },
-            { label: 'Tipo', value: selectedItem.tipo_display },
-            { label: 'Assunto', value: selectedItem.assunto },
-            { label: 'Matricula', value: selectedItem.matricula_numero },
-            { label: 'Aluno', value: selectedItem.aluno_nome },
-            { label: 'Periodo de referencia', value: selectedItem.periodo_ref || '-' },
-            { label: 'Observacao', value: selectedItem.observacao || '-' },
-            { label: 'Emitido por', value: selectedItem.emitido_por_nome || '-' },
-          ] : []}
-          isLoading={isLoadingDetails}
-          errorMessage={isErrorDetails ? 'Nao foi possivel carregar os detalhes deste historico.' : ''}
+          subtitle={selectedItem?.numero_registro || 'Historico escolar tecnico'}
+          isLoading={selectedLoading}
           onClose={() => setSelectedId(null)}
+          fields={selectedItem ? [
+            { label: 'Registro', value: selectedItem.numero_registro },
+            { label: 'Aluno', value: selectedItem.aluno_nome },
+            { label: 'CPF', value: selectedItem.cpf_aluno },
+            { label: 'Curso', value: selectedItem.curso_nome },
+            { label: 'Eixo Tecnologico', value: selectedItem.eixo_tecnologico || '-' },
+            { label: 'Matricula', value: selectedItem.matricula_numero },
+            { label: 'Livro/Folha/Pagina', value: `${selectedItem.livro || '-'} / ${selectedItem.folha || '-'} / ${selectedItem.pagina || '-'}` },
+            { label: 'Versao', value: selectedItem.versao },
+            { label: 'Status', value: selectedItem.status_display },
+            { label: 'Situacao final', value: selectedItem.situacao_final_display },
+            { label: 'Carga horaria total', value: selectedItem.carga_horaria_total },
+            { label: 'Data de conclusao', value: formatDate(selectedItem.data_conclusao) },
+            { label: 'Data emissao', value: formatDateTime(selectedItem.data_emissao) },
+            { label: 'Codigo validacao', value: selectedItem.codigo_validacao },
+            { label: 'Hash', value: selectedItem.hash_documento },
+            { label: 'Observacoes', value: selectedItem.observacoes || '-' },
+          ] : []}
         />
       ) : null}
 
-      {editingId ? (
+      {emissaoOpen ? (
         <EntityFormPanel
-          title="Editar historico"
-          subtitle="Preencha os dados do historico escolar."
+          title="Emitir historico escolar"
+          subtitle="Selecione a matricula, confira o preview e confirme a emissao oficial."
+          submitLabel="Emitir"
+          isSubmitting={emitirMutation.isPending}
+          onCancel={() => {
+            setEmissaoOpen(false)
+            setMatriculaId('')
+            setMatriculaSearch('')
+          }}
           onSubmit={(event) => {
             event.preventDefault()
-            saveMutation.mutate({ id: editingId, payload: { ...formData, matricula: Number(formData.matricula) } })
+            emitirMutation.mutate({ matricula_id: Number(matriculaId) })
           }}
-          onCancel={() => { setEditingId(null); setFormData(DEFAULT_FORM) }}
-          submitLabel="Salvar alteracoes"
-          isSubmitting={saveMutation.isPending}
         >
-          <div className="form-field">
-            <label>Tipo</label>
-            <select className="select" value={formData.tipo} onChange={(event) => setFormData((current) => ({ ...current, tipo: event.target.value }))}>
-              {TIPO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </div>
-          <div className="form-field form-field--full">
-            <label>Assunto</label>
-            <input type="text" value={formData.assunto} onChange={(event) => setFormData((current) => ({ ...current, assunto: event.target.value }))} />
-          </div>
           <SearchableRemoteSelect
-            id="historico-matricula"
+            id="historico-matricula-emissao"
             label="Matricula"
             searchLabel="Buscar matricula"
-            searchPlaceholder="Digite matricula ou aluno"
+            searchPlaceholder="Digite nome do aluno, CPF ou matricula"
             searchValue={matriculaSearch}
             onSearchChange={setMatriculaSearch}
-            value={formData.matricula}
-            onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))}
-            options={matriculas}
-            selectedOption={selectedMatriculaOption}
-            getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`}
+            value={matriculaId}
+            onChange={setMatriculaId}
+            options={matriculaOptions}
+            getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome} (${item.curso_nome})`}
           />
-          <div className="form-field">
-            <label>Periodo de referencia</label>
-            <input type="text" value={formData.periodo_ref} onChange={(event) => setFormData((current) => ({ ...current, periodo_ref: event.target.value }))} />
-          </div>
-          <div className="form-field form-field--full">
-            <label>Observacao</label>
-            <textarea rows="3" value={formData.observacao} onChange={(event) => setFormData((current) => ({ ...current, observacao: event.target.value }))} />
-          </div>
+
+          {previewLoading ? <p>Carregando preview...</p> : null}
+
+          {previewData ? (
+            <div className="entity-details-grid" style={{ marginTop: '1rem' }}>
+              <div className="entity-details-item"><span className="entity-details-item__label">Aluno</span><span className="entity-details-item__value">{previewData.aluno_nome}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">CPF</span><span className="entity-details-item__value">{previewData.aluno_cpf}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Curso</span><span className="entity-details-item__value">{previewData.curso_nome}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Eixo Tecnologico</span><span className="entity-details-item__value">{previewData.eixo_tecnologico || '-'}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Carga Horaria</span><span className="entity-details-item__value">{previewData.carga_horaria_total}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Situacao Final</span><span className="entity-details-item__value">{previewData.situacao_final}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Data Conclusao</span><span className="entity-details-item__value">{formatDate(previewData.data_conclusao)}</span></div>
+              <div className="entity-details-item"><span className="entity-details-item__label">Forma de Ingresso</span><span className="entity-details-item__value">{previewData.forma_ingresso || '-'}</span></div>
+            </div>
+          ) : null}
         </EntityFormPanel>
       ) : null}
-
-      {data ? <div className="pagination"><button className="btn btn--secondary" disabled={!data.previous} onClick={() => setPage((current) => current - 1)}>Anterior</button><span className="pagination__info">Pagina {page} — {data.count} registros</span><button className="btn btn--secondary" disabled={!data.next} onClick={() => setPage((current) => current + 1)}>Proxima</button></div> : null}
     </div>
   )
 }

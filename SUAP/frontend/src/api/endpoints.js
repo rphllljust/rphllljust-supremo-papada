@@ -32,6 +32,7 @@ export const accessApi = {
 
 export const dashboardApi = {
   overview: () => client.get('/dashboard/overview/'),
+  sheetsModule: (params = {}) => client.get('/dashboard/sheets/module/', { params }),
 }
 
 // ── Fábrica genérica de endpoints CRUD ────────────────────────────────────────
@@ -56,7 +57,18 @@ export const servidoresApi = {
 }
 export const setoresApi = crud('setores')
 export const declaracoesApi = crud('declaracoes')
-export const historicosApi = crud('historicos')
+export const historicosApi = {
+  list: (params) => client.get('/historicos/', { params }),
+  get: (id) => client.get(`/historicos/${id}/`),
+  emitir: (data) => client.post('/historicos/emitir/', data),
+  previewEmissao: (params) => client.get('/historicos/preview/', { params }),
+  preview: (id) => client.get(`/historicos/${id}/preview/`),
+  pdf: (id) => client.get(`/historicos/${id}/pdf/`, { responseType: 'blob' }),
+  reemitir: (id, data) => client.post(`/historicos/${id}/reemitir/`, data),
+  cancelar: (id, data) => client.post(`/historicos/${id}/cancelar/`, data),
+  validarPublico: (uuid) => publicClient.get(`/validacao/historicos/${uuid}/`),
+  validarPublicoPorCodigo: (codigo) => publicClient.get('/validacao/historicos/', { params: { codigo } }),
+}
 export const certificadosApi = {
   modelos: {
     list: (params) => client.get('/certificados/modelos/', { params }),

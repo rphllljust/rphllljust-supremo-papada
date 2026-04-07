@@ -30,6 +30,7 @@ const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
 const DocumentosPage = lazy(() => import('@/pages/documentos/DocumentosPage'))
 const DeclaracoesPage = lazy(() => import('@/pages/documentos/DeclaracoesPage'))
 const HistoricosPage = lazy(() => import('@/pages/documentos/HistoricosPage'))
+const HistoricoValidacaoPublicaPage = lazy(() => import('@/pages/documentos/HistoricoValidacaoPublicaPage'))
 const HistoricosDigitaisPage = lazy(() => import('@/pages/documentos/HistoricosDigitaisPage'))
 const GuiasTransferenciaPage = lazy(() => import('@/pages/documentos/GuiasTransferenciaPage'))
 const HipotesesLegaisPage = lazy(() => import('@/pages/documentos/HipotesesLegaisPage'))
@@ -75,6 +76,7 @@ const OfertaCursoEditPage = lazy(() => import('@/pages/cursos/OfertaCursoEditPag
 const MoodleCategoriasPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasPanel'))
 const MoodleCategoriasCursosPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasCursosPanel'))
 const MoodleSettingsPage = lazy(() => import('@/pages/cursos/MoodleSettingsPage'))
+const GoogleSheetsReadModulePage = lazy(() => import('@/pages/integracoes/GoogleSheetsReadModulePage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
@@ -234,6 +236,8 @@ export default function App() {
               <Route path="/validar-certificado/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
               <Route path="/validar-documento" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
               <Route path="/validar-documento/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
+              <Route path="/validacao/historico/:uuid" element={<RouteShell><HistoricoValidacaoPublicaPage /></RouteShell>} />
+              <Route path="/validacao/historico" element={<RouteShell><HistoricoValidacaoPublicaPage /></RouteShell>} />
 
               {/* ── Painel interno (JWT obrigatório) ─────── */}
               <Route element={<ProtectedRoute />}>
@@ -354,6 +358,8 @@ export default function App() {
                   <Route path="/ensino/moodle-config/" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
                   <Route path="/ti/moodle/configuracoes" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
                   <Route path="/ti/moodle/configuracoes/" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
+                  <Route path="/ti/integracoes/google-sheets" element={<RouteShell><GoogleSheetsReadModulePage /></RouteShell>} />
+                  <Route path="/ti/integracoes/google-sheets/" element={<RouteShell><GoogleSheetsReadModulePage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />

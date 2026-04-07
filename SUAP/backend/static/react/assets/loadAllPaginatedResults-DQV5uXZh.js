@@ -1,0 +1,1 @@
+async function u(d,i={},l=50){const e=[],a=new Set;let t=1;for(;t<=l;){const n=(await d({...i,page:t})).data||{};if((n.results||n||[]).forEach(s=>{const c=(s==null?void 0:s.id)??`${(s==null?void 0:s.descricao)||(s==null?void 0:s.nome)||""}-${e.length}`;a.has(c)||(a.add(c),e.push(s))}),!n.next)break;t+=1}return e}export{u as l};

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Bell, ChevronDown, LogOut, Search, User } from 'lucide-react'
 import { notificacoesApi } from '@/api/endpoints'
 import { sidebarItems } from '@/components/layout/sidebarItems'
+import idepRoLogo from '@/assets/idep-ro-logo.png'
 import { debugLog } from '@/utils/debug'
 import { getQuickAccessItems, trackQuickAccessVisit } from '@/utils/quickAccess'
 
@@ -577,12 +578,22 @@ export default function Layout() {
     () => buildBreadcrumbItems(location.pathname, location.state, enabledSidebarItems),
     [enabledSidebarItems, location.pathname, location.state],
   )
+  const currentSectionLabel = breadcrumbItems[breadcrumbItems.length - 1]?.label || 'Dashboard'
+  const currentDateLabel = useMemo(() => {
+    const formatted = new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date())
+
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+  }, [])
 
   return (
     <div className="layout layout--legacy">
       <aside className="sidebar">
         <div className="sidebar__header">
-          <span className="sidebar__wordmark">suap</span>
           <span className="sidebar__environment">{SIDEBAR_ENVIRONMENT_LABEL}</span>
           <span className="sidebar__header-spacer" aria-hidden="true" />
           <NavLink
@@ -594,6 +605,18 @@ export default function Layout() {
             <Bell size={15} />
             {unreadNotifications > 0 ? <span className="sidebar__notification-badge">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span> : null}
           </NavLink>
+        </div>
+
+        <div className="sidebar__brasao-banner">
+          <img
+            src={idepRoLogo}
+            alt="Governo do Estado de Rondonia"
+            className="sidebar__brasao-banner-img"
+            onError={(event) => {
+              event.currentTarget.onerror = null
+              event.currentTarget.src = '/idep-ro-logo.png'
+            }}
+          />
         </div>
 
         <div className="sidebar__account-shortcuts">
@@ -657,6 +680,32 @@ export default function Layout() {
 
       <div className="workspace">
         <main className="main-content">
+          <header className="workspace-topbar">
+            <div className="workspace-topbar__copy">
+              <span className="workspace-topbar__eyebrow">Sistema administrativo</span>
+              <h1 className="workspace-topbar__title">{currentSectionLabel}</h1>
+              <span className="workspace-topbar__subtitle">{currentDateLabel}</span>
+            </div>
+            <div className="workspace-topbar__actions">
+              <NavLink
+                to="/comum/notificacoes"
+                className={({ isActive }) => `workspace-topbar__action ${isActive ? 'workspace-topbar__action--active' : ''}`}
+              >
+                <Bell size={16} />
+                <span>Notificacoes</span>
+                {unreadNotifications > 0 ? <strong>{unreadNotifications > 99 ? '99+' : unreadNotifications}</strong> : null}
+              </NavLink>
+              <NavLink
+                to="/comum/minha_conta/"
+                end
+                className={({ isActive }) => `workspace-topbar__action ${isActive ? 'workspace-topbar__action--active' : ''}`}
+              >
+                <User size={16} />
+                <span>Minha conta</span>
+              </NavLink>
+            </div>
+          </header>
+
           <nav className="app-breadcrumb" aria-label="Breadcrumb">
             {breadcrumbItems.map((item, index) => (
               <span key={`${item.label}-${index}`} className="app-breadcrumb__item">

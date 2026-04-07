@@ -180,6 +180,13 @@ export const sidebarItems = [
           },
         ],
       },
+      {
+        id: 'ti-google-sheets-read',
+        type: 'link',
+        label: 'Leitura Google Sheets',
+        to: '/ti/integracoes/google-sheets',
+        activePrefixes: ['/ti/integracoes/google-sheets'],
+      },
     ],
   },
   {

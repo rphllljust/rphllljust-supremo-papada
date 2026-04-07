@@ -19,6 +19,7 @@ urlpatterns = [
     path("hipoteses-legais/", include("apps.api.v1.hipoteses_legais.urls")),
     path("guias-transferencia/", include("apps.api.v1.guias_transferencia.urls")),
     path("historicos/", include("apps.api.v1.historicos.urls")),
+    path("validacao/historicos/", include("apps.api.v1.validacao_historicos.urls")),
     path("historicos-digitais/", include("apps.api.v1.historicos_digitais.urls")),
     path("inscricoes/", include("apps.api.v1.inscricoes.urls")),
     path("integracoes/moodle/", include(("apps.integracao_moodle.api.urls", "integracao_moodle_api"), namespace="integracao_moodle_api")),

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { formatCpf } from '@/utils/cpf'
+import idepRoLogo from '@/assets/idep-ro-logo.png'
 import toast from 'react-hot-toast'
 
 const PERFIL_OPTIONS = [
@@ -63,7 +64,15 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-card__header">
-          <div className="login-card__logo">SUAP</div>
+          <img
+            src={idepRoLogo}
+            alt="Governo do Estado de Rondonia"
+            className="login-card__brasao"
+            onError={(event) => {
+              event.currentTarget.onerror = null
+              event.currentTarget.src = '/idep-ro-logo.png'
+            }}
+          />
           <h1 className="login-card__title">Sistema Unificado de Administração Pública</h1>
           <p className="login-card__subtitle">IDEP — Instituto de Desenvolvimento e Educação Profissional</p>
         </div>

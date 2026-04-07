@@ -1,10 +1,18 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework import viewsets
 
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
+from apps.documentos.services.historico_escolar_tecnico import (
+    HistoricoTecnicoError,
+    consolidar_dados_historico,
+    serializar_itens_consolidacao,
+)
 from apps.usuarios.models import PerfilUsuario
 
 from .serializers import AlunoSerializer
@@ -56,3 +64,32 @@ class AlunoViewSet(viewsets.ModelViewSet):
         instance.delete()
         if pessoa:
             pessoa.delete()
+
+    @action(detail=True, methods=["get"], url_path="dados-para-historico")
+    def dados_para_historico(self, request, pk=None):
+        aluno = self.get_object()
+        try:
+            consolidacao = consolidar_dados_historico(aluno_id=aluno.id)
+        except HistoricoTecnicoError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "aluno_id": aluno.id,
+                "aluno_nome": consolidacao.aluno_nome,
+                "aluno_cpf": consolidacao.aluno_cpf,
+                "curso_nome": consolidacao.curso_nome,
+                "eixo_tecnologico": consolidacao.eixo_tecnologico,
+                "carga_horaria_total": consolidacao.carga_horaria_total,
+                "situacao_final": consolidacao.situacao_final,
+                "data_conclusao": consolidacao.data_conclusao,
+                "matricula_id": consolidacao.matricula.id,
+                "matricula_numero": consolidacao.matricula.numero_matricula,
+                "itens": serializar_itens_consolidacao(consolidacao.itens),
+                "estagios": consolidacao.estagios,
+                "tcc_pratica": serializar_itens_consolidacao(consolidacao.tcc_pratica),
+                "forma_ingresso": consolidacao.forma_ingresso,
+                "municipio_unidade": consolidacao.municipio_unidade,
+                "observacoes": consolidacao.observacoes,
+            }
+        )

@@ -3,11 +3,17 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import (
+    AssinaturaDocumento,
     AtaOficioMemorando,
+    ConfiguracaoHistorico,
     Declaracao,
+    DocumentoValidacao,
     GuiaTransferencia,
     HistoricoEscolar,
+    HistoricoEscolarEvento,
+    HistoricoEscolarItem,
     HistoricoEscolarTecnico,
+    HistoricoEscolarTecnicoDocumento,
     HistoricoEscolarDigital,
 )
 
@@ -110,3 +116,54 @@ class HistoricoEscolarTecnicoAdmin(admin.ModelAdmin):
         )
 
     links_publicos.short_description = "Links publicos"
+
+
+@admin.register(HistoricoEscolarTecnicoDocumento)
+class HistoricoEscolarTecnicoDocumentoAdmin(admin.ModelAdmin):
+    list_display = (
+        "numero_registro",
+        "uuid",
+        "aluno",
+        "matricula",
+        "curso",
+        "versao",
+        "status",
+        "codigo_validacao",
+        "data_emissao",
+    )
+    list_filter = ("status", "curso", "versao")
+    search_fields = ("numero_registro", "codigo_validacao", "aluno__username", "aluno__cpf", "aluno__pessoa__nome_completo")
+    readonly_fields = ("uuid", "hash_documento", "codigo_validacao", "data_emissao", "criado_em", "atualizado_em")
+
+
+@admin.register(HistoricoEscolarItem)
+class HistoricoEscolarItemAdmin(admin.ModelAdmin):
+    list_display = ("historico", "ordem_exibicao", "componente_nome", "carga_horaria", "nota", "frequencia", "resultado")
+    list_filter = ("resultado",)
+    search_fields = ("historico__numero_registro", "componente_nome")
+
+
+@admin.register(HistoricoEscolarEvento)
+class HistoricoEscolarEventoAdmin(admin.ModelAdmin):
+    list_display = ("historico", "tipo_evento", "usuario", "criado_em")
+    list_filter = ("tipo_evento",)
+    search_fields = ("historico__numero_registro", "descricao", "motivo")
+
+
+@admin.register(DocumentoValidacao)
+class DocumentoValidacaoAdmin(admin.ModelAdmin):
+    list_display = ("historico", "hash_resumido", "valido", "atualizado_em")
+    list_filter = ("valido",)
+    search_fields = ("historico__numero_registro", "hash_documento", "hash_resumido")
+
+
+@admin.register(AssinaturaDocumento)
+class AssinaturaDocumentoAdmin(admin.ModelAdmin):
+    list_display = ("historico", "nome", "cargo", "identificador", "criado_em")
+    search_fields = ("historico__numero_registro", "nome", "cargo")
+
+
+@admin.register(ConfiguracaoHistorico)
+class ConfiguracaoHistoricoAdmin(admin.ModelAdmin):
+    list_display = ("nome_instituicao", "livro_padrao", "folha_padrao", "pagina_padrao", "ativo", "atualizado_em")
+    list_filter = ("ativo",)

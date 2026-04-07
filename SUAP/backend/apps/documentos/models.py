@@ -478,3 +478,267 @@ class HistoricoEscolarTecnico(models.Model):
     def __str__(self):
         aluno_nome = getattr(getattr(self.aluno, 'pessoa', None), 'nome_completo', None) or str(self.aluno)
         return f'{aluno_nome} - {self.curso.nome}'
+
+
+class HistoricoEscolarTecnicoDocumento(models.Model):
+    class StatusDocumento(models.TextChoices):
+        RASCUNHO = "RASCUNHO", "Rascunho"
+        EMITIDO = "EMITIDO", "Emitido"
+        CANCELADO = "CANCELADO", "Cancelado"
+        SUBSTITUIDO = "SUBSTITUIDO", "Substituido"
+
+    class SituacaoFinal(models.TextChoices):
+        APROVADO = "APROVADO", "Aprovado"
+        REPROVADO = "REPROVADO", "Reprovado"
+        EM_ANDAMENTO = "EM_ANDAMENTO", "Em andamento"
+        TRANSFERIDO = "TRANSFERIDO", "Transferido"
+        INDEFINIDA = "INDEFINIDA", "Indefinida"
+
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, verbose_name="UUID")
+    aluno = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="historicos_tecnicos_documentos",
+        verbose_name="Aluno",
+    )
+    matricula = models.ForeignKey(
+        "matriculas.Matricula",
+        on_delete=models.PROTECT,
+        related_name="historicos_tecnicos_documentos",
+        verbose_name="Matricula",
+    )
+    curso = models.ForeignKey(
+        "cursos.Curso",
+        on_delete=models.PROTECT,
+        related_name="historicos_tecnicos_documentos",
+        verbose_name="Curso",
+    )
+    numero_registro = models.CharField(max_length=40, unique=True, verbose_name="Numero de Registro")
+    livro = models.CharField(max_length=30, blank=True, default="", verbose_name="Livro")
+    folha = models.CharField(max_length=30, blank=True, default="", verbose_name="Folha")
+    pagina = models.CharField(max_length=30, blank=True, default="", verbose_name="Pagina")
+    versao = models.PositiveIntegerField(default=1, verbose_name="Versao")
+    status = models.CharField(
+        max_length=20,
+        choices=StatusDocumento.choices,
+        default=StatusDocumento.RASCUNHO,
+        verbose_name="Status",
+    )
+    hash_documento = models.CharField(max_length=64, verbose_name="Hash do Documento")
+    codigo_validacao = models.CharField(max_length=32, unique=True, verbose_name="Codigo de Validacao")
+    data_emissao = models.DateTimeField(null=True, blank=True, verbose_name="Data/Hora de Emissao")
+    data_cancelamento = models.DateTimeField(null=True, blank=True, verbose_name="Data/Hora de Cancelamento")
+    motivo_cancelamento = models.TextField(blank=True, default="", verbose_name="Motivo de Cancelamento")
+    historico_substituido = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="historicos_substitutos",
+        verbose_name="Historico Substituido",
+    )
+    emitido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="historicos_tecnicos_emitidos",
+        verbose_name="Emitido por",
+    )
+    observacoes = models.TextField(blank=True, default="", verbose_name="Observacoes Academicas")
+    pdf_arquivo = models.FileField(
+        upload_to="documentos/historicos_tecnicos/pdf/",
+        null=True,
+        blank=True,
+        verbose_name="PDF",
+    )
+    qrcode_imagem = models.ImageField(
+        upload_to="documentos/historicos_tecnicos/qrcode/",
+        null=True,
+        blank=True,
+        verbose_name="Imagem QR Code",
+    )
+    carga_horaria_total = models.PositiveIntegerField(default=0, verbose_name="Carga Horaria Total")
+    situacao_final = models.CharField(
+        max_length=20,
+        choices=SituacaoFinal.choices,
+        default=SituacaoFinal.INDEFINIDA,
+        verbose_name="Situacao Final",
+    )
+    data_conclusao = models.DateField(null=True, blank=True, verbose_name="Data de Conclusao")
+    criado_em = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    atualizado_em = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
+
+    class Meta:
+        verbose_name = "Historico Escolar Tecnico (Documento)"
+        verbose_name_plural = "Historicos Escolares Tecnicos (Documentos)"
+        ordering = ["-criado_em", "-id"]
+        indexes = [
+            models.Index(fields=["uuid"]),
+            models.Index(fields=["codigo_validacao"]),
+            models.Index(fields=["aluno", "curso"]),
+            models.Index(fields=["matricula", "status"]),
+        ]
+
+    def __str__(self):
+        return f"{self.numero_registro} - {self.aluno}"
+
+
+class HistoricoEscolarItem(models.Model):
+    class ResultadoItem(models.TextChoices):
+        APROVADO = "APROVADO", "Aprovado"
+        REPROVADO = "REPROVADO", "Reprovado"
+        CURSANDO = "CURSANDO", "Cursando"
+        APROVEITADO = "APROVEITADO", "Aproveitado"
+        DISPENSADO = "DISPENSADO", "Dispensado"
+
+    historico = models.ForeignKey(
+        HistoricoEscolarTecnicoDocumento,
+        on_delete=models.CASCADE,
+        related_name="itens",
+        verbose_name="Historico",
+    )
+    componente_curricular = models.ForeignKey(
+        "cursos.ComponenteCurricular",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="historico_itens",
+        verbose_name="Componente Curricular",
+    )
+    componente_nome = models.CharField(max_length=220, verbose_name="Nome do Componente")
+    modulo_periodo = models.CharField(max_length=80, blank=True, default="", verbose_name="Modulo/Periodo/Serie")
+    carga_horaria = models.PositiveIntegerField(default=0, verbose_name="Carga Horaria")
+    nota = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Nota")
+    frequencia = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Frequencia")
+    resultado = models.CharField(
+        max_length=20,
+        choices=ResultadoItem.choices,
+        default=ResultadoItem.CURSANDO,
+        verbose_name="Resultado",
+    )
+    ordem_exibicao = models.PositiveIntegerField(default=1, verbose_name="Ordem de Exibicao")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Historico Escolar Item"
+        verbose_name_plural = "Historico Escolar Itens"
+        ordering = ["ordem_exibicao", "id"]
+        indexes = [
+            models.Index(fields=["historico", "ordem_exibicao"]),
+            models.Index(fields=["resultado"]),
+        ]
+
+    def __str__(self):
+        return f"{self.componente_nome} ({self.historico.numero_registro})"
+
+
+class HistoricoEscolarEvento(models.Model):
+    class TipoEvento(models.TextChoices):
+        EMISSAO = "EMISSAO", "Emissao"
+        REEMISSAO = "REEMISSAO", "Reemissao"
+        CANCELAMENTO = "CANCELAMENTO", "Cancelamento"
+        VISUALIZACAO = "VISUALIZACAO", "Visualizacao"
+        VALIDACAO_PUBLICA = "VALIDACAO_PUBLICA", "Validacao Publica"
+
+    historico = models.ForeignKey(
+        HistoricoEscolarTecnicoDocumento,
+        on_delete=models.CASCADE,
+        related_name="eventos",
+        verbose_name="Historico",
+    )
+    tipo_evento = models.CharField(max_length=20, choices=TipoEvento.choices, verbose_name="Tipo de Evento")
+    descricao = models.TextField(blank=True, default="", verbose_name="Descricao")
+    motivo = models.TextField(blank=True, default="", verbose_name="Motivo")
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="eventos_historico_tecnico",
+        verbose_name="Usuario",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name="IP")
+    criado_em = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+
+    class Meta:
+        verbose_name = "Historico Escolar Evento"
+        verbose_name_plural = "Historico Escolar Eventos"
+        ordering = ["-criado_em", "-id"]
+        indexes = [models.Index(fields=["historico", "tipo_evento"]), models.Index(fields=["criado_em"])]
+
+    def __str__(self):
+        return f"{self.get_tipo_evento_display()} - {self.historico.numero_registro}"
+
+
+class DocumentoValidacao(models.Model):
+    historico = models.OneToOneField(
+        HistoricoEscolarTecnicoDocumento,
+        on_delete=models.CASCADE,
+        related_name="validacao",
+        verbose_name="Historico",
+    )
+    hash_documento = models.CharField(max_length=64, verbose_name="Hash")
+    hash_resumido = models.CharField(max_length=16, verbose_name="Hash Resumido")
+    url_validacao = models.CharField(max_length=500, verbose_name="URL de Validacao")
+    valido = models.BooleanField(default=True, verbose_name="Valido")
+    observacoes = models.TextField(blank=True, default="", verbose_name="Observacoes")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Documento Validacao"
+        verbose_name_plural = "Documentos Validacao"
+        indexes = [models.Index(fields=["hash_documento"]), models.Index(fields=["hash_resumido"])]
+
+    def __str__(self):
+        return f"Validacao - {self.historico.numero_registro}"
+
+
+class AssinaturaDocumento(models.Model):
+    historico = models.ForeignKey(
+        HistoricoEscolarTecnicoDocumento,
+        on_delete=models.CASCADE,
+        related_name="assinaturas",
+        verbose_name="Historico",
+    )
+    nome = models.CharField(max_length=150, verbose_name="Nome")
+    cargo = models.CharField(max_length=150, verbose_name="Cargo")
+    identificador = models.CharField(max_length=60, blank=True, default="", verbose_name="Identificador")
+    assinatura_hash = models.CharField(max_length=64, blank=True, default="", verbose_name="Hash da Assinatura")
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Assinatura de Documento"
+        verbose_name_plural = "Assinaturas de Documento"
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.nome} - {self.cargo}"
+
+
+class ConfiguracaoHistorico(models.Model):
+    nome_instituicao = models.CharField(max_length=200, default="IDEP-ETEC/RO", verbose_name="Nome da Instituicao")
+    subtitulo = models.CharField(max_length=200, blank=True, default="", verbose_name="Subtitulo")
+    livro_padrao = models.CharField(max_length=30, blank=True, default="1", verbose_name="Livro padrao")
+    folha_padrao = models.CharField(max_length=30, blank=True, default="1", verbose_name="Folha padrao")
+    pagina_padrao = models.CharField(max_length=30, blank=True, default="1", verbose_name="Pagina padrao")
+    carga_horaria_minima_aprovacao = models.PositiveIntegerField(default=0, verbose_name="CH minima")
+    nota_minima_aprovacao = models.DecimalField(max_digits=4, decimal_places=2, default=6.0, verbose_name="Nota minima")
+    frequencia_minima_aprovacao = models.DecimalField(max_digits=5, decimal_places=2, default=75.0, verbose_name="Frequencia minima")
+    assinatura_1_nome = models.CharField(max_length=150, blank=True, default="", verbose_name="Assinatura 1 Nome")
+    assinatura_1_cargo = models.CharField(max_length=150, blank=True, default="", verbose_name="Assinatura 1 Cargo")
+    assinatura_2_nome = models.CharField(max_length=150, blank=True, default="", verbose_name="Assinatura 2 Nome")
+    assinatura_2_cargo = models.CharField(max_length=150, blank=True, default="", verbose_name="Assinatura 2 Cargo")
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuracao de Historico"
+        verbose_name_plural = "Configuracoes de Historico"
+        ordering = ["-ativo", "-atualizado_em", "-id"]
+
+    def __str__(self):
+        return self.nome_instituicao

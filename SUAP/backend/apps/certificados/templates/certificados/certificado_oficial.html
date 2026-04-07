@@ -21,7 +21,11 @@
           <header class="cert-idep__header">
             <img class="cert-idep__brasao" src="{{ brasao_rondonia_data_uri }}" alt="Brasao do Estado de Rondonia" />
             <h1 class="cert-idep__titulo">{{ certificado.tipo_documento_display|default:"DIPLOMA"|upper }}</h1>
-            <p class="cert-idep__subtitulo">Documento oficial emitido institucionalmente</p>
+            <p class="cert-idep__subtitulo">
+              GOVERNO DO ESTADO DE RONDONIA |
+              {{ certificado.nome_da_instituicao|default:"INSTITUTO ESTADUAL DE DESENVOLVIMENTO DA EDUCACAO PROFISSIONAL - IDEP"|upper }} |
+              ESCOLA TECNICA ESTADUAL - ETEC
+            </p>
           </header>
 
           <h2 class="cert-idep__nome">{{ certificado.nome_aluno|default:"Nome do(a) Aluno(a)" }}</h2>
@@ -111,13 +115,12 @@
 
           <section class="cert-idep__logos">
             {% if certificado.logos_rodape %}
-              {% for logo in certificado.logos_rodape %}
+              {% for logo in certificado.logos_rodape|slice:":2" %}
                 <img src="{{ logo }}" alt="Logo institucional {{ forloop.counter }}" />
               {% endfor %}
             {% else %}
-              <span>LOGO1</span>
-              <span>LOGO2</span>
-              <span>LOGO3</span>
+              <img src="{{ brasao_rondonia_data_uri }}" alt="Brasao institucional 1" />
+              <img src="{{ brasao_rondonia_data_uri }}" alt="Brasao institucional 2" />
             {% endif %}
           </section>
 
