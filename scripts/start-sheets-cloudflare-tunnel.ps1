@@ -57,6 +57,33 @@ function Test-Url200 {
     return $false
 }
 
+function Test-UrlExternally {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Url,
+        [int]$Retries = 6,
+        [int]$DelaySeconds = 2
+    )
+
+    $externalUrl = "https://r.jina.ai/http://$($Url -replace '^https?://', '')"
+
+    for ($i = 0; $i -lt $Retries; $i++) {
+        try {
+            $response = Invoke-WebRequest -Uri $externalUrl -Method Get -UseBasicParsing -TimeoutSec 30
+            if ($response.StatusCode -eq 200 -and $response.Content -match "secao,id,titulo,descricao,valor,data,status,href") {
+                return $true
+            }
+        }
+        catch {
+            Start-Sleep -Seconds $DelaySeconds
+            continue
+        }
+        Start-Sleep -Seconds $DelaySeconds
+    }
+
+    return $false
+}
+
 function Stop-ExistingTunnelProcesses {
     Get-CimInstance Win32_Process |
         Where-Object { $_.Name -eq "cloudflared.exe" -or ($_.Name -eq "node.exe" -and $_.CommandLine -match "localtunnel") } |
@@ -107,51 +134,6 @@ function Start-CloudflareTunnel {
     }
 }
 
-function Start-LocalTunnel {
-    param(
-        [int]$TargetPort,
-        [string]$OutLog,
-        [string]$ErrLog
-    )
-
-    $npx = "C:\Program Files\nodejs\npx.cmd"
-    if (-not (Test-Path $npx)) {
-        throw "npx nao encontrado em '$npx'."
-    }
-
-    if (Test-Path $OutLog) { Remove-Item $OutLog -Force -ErrorAction SilentlyContinue }
-    if (Test-Path $ErrLog) { Remove-Item $ErrLog -Force -ErrorAction SilentlyContinue }
-
-    $args = @("--yes", "localtunnel", "--port", "$TargetPort", "--local-host", "127.0.0.1")
-    $proc = Start-Process -FilePath $npx -ArgumentList $args -RedirectStandardOutput $OutLog -RedirectStandardError $ErrLog -PassThru
-
-    $url = $null
-    for ($i = 0; $i -lt 60; $i++) {
-        Start-Sleep -Seconds 1
-        if (-not (Test-Path $OutLog)) { continue }
-
-        $content = (Get-Content $OutLog -Raw -ErrorAction SilentlyContinue) -as [string]
-        if (-not $content) { continue }
-
-        $match = [regex]::Match($content, "https://[a-z0-9-]+\.loca\.lt")
-        if ($match.Success) {
-            $url = $match.Value
-            break
-        }
-    }
-
-    if (-not $url) {
-        try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
-        return $null
-    }
-
-    return @{
-        Name = "localtunnel"
-        Url = $url
-        Pid = $proc.Id
-    }
-}
-
 function Update-ComposePublicUrl {
     param(
         [Parameter(Mandatory = $true)]
@@ -181,9 +163,6 @@ if (-not (Test-Url200 -Url $localCsvUrl -Retries $MaxRetries -DelaySeconds 2 -Ti
 }
 
 $cloudflareLog = Join-Path $tunnelDir "cloudflared.log"
-$localtunnelOutLog = Join-Path $tunnelDir "localtunnel.out.log"
-$localtunnelErrLog = Join-Path $tunnelDir "localtunnel.err.log"
-
 $tunnel = $null
 
 Write-Host "Tentando tunnel Cloudflare..." -ForegroundColor Cyan
@@ -194,22 +173,14 @@ if ($tunnel) {
         try { Stop-Process -Id $tunnel.Pid -Force -ErrorAction SilentlyContinue } catch {}
         $tunnel = $null
     }
-}
-
-if (-not $tunnel) {
-    Write-Host "Cloudflare instavel. Tentando LocalTunnel..." -ForegroundColor Yellow
-    $tunnel = Start-LocalTunnel -TargetPort $Port -OutLog $localtunnelOutLog -ErrLog $localtunnelErrLog
-    if ($tunnel) {
-        $candidateCsv = "$($tunnel.Url)/api/v1/dashboard/overview-sheets.csv?token=$Token"
-        if (-not (Test-Url200 -Url $candidateCsv -Retries 10 -DelaySeconds 2 -TimeoutSec 20)) {
-            try { Stop-Process -Id $tunnel.Pid -Force -ErrorAction SilentlyContinue } catch {}
-            $tunnel = $null
-        }
+    elseif (-not (Test-UrlExternally -Url $candidateCsv -Retries 6 -DelaySeconds 2)) {
+        try { Stop-Process -Id $tunnel.Pid -Force -ErrorAction SilentlyContinue } catch {}
+        $tunnel = $null
     }
 }
 
 if (-not $tunnel) {
-    throw "Nao foi possivel obter uma URL publica com resposta 200 (Cloudflare/LocalTunnel)."
+    throw "Nao foi possivel obter uma URL Cloudflare estavel para Google Sheets. Rode o script novamente."
 }
 
 Update-ComposePublicUrl -PublicUrl $tunnel.Url

@@ -32,7 +32,11 @@
       INITIAL_ADMIN_CPF: 90000010057
       INITIAL_ADMIN_PASSWORD: admin
       GOOGLE_SHEETS_EXPORT_TOKEN: idep_sheets_bc4d78f7b1d5447ab19d537d2b985781e9a363133e574a96
-      GOOGLE_SHEETS_PUBLIC_BASE_URL: https://eleven-rockets-send.loca.lt
+      GOOGLE_SHEETS_PUBLIC_BASE_URL: https://environments-stephen-inc-cabinets.trycloudflare.com
+      GOOGLE_SHEETS_SOURCE_URLS: ""
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON: ""
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_FILE: ""
+      GOOGLE_SHEETS_SERVICE_ACCOUNT_LOCAL_FILE: /app/.google_sheets_service_account.json
     volumes:
       - ./SUAP/backend:/app
 
@@ -62,5 +66,8 @@
 
 volumes:
   frontend_node_modules:
+
+
+
 
 

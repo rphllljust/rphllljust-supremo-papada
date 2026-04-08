@@ -33,6 +33,7 @@ export const accessApi = {
 export const dashboardApi = {
   overview: () => client.get('/dashboard/overview/'),
   sheetsModule: (params = {}) => client.get('/dashboard/sheets/module/', { params }),
+  saveSheetsServiceAccount: (data) => client.post('/dashboard/sheets/module/', data),
 }
 
 // ── Fábrica genérica de endpoints CRUD ────────────────────────────────────────
