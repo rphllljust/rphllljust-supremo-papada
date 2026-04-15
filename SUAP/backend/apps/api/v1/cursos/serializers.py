@@ -65,6 +65,7 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
     nivel_ensino_nome = serializers.CharField(source='nivel_ensino_catalogo.descricao', read_only=True)
     curso_id = serializers.IntegerField(read_only=True)
     curso_nome = serializers.CharField(source='curso.nome', read_only=True)
+    eixo_tecnologico = serializers.CharField(source='curso.eixo_tecnologico', read_only=True)
     esta_ativo = serializers.BooleanField(source='ativo', required=False)
     utilizado = serializers.SerializerMethodField(read_only=True)
 
@@ -90,12 +91,14 @@ class ComponenteCurricularSerializer(serializers.ModelSerializer):
             'matriz_curricular_nome',
             'curso_id',
             'curso_nome',
+            'eixo_tecnologico',
             'grupo_atuacao',
             'carga_horaria',
             'hora_aula',
             'qtd_creditos',
             'modulo_numero',
             'modulo_nome',
+            'conteudo_modulo',
             'ordem_no_modulo',
             'esta_ativo',
             'sigla_qacademico',

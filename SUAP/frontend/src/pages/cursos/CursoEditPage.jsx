@@ -5,18 +5,33 @@ import toast from 'react-hot-toast'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import { areasCursoApi, cursosApi, eixosTecnologicosApi, unidadesApi, moodleIntegrationApi } from '@/api/endpoints'
+import { cursosApi, eixosTecnologicosApi, unidadesApi, moodleIntegrationApi } from '@/api/endpoints'
 import { loadAllPaginatedResults } from '@/utils/loadAllPaginatedResults'
 
 const DEFAULT_VALUES = {
   nome: '',
   sigla: '',
   unidade: '',
-  area_curso: '',
   eixo_tecnologico: '',
   carga_horaria: '',
   moodle_category: '',
 }
+
+const EIXOS_OFICIAIS = [
+  'Ambiente e Saúde',
+  'Controle e Processos Industriais',
+  'Desenvolvimento Educacional e Social',
+  'Gestão e Negócios',
+  'Informação e Comunicação',
+  'Infraestrutura',
+  'Militar',
+  'Produção Alimentícia',
+  'Produção Cultural e Design',
+  'Produção Industrial',
+  'Recursos Naturais',
+  'Segurança',
+  'Turismo, Hospitalidade e Lazer',
+]
 
 function getErrorMessage(error, fallback) {
   const data = error?.response?.data
@@ -102,15 +117,13 @@ export default function CursoEditPage() {
   const { data: optionsData, isLoading: isLoadingOptions } = useQuery({
     queryKey: ['curso', 'edit-options', catalogMeta.optionsScope],
     queryFn: async () => {
-      const [unidades, areas, eixos] = await Promise.all([
+      const [unidades, eixos] = await Promise.all([
         loadAllPaginatedResults((params) => unidadesApi.list(params)),
-        loadAllPaginatedResults((params) => areasCursoApi.list(params)),
         loadAllPaginatedResults((params) => eixosTecnologicosApi.list(params)),
       ])
 
       return {
         unidades: unidades.sort((left, right) => left.nome.localeCompare(right.nome)),
-        areas: areas.sort((left, right) => (left.descricao || '').localeCompare(right.descricao || '')),
         eixos: eixos.sort((left, right) => left.descricao.localeCompare(right.descricao)),
       }
     },
@@ -162,7 +175,6 @@ export default function CursoEditPage() {
       nome: data.nome || '',
       sigla: data.sigla || '',
       unidade: data.unidade ? String(data.unidade) : '',
-      area_curso: data.area_curso ? String(data.area_curso) : '',
       eixo_tecnologico: data.eixo_tecnologico || '',
       carga_horaria: typeof data.carga_horaria === 'number' ? String(data.carga_horaria) : '',
       moodle_category: '',
@@ -263,8 +275,15 @@ export default function CursoEditPage() {
   }
 
   const unidades = optionsData?.unidades || []
-  const areas = optionsData?.areas || []
-  const eixos = optionsData?.eixos || []
+  const eixosApi = optionsData?.eixos || []
+  const eixosMap = new Map()
+  EIXOS_OFICIAIS.forEach((descricao) => eixosMap.set(descricao, { id: descricao, descricao }))
+  eixosApi.forEach((item) => {
+    if (!eixosMap.has(item.descricao)) {
+      eixosMap.set(item.descricao, { id: item.id, descricao: item.descricao })
+    }
+  })
+  const eixos = Array.from(eixosMap.values())
   const showMoodleCategoryField = isInitialCatalog || (!isCreateMode && openedFromMoodlePanel)
 
   const onSubmit = handleSubmit(async (formData) => {
@@ -273,7 +292,6 @@ export default function CursoEditPage() {
       nome: formData.nome.trim(),
       sigla: formData.sigla.trim(),
       unidade: Number(formData.unidade),
-      area_curso: Number(formData.area_curso),
       eixo_tecnologico: formData.eixo_tecnologico.trim(),
       carga_horaria: Number(formData.carga_horaria),
     }
@@ -411,19 +429,6 @@ export default function CursoEditPage() {
           </div>
 
           <div className="area-curso-edit-row">
-            <label className="area-curso-edit-row__label">* Área do curso</label>
-            <div className="area-curso-edit-row__field">
-              <select {...register('area_curso', { required: 'Selecione a área do curso.' })}>
-                <option value="">Selecione</option>
-                {areas.map((item) => (
-                  <option key={item.id} value={item.id}>{item.descricao}</option>
-                ))}
-              </select>
-              {errors.area_curso ? <span className="form-field__error">{errors.area_curso.message}</span> : null}
-            </div>
-          </div>
-
-          <div className="area-curso-edit-row">
             <label className="area-curso-edit-row__label">* Eixo tecnológico</label>
             <div className="area-curso-edit-row__field">
               <select
@@ -433,7 +438,9 @@ export default function CursoEditPage() {
               >
                 <option value="">Selecione</option>
                 {eixos.map((item) => (
-                  <option key={item.id} value={item.descricao}>{item.descricao}</option>
+                  <option key={item.id} value={item.descricao}>
+                    {item.descricao}
+                  </option>
                 ))}
               </select>
               {errors.eixo_tecnologico ? <span className="form-field__error">{errors.eixo_tecnologico.message}</span> : null}

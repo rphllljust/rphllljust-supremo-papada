@@ -20,6 +20,8 @@ from .views import (
     HistoricoEmissaoCertificadoListApiView,
     ModeloCertificadoDetailApiView,
     ModeloCertificadoListCreateApiView,
+    ModeloCertificadoPresetDetalheApiView,
+    ModeloCertificadoPresetsApiView,
     PreviewRascunhoCertificadoApiView,
 )
 
@@ -28,6 +30,8 @@ app_name = "api_v1_certificados"
 urlpatterns = [
     path("modelos/", ModeloCertificadoListCreateApiView.as_view(), name="modelos-list"),
     path("modelos/<int:pk>/", ModeloCertificadoDetailApiView.as_view(), name="modelos-detail"),
+    path("modelos/presets/", ModeloCertificadoPresetsApiView.as_view(), name="modelos-presets"),
+    path("modelos/presets/<str:preset_id>/", ModeloCertificadoPresetDetalheApiView.as_view(), name="modelos-preset-detalhe"),
 
     path("assinaturas/", AssinaturaCertificadoListCreateApiView.as_view(), name="assinaturas-list"),
     path("assinaturas/<int:pk>/", AssinaturaCertificadoDetailApiView.as_view(), name="assinaturas-detail"),

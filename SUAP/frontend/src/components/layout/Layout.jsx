@@ -12,74 +12,74 @@ import { getQuickAccessItems, trackQuickAccessVisit } from '@/utils/quickAccess'
 const BREADCRUMB_LABELS = {
   dashboard: 'Dashboard',
   documentos: 'Documentos',
-  declaracoes: 'Declaracoes',
-  historicos: 'Historicos',
-  guias: 'Guias de Transferencia',
-  'hipoteses-legais': 'Hipoteses Legais',
-  matriculas: 'Matriculas',
+  declaracoes: 'Declarações',
+  historicos: 'Históricos',
+  guias: 'Guias de Transferência',
+  'hipoteses-legais': 'Hipóteses Legais',
+  matriculas: 'Matrículas',
   notas: 'Notas',
-  frequencia: 'Frequencia',
+  frequencia: 'Frequência',
   turmas: 'Turmas',
   alunos: 'Alunos',
-  usuarios: 'Usuarios',
-  unidades: 'Instituicoes',
+  usuarios: 'Usuários',
+  unidades: 'Instituições',
   agenda: 'Agenda',
   processos: 'Processos',
   arquivo: 'Arquivo',
-  inscricoes: 'Inscricoes',
-  estagio: 'Estagios',
+  inscricoes: 'Inscrições',
+  estagio: 'Estágios',
   servidores: 'Servidores',
   servidor: 'Servidor',
   setores: 'Setores',
-  notificacoes: 'Notificacoes',
-  preferencias: 'Preferencias',
+  notificacoes: 'Notificações',
+  preferencias: 'Preferências',
   minha_conta: 'Minha Conta',
   'alterar-senha': 'Alterar Senha',
   ensino: 'Ensino',
-  ti: 'Tecnologia da Informacao',
+  ti: 'Tecnologia da Informação',
   moodle: 'Moodle',
   configuracoes: 'Central Moodle',
   categorias: 'Categorias Moodle',
-  catalogo: 'Catalogo Moodle',
-  diarios: 'Diarios',
+  catalogo: 'Catálogo Moodle',
+  diarios: 'Diários',
   componentes: 'Componentes',
-  areacurso: 'Areas de cursos',
+  areacurso: 'Áreas de cursos',
   cursoinicial: 'Cursos iniciais',
-  eixotecnologico: 'Eixos Tecnologicos',
+  eixotecnologico: 'Eixos Tecnológicos',
   cursoformacaosuperior: 'Cursos itinerantes',
   cursoitinerante: 'Cursos itinerantes',
-  cursotecnico: 'Catalogo de cursos tecnicos',
+  cursotecnico: 'Catálogo de cursos técnicos',
   editar: 'Editar',
   nova: 'Nova',
   access: 'Access',
   ava: 'AVA',
-  export: 'Exportacao',
-  preview: 'Previa',
+  export: 'Exportação',
+  preview: 'Prévia',
   comum: 'Comum',
-  rh: 'Gestao de Pessoas',
-  indisponivel: 'Indisponivel',
+  rh: 'Gestão de Pessoas',
+  indisponivel: 'Indisponível',
 }
 
 const STATIC_BREADCRUMB_PREFIXES = [
   {
     prefix: '/rh/servidor',
     items: [
-      { label: 'Gestao de Pessoas' },
+      { label: 'Gestão de Pessoas' },
       { label: 'Servidores', to: '/rh/servidores' },
     ],
   },
   {
     prefix: '/rh/setor',
     items: [
-      { label: 'Gestao de Pessoas' },
+      { label: 'Gestão de Pessoas' },
       { label: 'Setores', to: '/rh/setores' },
     ],
   },
   {
     prefix: '/rh/instituicao',
     items: [
-      { label: 'Gestao de Pessoas' },
-      { label: 'Instituicoes', to: '/rh/instituicoes' },
+      { label: 'Gestão de Pessoas' },
+      { label: 'Instituições', to: '/rh/instituicoes' },
     ],
   },
 ]
@@ -179,7 +179,7 @@ function buildFallbackTrail(pathname) {
 
 function buildBreadcrumbItems(pathname, locationState, enabledItems) {
   const normalizedPathname = normalizePath(pathname)
-  const baseItems = [{ label: 'Inicio', to: '/dashboard' }]
+  const baseItems = [{ label: 'Início', to: '/dashboard' }]
   const trailMatch = findBreadcrumbTrail(enabledItems, normalizedPathname) || buildFallbackTrail(normalizedPathname)
 
   const breadcrumbItems = [...baseItems]
@@ -188,7 +188,7 @@ function buildBreadcrumbItems(pathname, locationState, enabledItems) {
   if (trailMatch) {
     matchedBase = trailMatch.matchedBase
     for (const item of trailMatch.items) {
-      if (item.label === 'Inicio') {
+      if (item.label === 'Início') {
         continue
       }
 
@@ -610,7 +610,7 @@ export default function Layout() {
         <div className="sidebar__brasao-banner">
           <img
             src={idepRoLogo}
-            alt="Governo do Estado de Rondonia"
+            alt="Governo do Estado de Rondônia"
             className="sidebar__brasao-banner-img"
             onError={(event) => {
               event.currentTarget.onerror = null
@@ -625,7 +625,7 @@ export default function Layout() {
               <span className="sidebar__account-avatar">{getUserInitials(user)}</span>
               <span className="sidebar__account-copy">
                 <strong>{user?.nome_completo || user?.username}</strong>
-                <span>{user?.tipo_display || 'Usuario autenticado'}</span>
+                <span>{user?.tipo_display || 'Usuário autenticado'}</span>
               </span>
             </NavLink>
 
@@ -692,7 +692,7 @@ export default function Layout() {
                 className={({ isActive }) => `workspace-topbar__action ${isActive ? 'workspace-topbar__action--active' : ''}`}
               >
                 <Bell size={16} />
-                <span>Notificacoes</span>
+                <span>Notificações</span>
                 {unreadNotifications > 0 ? <strong>{unreadNotifications > 99 ? '99+' : unreadNotifications}</strong> : null}
               </NavLink>
               <NavLink

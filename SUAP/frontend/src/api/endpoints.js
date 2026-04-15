@@ -78,6 +78,8 @@ export const certificadosApi = {
     update: (id, data) => client.put(`/certificados/modelos/${id}/`, data),
     patch: (id, data) => client.patch(`/certificados/modelos/${id}/`, data),
     remove: (id) => client.delete(`/certificados/modelos/${id}/`),
+    presets: () => client.get('/certificados/modelos/presets/'),
+    preset: (id) => client.get(`/certificados/modelos/presets/${id}/`),
   },
   assinaturas: {
     list: (params) => client.get('/certificados/assinaturas/', { params }),

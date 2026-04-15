@@ -249,10 +249,20 @@ def publish_matriz_curricular(matriz: MatrizCurricular) -> MatrizCurricular:
         curso_base=matriz.curso_base,
         ano_referencia=matriz.ano_referencia,
         status='VIGENTE',
-    ).exclude(pk=matriz.pk)
+    ).exclude(pk=matriz.pk).order_by('-updated_at', '-id').first()
 
-    if vigente_existente.exists():
-        raise ValueError('Já existe uma matriz vigente para este curso técnico e ano de referência. Use a ação de definir vigente para substituir a atual.')
+    if vigente_existente:
+        # Publicacao idempotente: reutiliza a matriz vigente para o mesmo curso/ano.
+        _sync_course_reference_matrix(vigente_existente.curso_base)
+        log_matriz_event(
+            matriz=vigente_existente,
+            curso=vigente_existente.curso_base,
+            evento='publicacao_matriz',
+            status='info',
+            mensagem='Publicacao ignorada: ja existe matriz curricular vigente para este curso e ano.',
+            payload={'matriz_solicitada_id': matriz.id, 'matriz_vigente_id': vigente_existente.id},
+        )
+        return vigente_existente
 
     matriz.status = 'VIGENTE'
     matriz.ativa = True

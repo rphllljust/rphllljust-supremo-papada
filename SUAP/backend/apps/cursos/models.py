@@ -264,6 +264,7 @@ class ComponenteCurricular(models.Model):
     ordem = models.PositiveIntegerField(default=1, verbose_name='Ordem')
     modulo_numero = models.PositiveIntegerField(null=True, blank=True, verbose_name='Número do Módulo')
     modulo_nome = models.CharField(max_length=120, blank=True, default='', verbose_name='Nome do Módulo')
+    conteudo_modulo = models.TextField(blank=True, default='', verbose_name='Conteúdo abordado no módulo')
     ordem_no_modulo = models.PositiveIntegerField(null=True, blank=True, verbose_name='Ordem no Módulo')
 
     class Meta:
@@ -295,6 +296,7 @@ class ComponenteCurricular(models.Model):
         self.tipo_componente = (self.tipo_componente or '').strip()
         self.nivel_ensino = (self.nivel_ensino or '').strip()
         self.modulo_nome = (self.modulo_nome or '').strip()
+        self.conteudo_modulo = (self.conteudo_modulo or '').strip()
 
         self._sync_catalog_fields()
 

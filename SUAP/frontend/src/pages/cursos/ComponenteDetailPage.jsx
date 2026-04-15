@@ -163,6 +163,7 @@ export default function ComponenteDetailPage() {
               <DetailField label="Quantidade de créditos" value={data.qtd_creditos} />
               <DetailField label="Módulo" value={data.modulo_numero ? `Módulo ${data.modulo_numero}` : '-'} />
               <DetailField label="Nome do módulo" value={data.modulo_nome} />
+              <DetailField label="Conteúdo abordado no módulo" value={data.conteudo_modulo} wide />
               <DetailField label="Ordem no módulo" value={data.ordem_no_modulo} />
             </div>
           </section>

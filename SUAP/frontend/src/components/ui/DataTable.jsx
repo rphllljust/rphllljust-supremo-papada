@@ -1,7 +1,7 @@
 /**
  * Tabela reutilizável com busca, paginação e loading skeleton.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function DataTable({
@@ -16,10 +16,21 @@ export default function DataTable({
   emptyMessage = 'Nenhum registro encontrado.',
 }) {
   const [search, setSearch] = useState('')
+  const onSearchRef = useRef(onSearch)
+
+  useEffect(() => {
+    onSearchRef.current = onSearch
+  }, [onSearch])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onSearchRef.current?.(search)
+    }, 300)
+    return () => window.clearTimeout(timeoutId)
+  }, [search])
 
   const handleSearch = (e) => {
     setSearch(e.target.value)
-    onSearch?.(e.target.value)
   }
 
   if (isLoading) {

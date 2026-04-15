@@ -55,8 +55,9 @@ export default function LoginPage() {
       navigate(authenticatedUser?.must_change_password ? '/comum/alterar-senha' : nextPath, { replace: true })
     } catch (err) {
       const data = err.response?.data
-      const msg = data?.detail || data?.cpf?.[0] || data?.perfil?.[0] || 'Credenciais inválidas.'
-      toast.error(msg)
+      const detail = Array.isArray(data?.detail) ? data.detail[0] : data?.detail
+      const msg = detail || data?.cpf?.[0] || data?.perfil?.[0] || data?.password?.[0] || 'Credenciais inválidas.'
+      toast.error(String(msg))
     }
   }
 

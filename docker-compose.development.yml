@@ -1,5 +1,9 @@
 ﻿services:
   postgres:
+    command:
+      - postgres
+      - -c
+      - max_connections=300
     ports:
       - "5435:5432"
     environment:
@@ -27,10 +31,14 @@
       DATABASE_NAME: suap_idep_dev
       DATABASE_USER: suap_dev
       DATABASE_PASSWORD: suap_dev
-      DATABASE_CONN_MAX_AGE: 60
+      DATABASE_CONN_MAX_AGE: 0
       CERTIFICADOS_VALIDATION_FRONTEND_BASE_URL: http://localhost:5175
       INITIAL_ADMIN_CPF: 90000010057
       INITIAL_ADMIN_PASSWORD: admin
+      JWT_ACCESS_TOKEN_LIFETIME_MINUTES: "120"
+      JWT_REFRESH_TOKEN_LIFETIME_DAYS: "30"
+      JWT_ROTATE_REFRESH_TOKENS: "True"
+      JWT_BLACKLIST_AFTER_ROTATION: "True"
       GOOGLE_SHEETS_EXPORT_TOKEN: idep_sheets_bc4d78f7b1d5447ab19d537d2b985781e9a363133e574a96
       GOOGLE_SHEETS_PUBLIC_BASE_URL: https://environments-stephen-inc-cabinets.trycloudflare.com
       GOOGLE_SHEETS_SOURCE_URLS: ""

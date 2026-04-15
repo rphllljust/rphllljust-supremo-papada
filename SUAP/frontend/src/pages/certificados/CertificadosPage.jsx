@@ -97,6 +97,9 @@ export default function CertificadosPage() {
     periodo: '',
   })
   const [previewHtml, setPreviewHtml] = useState('')
+  const [previewTitle, setPreviewTitle] = useState('Pre-visualizacao do certificado')
+  const [previewLoadingId, setPreviewLoadingId] = useState(null)
+  const [previewCache, setPreviewCache] = useState({})
   const [showEmissionModal, setShowEmissionModal] = useState(false)
   const [emissao, setEmissao] = useState(buildInitialEmissao)
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
@@ -182,7 +185,6 @@ export default function CertificadosPage() {
 
   const previewEmitidoMutation = useMutation({
     mutationFn: (id) => certificadosApi.emitidos.preview(id),
-    onSuccess: (response) => setPreviewHtml(response.data.html || ''),
     onError: (error) => toast.error(getErrorMessage(error, 'Falha ao abrir preview do documento.')),
   })
 
@@ -300,6 +302,31 @@ export default function CertificadosPage() {
   const abrirEmissao = (tipoDocumento) => {
     setEmissao((current) => ({ ...current, tipo_documento: tipoDocumento }))
     setShowEmissionModal(true)
+  }
+
+  const handlePreviewEmitido = (row) => {
+    if (previewLoadingId !== null) return
+
+    const title = `Pre-visualizacao de ${row.numero_registro || row.numero_certificado || 'documento'}`
+    setPreviewTitle(title)
+
+    const cachedHtml = previewCache[row.id]
+    if (cachedHtml) {
+      setPreviewHtml(cachedHtml)
+      return
+    }
+
+    setPreviewLoadingId(row.id)
+    previewEmitidoMutation.mutate(row.id, {
+      onSuccess: (response) => {
+        const html = response?.data?.html || ''
+        setPreviewCache((current) => ({ ...current, [row.id]: html }))
+        setPreviewHtml(html)
+      },
+      onSettled: () => {
+        setPreviewLoadingId(null)
+      },
+    })
   }
 
   const counts = useMemo(() => {
@@ -562,8 +589,13 @@ export default function CertificadosPage() {
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSelectedDocumentId(row.id)}>
               <Eye size={14} /> Detalhes
             </button>
-            <button type="button" className="btn btn--outline btn--sm" onClick={() => previewEmitidoMutation.mutate(row.id)}>
-              <Eye size={14} /> Preview
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => handlePreviewEmitido(row)}
+              disabled={previewLoadingId !== null}
+            >
+              <Eye size={14} /> {previewLoadingId === row.id ? 'Carregando...' : 'Preview'}
             </button>
             <button
               type="button"
@@ -631,6 +663,7 @@ export default function CertificadosPage() {
       {previewHtml ? (
         <CertificadoPreview
           html={previewHtml}
+          title={previewTitle}
           onClose={() => setPreviewHtml('')}
         />
       ) : null}

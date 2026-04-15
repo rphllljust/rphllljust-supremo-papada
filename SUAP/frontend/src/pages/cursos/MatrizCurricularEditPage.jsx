@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Save } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { cursosApi, matrizesCurricularesApi } from '@/api/endpoints'
 import { loadAllPaginatedResults } from '@/utils/loadAllPaginatedResults'
@@ -19,6 +19,7 @@ const DEFAULT_VALUES = {
 }
 
 export default function MatrizCurricularEditPage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { matrizId } = useParams()
@@ -133,6 +134,9 @@ export default function MatrizCurricularEditPage() {
           <p className="page-subtitle">Cadastre a matriz curricular explícita sem remover os vínculos legados do curso e dos componentes.</p>
         </div>
         <div className="page-header__actions">
+          <Link to="/ensino/cursotecnico/novo" state={{ from: location.pathname }} className="btn btn--secondary">
+            Cadastrar curso base
+          </Link>
           <button type="button" className="btn btn--outline" onClick={() => navigate(isCreateMode ? '/ensino/matrizes-curriculares/' : `/ensino/matrizes-curriculares/${matrizId}`)}>
             <ArrowLeft size={16} /> Voltar
           </button>
@@ -151,6 +155,25 @@ export default function MatrizCurricularEditPage() {
               {technicalCourses.map((curso) => <option key={curso.id} value={curso.id}>{curso.nome}</option>)}
             </select>
             {errors.curso_base ? <span className="form-field__error">{errors.curso_base.message}</span> : null}
+            {!technicalCourses.length ? (
+              <span className="form-field__error">
+                Nenhum curso base técnico cadastrado.{' '}
+                <Link to="/ensino/cursotecnico/novo" state={{ from: location.pathname }}>
+                  Cadastrar novo curso base
+                </Link>
+                .
+              </span>
+            ) : null}
+            {technicalCourses.length ? (
+              <div style={{ marginTop: 6 }}>
+                <Link to="/ensino/cursotecnico/novo" state={{ from: location.pathname }}>
+                  Cadastrar novo curso base
+                </Link>
+              </div>
+            ) : null}
+            <small style={{ display: 'block', marginTop: 6, color: '#475569' }}>
+              Se precisar criar outro curso base técnico, use o botão "Cadastrar curso base" no topo.
+            </small>
           </label>
 
           <label className="matrix-form__field matrix-form__field--full">

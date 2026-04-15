@@ -29,6 +29,7 @@ const DEFAULT_VALUES = {
   qtd_creditos: 0,
   modulo_numero: '',
   modulo_nome: '',
+  conteudo_modulo: '',
   ordem_no_modulo: '',
 }
 
@@ -73,6 +74,7 @@ function buildFormValues(component) {
     qtd_creditos: component?.qtd_creditos ?? 0,
     modulo_numero: component?.modulo_numero ?? '',
     modulo_nome: component?.modulo_nome ?? '',
+    conteudo_modulo: component?.conteudo_modulo || '',
     ordem_no_modulo: component?.ordem_no_modulo ?? '',
   }
 }
@@ -269,6 +271,7 @@ export default function ComponenteEditPage() {
       qtd_creditos: Number(formData.qtd_creditos) || 0,
       modulo_numero: formData.modulo_numero ? Number(formData.modulo_numero) : null,
       modulo_nome: formData.modulo_nome.trim(),
+      conteudo_modulo: formData.conteudo_modulo.trim(),
       ordem_no_modulo: formData.ordem_no_modulo ? Number(formData.ordem_no_modulo) : null,
     }
 
@@ -414,6 +417,10 @@ export default function ComponenteEditPage() {
 
             <FormRow label="Nome do módulo">
               <input {...register('modulo_nome')} placeholder="Ex.: Fundamentos da formação técnica" />
+            </FormRow>
+
+            <FormRow label="Conteúdo abordado no módulo" hint="Descreva os principais temas, competências e tópicos trabalhados neste módulo.">
+              <textarea rows="4" {...register('conteudo_modulo')} placeholder="Ex.: Introdução à lógica, algoritmos, estruturas de dados e boas práticas de desenvolvimento." />
             </FormRow>
 
             <FormRow label="Ordem no módulo">

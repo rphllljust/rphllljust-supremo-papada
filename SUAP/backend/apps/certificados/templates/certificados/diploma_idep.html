@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIPLOMA - {{ certificado.nome_aluno|default:"Aluno" }}</title>
+    <style>{{ stylesheet_css|safe }}</style>
+  </head>
+  <body>
+    <article class="diploma-sheet">
+      <div class="diploma-sheet__outer">
+        <div class="diploma-sheet__inner">
+          <div class="diploma-sheet__content">
+            <header class="diploma-header">
+              <img
+                class="diploma-header__coat"
+                src="{{ brasao_rondonia_data_uri }}"
+                alt="Brasao"
+              />
+              <p class="diploma-header__line diploma-header__line--main">REPUBLICA FEDERATIVA DO BRASIL</p>
+              <p class="diploma-header__line diploma-header__line--main">GOVERNO DO ESTADO DE RONDONIA</p>
+              <p class="diploma-header__line diploma-header__line--inst">
+                INSTITUTO ESTADUAL DE DESENVOLVIMENTO DA EDUCACAO PROFISSIONAL - IDEP-ETEC
+              </p>
+            </header>
+
+            <section class="diploma-title-block">
+              <h1>DIPLOMA</h1>
+              <div class="diploma-title-block__ornament" aria-hidden="true">
+                <span></span><em>?</em><span></span>
+              </div>
+            </section>
+
+            <section class="diploma-body">
+              <p class="diploma-body__line diploma-body__line--intro">
+                <span>Certificamos que</span>
+                <strong>{{ certificado.nome_aluno|default:"Nome do(a) Aluno(a)" }}</strong>
+                <span>de nacionalidade {{ certificado.nacionalidade|default:"Brasileira" }}</span>
+              </p>
+
+              <p class="diploma-body__line">
+                portador(a) do CPF n° {{ certificado.cpf_aluno|default:"-" }} e do RG n° {{ certificado.rg_aluno|default:"-" }},
+                nascido(a) em {{ certificado.data_nascimento|default:"-" }}
+              </p>
+
+              <p class="diploma-body__line">
+                residente e domiciliado(a) em {{ certificado.cidade|default:"Porto Velho" }} - {{ certificado.estado|default:"RO" }}
+              </p>
+
+              <p class="diploma-body__line">
+                concluiu com aproveitamento o Curso Profissionalizante em
+                <strong>{{ certificado.curso_nome|default:"-" }}</strong>,
+                pertencente ao eixo tecnologico
+                <strong>{{ certificado.eixo_tecnologico|default:"Gestao e Negocios" }}</strong>,
+                com carga horaria total de {{ certificado.carga_horaria|default:"-" }} horas,
+                no ano de {{ certificado.data_conclusao|default:"-" }}, fazendo jus ao presente diploma.
+              </p>
+
+              <p class="diploma-body__line diploma-body__line--city-date">
+                {{ certificado.cidade|default:"Porto Velho" }} - {{ certificado.estado|default:"RO" }}, {{ certificado.data_emissao|default:"-" }}
+              </p>
+            </section>
+
+            <section class="diploma-signatures">
+              <div class="diploma-signatures__item">
+                <p class="diploma-signatures__role">{{ certificado.cargo_assinante_1|default:"DIRETOR(A)-GERAL" }}</p>
+                <p class="diploma-signatures__name">{{ certificado.nome_assinante_1|default:"Nome do(a) Diretor(a) Geral" }}</p>
+              </div>
+              <div class="diploma-signatures__item">
+                <p class="diploma-signatures__role">COORDENADOR(A)</p>
+                <p class="diploma-signatures__name">{{ certificado.nome_assinante_3|default:"Nome do(a) Coordenador(a)" }}</p>
+              </div>
+              <div class="diploma-signatures__item">
+                <p class="diploma-signatures__role">{{ certificado.cargo_assinante_2|default:"SECRETARIO(A) ESCOLAR" }}</p>
+                <p class="diploma-signatures__name">{{ certificado.nome_assinante_2|default:"Nome do(a) Secretario(a) Escolar" }}</p>
+              </div>
+            </section>
+
+            <footer class="diploma-footer">
+              <div class="diploma-footer__top-line"></div>
+              <div class="diploma-footer__content">
+                <div class="diploma-footer__qr">
+                  {% if certificado.qr_code_data_uri %}
+                    <img src="{{ certificado.qr_code_data_uri }}" alt="QR Code" />
+                  {% else %}
+                    <div class="diploma-footer__qr-empty"></div>
+                  {% endif %}
+                </div>
+                <div class="diploma-footer__text">
+                  <p>
+                    Registro n° {{ certificado.numero_registro|default:"-" }} · Livro: {{ certificado.livro|default:"01" }} ·
+                    Folha {{ certificado.folha|default:"001" }} · Codigo de Autenticacao: {{ certificado.codigo_validacao|default:"-" }}
+                  </p>
+                  <p>
+                    A autenticidade deste diploma podera ser verificada em
+                    {{ certificado.url_validacao|default:certificado.qr_code_validacao|default:"-" }}
+                  </p>
+                </div>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </div>
+    </article>
+  </body>
+</html>

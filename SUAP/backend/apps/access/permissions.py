@@ -13,6 +13,9 @@ ACCESS_MATRIX = {
         "web": {
             "view": TEACHING_VIEW,
         },
+        "api": {
+            "view": TEACHING_VIEW,
+        },
     },
     "cursos": {
         "web": {
@@ -137,6 +140,10 @@ ACCESS_MATRIX = {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
         },
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
     },
     "auditoria": {
         "web": {
@@ -233,6 +240,10 @@ ACCESS_MATRIX = {
         },
     },
     "integracao_moodle": {
+        "api": {
+            "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+        },
         "api_ava": {
             "export": STAFF_VIEW,
         },

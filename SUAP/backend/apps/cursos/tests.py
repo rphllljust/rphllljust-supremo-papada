@@ -206,6 +206,21 @@ class MatrizCurricularGovernanceTests(TestCase):
         self.assertEqual(self.matriz.status, 'VIGENTE')
         self.assertEqual(self.curso.matriz_curricular, self.matriz)
 
+    def test_publish_matriz_curricular_with_existing_vigente_returns_current(self):
+        vigente = clone_matriz_curricular(self.matriz, versao='1.1')
+        publish_matriz_curricular(vigente)
+
+        resultado = publish_matriz_curricular(self.matriz)
+
+        self.matriz.refresh_from_db()
+        vigente.refresh_from_db()
+        self.curso.refresh_from_db()
+
+        self.assertEqual(resultado.id, vigente.id)
+        self.assertEqual(vigente.status, 'VIGENTE')
+        self.assertEqual(self.matriz.status, 'RASCUNHO')
+        self.assertEqual(self.curso.matriz_curricular, vigente)
+
     def test_set_matriz_as_current_closes_previous_vigente(self):
         publish_matriz_curricular(self.matriz)
         clone = clone_matriz_curricular(self.matriz, versao='1.1')

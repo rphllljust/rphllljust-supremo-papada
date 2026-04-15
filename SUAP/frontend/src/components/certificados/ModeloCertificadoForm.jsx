@@ -1,4 +1,8 @@
-﻿import EntityFormPanel from '@/components/ui/EntityFormPanel'
+﻿import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
+import EntityFormPanel from '@/components/ui/EntityFormPanel'
+import { certificadosApi } from '@/api/endpoints'
 
 const TIPOS_MODELO = [
   { value: 'CERTIFICADO', label: 'Certificado' },
@@ -23,6 +27,36 @@ export default function ModeloCertificadoForm({
   isSubmitting,
   submitLabel = 'Salvar modelo',
 }) {
+  const [loadingPreset, setLoadingPreset] = useState(false)
+
+  const { data: presetsData } = useQuery({
+    queryKey: ['certificados-modelos-presets'],
+    queryFn: () => certificadosApi.modelos.presets().then((r) => r.data),
+    staleTime: 300_000,
+  })
+  const presets = presetsData || []
+
+  async function aplicarPreset(presetId) {
+    if (!presetId) return
+    setLoadingPreset(true)
+    try {
+      const { data } = await certificadosApi.modelos.preset(presetId)
+      setFormData((current) => ({
+        ...current,
+        tipo: data.tipo || current.tipo,
+        template_html: data.template_html || current.template_html,
+        stylesheet_css: data.stylesheet_css || current.stylesheet_css,
+        texto_certificado: data.texto_certificado || current.texto_certificado,
+        nome: current.nome || data.nome,
+      }))
+      toast.success(`Preset "${data.nome}" carregado. Revise e salve.`)
+    } catch {
+      toast.error('Nao foi possivel carregar o preset.')
+    } finally {
+      setLoadingPreset(false)
+    }
+  }
+
   const assinaturas = Array.isArray(formData.assinaturas) ? formData.assinaturas : []
   const logosRodapeValue = (formData.configuracao_visual.logos_rodape || []).join('\n')
 
@@ -70,6 +104,29 @@ export default function ModeloCertificadoForm({
       submitLabel={submitLabel}
       isSubmitting={isSubmitting}
     >
+      {presets.length > 0 && (
+        <div className="form-field form-field--full">
+          <label>Usar preset de layout</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <select
+              className="select"
+              defaultValue=""
+              disabled={loadingPreset}
+              onChange={(event) => aplicarPreset(event.target.value)}
+            >
+              <option value="">— selecione um preset para preencher automaticamente —</option>
+              {presets.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
+            </select>
+            {loadingPreset && <span style={{ fontSize: '12px', color: '#666' }}>Carregando...</span>}
+          </div>
+          <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+            O preset preenche HTML, CSS e texto padrão. Voce ainda pode editar tudo antes de salvar.
+          </small>
+        </div>
+      )}
+
       <div className="form-field">
         <label>Nome do modelo</label>
         <input

@@ -35,3 +35,6 @@ def _load_template_file(filename: str, fallback: str) -> str:
 
 DEFAULT_CERTIFICADO_CSS = _load_template_file("certificado_oficial.css", FALLBACK_CSS)
 DEFAULT_CERTIFICADO_TEMPLATE = _load_template_file("certificado_oficial.html", FALLBACK_HTML)
+
+DIPLOMA_IDEP_CSS = _load_template_file("diploma_idep.css", FALLBACK_CSS)
+DIPLOMA_IDEP_TEMPLATE = _load_template_file("diploma_idep.html", FALLBACK_HTML)

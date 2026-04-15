@@ -400,7 +400,7 @@ def _fetch_external_csv_content(csv_url, source_info=None, timeout=20):
             continue
         return text
 
-    if source_info and (saw_html_response or (last_http_error and last_http_error.code in {401, 403})):
+    if source_info and source_info.get("sheet_id") and (saw_html_response or (last_http_error and last_http_error.code in {401, 403})):
         return _fetch_external_csv_content_via_service_account(
             source_info.get("sheet_id"),
             source_info.get("gid"),
@@ -713,7 +713,11 @@ def _fetch_external_csv_content_via_service_account(sheet_id, gid, timeout=20):
     selected_sheet = None
     for item in sheets:
         properties = item.get("properties", {}) or {}
-        if int(properties.get("sheetId", -1)) == gid_number:
+        try:
+            sheet_id_num = int(properties.get("sheetId", -1))
+        except (TypeError, ValueError):
+            sheet_id_num = -1
+        if sheet_id_num == gid_number:
             selected_sheet = properties
             break
     if not selected_sheet and sheets:

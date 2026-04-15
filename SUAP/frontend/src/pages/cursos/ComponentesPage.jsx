@@ -21,6 +21,7 @@ function mapOptions(summary) {
     tipos: (filterOptions.tipos_componente || []).map((item) => ({ id: item.value, nome: item.label })),
     grupos: (filterOptions.grupos_atuacao || []).map((item) => ({ id: item.value, nome: item.label })),
     matrizes: (filterOptions.matrizes_curriculares || []).map((item) => ({ id: item.value, nome: item.label })),
+    eixos: (filterOptions.eixos_tecnologicos || []).map((item) => ({ id: item.value, nome: item.label })),
   }
 }
 
@@ -31,6 +32,7 @@ function mapRow(row) {
     descricao: row.descricao || row.nome,
     tipo: row.tipo_componente_nome || row.tipo_componente,
     nivel: row.nivel_ensino_nome || row.nivel_ensino,
+    eixo: row.eixo_tecnologico,
     grupo: row.grupo_atuacao,
     hora_relogio: row.carga_horaria,
     hora_aula: row.hora_aula,
@@ -42,7 +44,7 @@ function mapRow(row) {
 }
 
 function useOpcoes() {
-  const [opcoes, setOpcoes] = useState({ niveis: [], tipos: [], grupos: [], matrizes: [] })
+  const [opcoes, setOpcoes] = useState({ niveis: [], tipos: [], grupos: [], matrizes: [], eixos: [] })
 
   useEffect(() => {
     let isMounted = true
@@ -51,7 +53,7 @@ function useOpcoes() {
       setOpcoes(mapOptions(response.data?.summary))
     }).catch(() => {
       if (!isMounted) return
-      setOpcoes({ niveis: [], tipos: [], grupos: [], matrizes: [] })
+      setOpcoes({ niveis: [], tipos: [], grupos: [], matrizes: [], eixos: [] })
     })
 
     return () => {
@@ -119,6 +121,7 @@ const TableRow = memo(({ row, onView, onEdit }) => (
     <td>{row.descricao}</td>
     <td>{row.tipo}</td>
     <td>{row.nivel}</td>
+    <td className="td--dash">{row.eixo || '-'}</td>
     <td className="td--dash">{row.grupo || '-'}</td>
     <td className="td--center">{row.hora_relogio}</td>
     <td className="td--center">{row.hora_aula}</td>
@@ -157,6 +160,7 @@ export default function ComponentesPage() {
     nivel: '',
     tipo: '',
     grupo: '',
+    eixo: '',
     matriz: '',
   })
   const [filters, setFilters] = useState({
@@ -166,6 +170,7 @@ export default function ComponentesPage() {
     nivel: '',
     tipo: '',
     grupo: '',
+    eixo: '',
     matriz: '',
   })
   const [page, setPage] = useState(1)
@@ -185,11 +190,12 @@ export default function ComponentesPage() {
     ...(filters.nivel ? { nivel_id: filters.nivel } : {}),
     ...(filters.tipo ? { tipo_id: filters.tipo } : {}),
     ...(filters.grupo ? { grupo_id: filters.grupo } : {}),
+    ...(filters.eixo ? { eixo_id: filters.eixo } : {}),
     ...(filters.matriz ? { matriz_id: filters.matriz } : {}),
     page,
     sort,
     dir,
-  }), [tab, filters.ativo, filters.nivel, filters.tipo, filters.grupo, filters.matriz, sigla, qDebounced, page, sort, dir])
+  }), [tab, filters.ativo, filters.nivel, filters.tipo, filters.grupo, filters.eixo, filters.matriz, sigla, qDebounced, page, sort, dir])
 
   const { rows, total, loading, error } = useComponentes(queryParams)
 
@@ -211,6 +217,7 @@ export default function ComponentesPage() {
       nivel: '',
       tipo: '',
       grupo: '',
+      eixo: '',
       matriz: '',
     }
 
@@ -236,6 +243,7 @@ export default function ComponentesPage() {
     { key: 'descricao', label: 'Descrição', sortable: true },
     { key: 'tipo', label: 'Tipo do componente' },
     { key: 'nivel', label: 'Nível de ensino' },
+    { key: 'eixo', label: 'Eixo tecnológico' },
     { key: 'grupo', label: 'Grupo de Atuação' },
     { key: 'hora_relogio', label: 'Hora/relógio', sortable: true },
     { key: 'hora_aula', label: 'Hora/aula', sortable: true },
@@ -281,6 +289,7 @@ export default function ComponentesPage() {
             <FilterSelect label="Está ativo" value={draftFilters.ativo} options={[{ id: 'SIM', nome: 'Sim' }, { id: 'NAO', nome: 'Não' }]} onChange={(value) => updateDraftFilter('ativo', value)} />
             <FilterSelect label="Tipo" value={draftFilters.tipo} options={opcoes.tipos} onChange={(value) => updateDraftFilter('tipo', value)} />
             <FilterSelect label="Nível de ensino" value={draftFilters.nivel} options={opcoes.niveis} onChange={(value) => updateDraftFilter('nivel', value)} />
+            <FilterSelect label="Eixo tecnológico" value={draftFilters.eixo} options={opcoes.eixos} onChange={(value) => updateDraftFilter('eixo', value)} />
             <FilterSelect label="Matriz curricular" value={draftFilters.matriz} options={opcoes.matrizes} onChange={(value) => updateDraftFilter('matriz', value)} />
             <FilterSelect label="Grupo" value={draftFilters.grupo} options={opcoes.grupos} onChange={(value) => updateDraftFilter('grupo', value)} />
           </div>
@@ -321,7 +330,7 @@ export default function ComponentesPage() {
               <tbody>
                 {rows.map((row) => <TableRow key={row.id} row={row} onView={() => navigate(`/componentes/${row.id}`)} onEdit={() => navigate(`/componentes/${row.id}/editar`)} />)}
                 {!loading && !rows.length && (
-                  <tr><td colSpan={12} className="td-empty">Nenhum componente encontrado.</td></tr>
+                  <tr><td colSpan={COLS.length} className="td-empty">Nenhum componente encontrado.</td></tr>
                 )}
               </tbody>
             </table>

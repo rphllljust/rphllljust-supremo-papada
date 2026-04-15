@@ -175,6 +175,7 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
         nivel_id = (params.get("nivel_id") or "").strip()
         matriz_curricular = (params.get("matriz_curricular") or params.get("matriz_id") or "").strip()
         grupo_atuacao = (params.get("grupo_atuacao") or params.get("grupo_id") or "").strip()
+        eixo_tecnologico = (params.get("eixo_tecnologico") or params.get("eixo_id") or "").strip()
 
         if search:
             queryset = queryset.filter(
@@ -205,6 +206,8 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
             queryset = queryset.filter(Q(matriz_curricular_id=matriz_curricular) | Q(curso_id=matriz_curricular))
         if grupo_atuacao:
             queryset = queryset.filter(grupo_atuacao=grupo_atuacao)
+        if eixo_tecnologico:
+            queryset = queryset.filter(curso__eixo_tecnologico=eixo_tecnologico)
 
         if include_tab:
             aba = params.get("aba", "TODOS").strip() or "TODOS"
@@ -226,6 +229,7 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
         tipos = TipoComponente.objects.order_by("descricao")
         niveis = NivelEnsino.objects.order_by("descricao")
         grupos = queryset.exclude(grupo_atuacao="").values_list("grupo_atuacao", flat=True).distinct().order_by("grupo_atuacao")
+        eixos = queryset.exclude(curso__eixo_tecnologico="").values_list("curso__eixo_tecnologico", flat=True).distinct().order_by("curso__eixo_tecnologico")
 
         matrizes = []
         vistos = set()
@@ -248,6 +252,7 @@ class ComponenteCurricularListApiView(generics.ListCreateAPIView):
                 "niveis_ensino": [{"value": item.id, "label": item.descricao, "legacy_value": item.descricao} for item in niveis],
                 "matrizes_curriculares": matrizes,
                 "grupos_atuacao": [{"value": value, "label": value} for value in grupos],
+                "eixos_tecnologicos": [{"value": value, "label": value} for value in eixos],
             },
         }
 

@@ -52,7 +52,7 @@ export const sidebarItems = [
   {
     id: 'inicio',
     type: 'link',
-    label: 'Inicio',
+    label: 'Início',
     icon: LayoutDashboard,
     to: '/dashboard',
     exact: true,
@@ -60,29 +60,29 @@ export const sidebarItems = [
   {
     id: 'acesso-rapido',
     type: 'group',
-    label: 'Acesso Rapido',
+    label: 'Acesso Rápido',
     icon: Rocket,
     items: [
       { id: 'cursos', type: 'link', label: 'Cursos', to: '/ensino/cursoinicial/' },
       { id: 'turmas', type: 'link', label: 'Turmas', to: '/turmas' },
-      { id: 'matriculas', type: 'link', label: 'Matriculas', to: '/matriculas' },
+      { id: 'matriculas', type: 'link', label: 'Matrículas', to: '/matriculas' },
       { id: 'notas', type: 'link', label: 'Notas', to: '/notas' },
-      { id: 'frequencia', type: 'link', label: 'Frequencia', to: '/frequencia' },
+      { id: 'frequencia', type: 'link', label: 'Frequência', to: '/frequencia' },
       { id: 'agenda', type: 'link', label: 'Agenda', to: '/agenda' },
-      unavailable('diario-classe', 'Diario de Classe'),
+      unavailable('diario-classe', 'Diário de Classe'),
       { id: 'ata-professores', type: 'link', label: 'Ata dos Professores', to: '/ata-professores' },
     ],
   },
   {
     id: 'documentos-processos',
     type: 'group',
-    label: 'Documentos/Processos',
+    label: 'Documentos e Processos',
     icon: FileText,
     items: [
       {
         id: 'documentos-eletronicos',
         type: 'group',
-        label: 'Documentos Eletronicos',
+        label: 'Documentos Eletrônicos',
         items: [
           unavailable('documentos-eletronicos-dashboard', 'Dashboard'),
           { id: 'documentos', type: 'link', label: 'Documentos', to: '/documentos' },
@@ -93,19 +93,19 @@ export const sidebarItems = [
             type: 'group',
             label: 'Cadastros',
             items: [
-              unavailable('documentos-eletronicos-classificacoes', 'Classificacoes'),
+              unavailable('documentos-eletronicos-classificacoes', 'Classificações'),
               {
                 id: 'documentos-eletronicos-hipoteses-legais',
                 type: 'link',
-                label: 'Hipoteses Legais',
+                label: 'Hipóteses Legais',
                 to: '/documentos/hipoteses-legais',
                 activePrefixes: ['/documentos/hipoteses-legais'],
               },
               unavailable('documentos-eletronicos-modelos', 'Modelos'),
-              unavailable('documentos-eletronicos-tipos-conferencia', 'Tipos Conferencia'),
+              unavailable('documentos-eletronicos-tipos-conferencia', 'Tipos de Conferência'),
               unavailable('documentos-eletronicos-tipos-documentos-externos', 'Tipos de Documentos Externos'),
               unavailable('documentos-eletronicos-tipos-documentos-internos', 'Tipos de Documentos Internos'),
-              unavailable('documentos-eletronicos-tipos-vinculo-documentos', 'Tipos de Vinculos entre Documentos'),
+              unavailable('documentos-eletronicos-tipos-vinculo-documentos', 'Tipos de Vínculos entre Documentos'),
             ],
           },
         ],
@@ -113,7 +113,7 @@ export const sidebarItems = [
       {
         id: 'processos-eletronicos',
         type: 'group',
-        label: 'Processos Eletronicos',
+        label: 'Processos Eletrônicos',
         items: [
           { id: 'processos-lista', type: 'link', label: 'Processos', to: '/processos' },
           unavailable('requerimentos', 'Requerimentos'),
@@ -122,25 +122,25 @@ export const sidebarItems = [
       {
         id: 'processos-fisicos',
         type: 'group',
-        label: 'Processos Fisicos',
+        label: 'Processos Físicos',
         items: [
-          unavailable('caixa-de-entrada-e-saida', 'Caixa de Entrada e Saida'),
-          unavailable('caixa-de-tramitacao-externa', 'Caixa de Tramitacao Externa'),
+          unavailable('caixa-de-entrada-e-saida', 'Caixa de Entrada e Saída'),
+          unavailable('caixa-de-tramitacao-externa', 'Caixa de Tramitação Externa'),
           { id: 'arquivo-processos', type: 'link', label: 'Processos', to: '/arquivo' },
         ],
       },
-      unavailable('minhas-permissoes', 'Minhas Permissoes'),
-      unavailable('solitacoes-alteracao-nivel-acesso', 'Solitacoes de Alteracao de Nivel de Acesso'),
+      unavailable('minhas-permissoes', 'Minhas Permissões'),
+      unavailable('solitacoes-alteracao-nivel-acesso', 'Solicitações de Alteração de Nível de Acesso'),
     ],
   },
   {
     id: 'gestao-sistema',
     type: 'group',
-    label: 'Gestao e Sistema',
+    label: 'Gestão e Sistema',
     icon: Settings,
     items: [
-      { id: 'programa-gestao', type: 'link', label: 'Programa de Gestao', to: '/dashboard' },
-      unavailable('administracao', 'Administracao', {
+      { id: 'programa-gestao', type: 'link', label: 'Programa de Gestão', to: '/dashboard' },
+      unavailable('administracao', 'Administração', {
         description: 'O acesso ao Django admin foi bloqueado dentro deste frontend. Use uma tela interna quando ela for portada.',
       }),
       unavailable('auditoria', 'Auditoria'),
@@ -149,7 +149,7 @@ export const sidebarItems = [
   {
     id: 'ti',
     type: 'group',
-    label: 'Tecnologia da Informacao',
+    label: 'Tecnologia da Informação',
     icon: Settings,
     items: [
       {
@@ -217,26 +217,26 @@ export const sidebarItems = [
         label: 'Cadastros Gerais',
         items: [
           {
-            id: 'eixos-tecnologicos',
-            type: 'link',
-            label: 'Eixos TecnolÃ³gicos',
-            to: '/ensino/eixotecnologico/',
-            activePrefixes: ['/ensino/eixotecnologico'],
-          },
-          {
             id: 'tipos-componente',
             type: 'link',
-            label: 'Tipos do Componente',
+            label: 'Tipos de Componente',
             to: '/ensino/tipos-componente/',
             activePrefixes: ['/ensino/tipos-componente'],
           },
           {
             id: 'niveis-ensino',
             type: 'link',
-            label: 'NÃ­veis de Ensino',
+            label: 'Níveis de Ensino',
             to: '/ensino/niveis-ensino/',
             activePrefixes: ['/ensino/niveis-ensino'],
           },
+        ],
+      },
+      {
+        id: 'catalogos-cursos',
+        type: 'group',
+        label: 'Catálogos de Cursos',
+        items: [
           {
             id: 'cursos-formacao-superior',
             type: 'link',
@@ -254,7 +254,7 @@ export const sidebarItems = [
           {
             id: 'catalogo-cursos-tecnicos',
             type: 'link',
-            label: 'CatÃ¡logo de cursos tÃ©cnicos',
+            label: 'Catálogo de cursos técnicos',
             to: '/ensino/cursotecnico/',
             activePrefixes: ['/ensino/cursotecnico'],
           },
@@ -263,14 +263,14 @@ export const sidebarItems = [
       {
         id: 'cursos-matrizes-componentes',
         type: 'group',
-        label: 'Cursos, Matrizes e Componentes',
+        label: 'Matriz Curricular',
         items: [
           {
-            id: 'matrizes-curriculares',
+            id: 'eixos-tecnologicos',
             type: 'link',
-            label: 'Matrizes Curriculares',
-            to: '/ensino/matrizes-curriculares/',
-            activePrefixes: ['/ensino/matrizes-curriculares'],
+            label: 'Eixos Tecnológicos',
+            to: '/ensino/eixotecnologico/',
+            activePrefixes: ['/ensino/eixotecnologico'],
           },
           {
             id: 'ofertas-cursos',
@@ -280,9 +280,16 @@ export const sidebarItems = [
             activePrefixes: ['/ensino/ofertas'],
           },
           {
+            id: 'matrizes-curriculares',
+            type: 'link',
+            label: 'Matrizes Curriculares',
+            to: '/ensino/matrizes-curriculares/',
+            activePrefixes: ['/ensino/matrizes-curriculares'],
+          },
+          {
             id: 'componentes',
             type: 'link',
-            label: 'Componentes',
+            label: 'Componentes Curriculares',
             to: '/ensino/componentes/',
             activePrefixes: ['/ensino/componentes', '/componentes'],
           },
@@ -305,7 +312,7 @@ export const sidebarItems = [
       {
         id: 'diario-academico',
         type: 'group',
-        label: 'Diario Academico',
+        label: 'Diário Acadêmico',
         items: [
           {
             id: 'turmas-ensino',
@@ -317,7 +324,7 @@ export const sidebarItems = [
           {
             id: 'diarios-ensino',
             type: 'link',
-            label: 'Diarios de Classe',
+            label: 'Diários de Classe',
             to: '/diarios',
             activePrefixes: ['/diarios', '/ensino/diarios'],
           },
@@ -331,7 +338,7 @@ export const sidebarItems = [
           {
             id: 'frequencia-ensino',
             type: 'link',
-            label: 'Frequencia',
+            label: 'Frequência',
             to: '/ensino/frequencia',
             activePrefixes: ['/ensino/frequencia', '/frequencia'],
           },
@@ -347,28 +354,28 @@ export const sidebarItems = [
         items: [
           { id: 'certificados-emitidos-nav', type: 'link', label: 'Certificados', to: '/certificados', activePrefixes: ['/certificados'] },
           { id: 'certificados-modelos-nav', type: 'link', label: 'Modelos de Certificado', to: '/certificados/modelos', activePrefixes: ['/certificados/modelos'] },
-          { id: 'certificados-historico-nav', type: 'link', label: 'Historico de Emissao', to: '/certificados/historico', activePrefixes: ['/certificados/historico'] },
-          { id: 'certificados-validacao-nav', type: 'link', label: 'Validacao Publica', to: '/certificados/validacao', activePrefixes: ['/certificados/validacao'] },
+          { id: 'certificados-historico-nav', type: 'link', label: 'Histórico de Emissão', to: '/certificados/historico', activePrefixes: ['/certificados/historico'] },
+          { id: 'certificados-validacao-nav', type: 'link', label: 'Validação Pública', to: '/certificados/validacao', activePrefixes: ['/certificados/validacao'] },
         ],
       },
       unavailable('ead', 'EAD'),
-      { id: 'estagios-docentes', type: 'link', label: 'Estagios Docentes', to: '/estagio' },
+      { id: 'estagios-docentes', type: 'link', label: 'Estágios Docentes', to: '/estagio' },
       unavailable('etep', 'ETEP'),
       { id: 'painel-controle', type: 'link', label: 'Painel de Controle', to: '/dashboard' },
       unavailable('procedimentos-de-apoio', 'Procedimentos de Apoio'),
       { id: 'processos-seletivos', type: 'link', label: 'Processos Seletivos', to: '/inscricoes' },
-      unavailable('relatorios-ensino', 'Relatorios'),
+      unavailable('relatorios-ensino', 'Relatórios'),
       unavailable('programas', 'Programas'),
-      unavailable('atas-eletronicas', 'Atas Eletronicas'),
+      unavailable('atas-eletronicas', 'Atas Eletrônicas'),
       unavailable('plano-de-oferta', 'Plano de Oferta'),
-      unavailable('regulacao', 'Regulacao'),
-      unavailable('migracao-de-dados', 'Migracao de dados'),
+      unavailable('regulacao', 'Regulação'),
+      unavailable('migracao-de-dados', 'Migração de dados'),
       unavailable('napne', 'Napne'),
-      unavailable('variaveis-de-gestao', 'Variaveis de Gestao'),
-      unavailable('acervo-academico', 'Acervo Academico'),
+      unavailable('variaveis-de-gestao', 'Variáveis de Gestão'),
+      unavailable('acervo-academico', 'Acervo Acadêmico'),
       unavailable('atividade-profissional-efetiva', 'Atividade Profissional Efetiva'),
       unavailable('planos-individuais-de-trabalho', 'Planos Individuais de Trabalho'),
-      unavailable('laboratorios-remotos', 'Laboratorios Remotos'),
+      unavailable('laboratorios-remotos', 'Laboratórios Remotos'),
       unavailable('projetos-ensino', 'Projetos'),
       unavailable('ppc', 'PPC'),
       unavailable('pafc', 'PAFC'),
@@ -377,7 +384,7 @@ export const sidebarItems = [
   {
     id: 'gestao-pessoas',
     type: 'group',
-    label: 'Gestao de Pessoas',
+    label: 'Gestão de Pessoas',
     icon: Users,
     items: [
       {
@@ -390,7 +397,7 @@ export const sidebarItems = [
       {
         id: 'notificacoes-servidores',
         type: 'link',
-        label: 'Notificacoes',
+        label: 'Notificações',
         to: '/comum/notificacoes',
         activePrefixes: ['/comum/notificacoes'],
       },
@@ -398,12 +405,12 @@ export const sidebarItems = [
       {
         id: 'administracao-pessoal',
         type: 'group',
-        label: 'Administracao de Pessoal',
+        label: 'Administração de Pessoal',
         items: [
           rhUnavailable('organograma', 'Organograma'),
           rhUnavailable('ponto', 'Ponto'),
-          rhUnavailable('solicitacoes', 'Solicitacoes'),
-          rhUnavailable('acumulo-de-cargo', 'Acumulo de Cargo'),
+          rhUnavailable('solicitacoes', 'Solicitações'),
+          rhUnavailable('acumulo-de-cargo', 'Acúmulo de Cargo'),
           rhUnavailable('acompanhamento-funcional', 'Acompanhamento Funcional'),
         ],
       },
@@ -412,9 +419,9 @@ export const sidebarItems = [
         type: 'group',
         label: 'Desenvolvimento de Pessoal',
         items: [
-          rhUnavailable('remocao-interna', 'Remocao Interna'),
-          rhUnavailable('avaliacao-de-desempenho', 'Avaliacao de Desempenho'),
-          rhUnavailable('licenca-capacitacao', 'Licenca Capacitacao'),
+          rhUnavailable('remocao-interna', 'Remoção Interna'),
+          rhUnavailable('avaliacao-de-desempenho', 'Avaliação de Desempenho'),
+          rhUnavailable('licenca-capacitacao', 'Licença Capacitação'),
           rhUnavailable('pdp', 'PDP'),
           {
             id: 'docentes',
@@ -425,33 +432,33 @@ export const sidebarItems = [
           },
         ],
       },
-      rhUnavailable('atencao-a-saude-do-servidor', 'Atencao a Saude do Servidor'),
+      rhUnavailable('atencao-a-saude-do-servidor', 'Atenção à Saúde do Servidor'),
       {
         id: 'cadastros-pessoas',
         type: 'group',
         label: 'Cadastros',
         items: [
-          { id: 'instituicoes', type: 'link', label: 'Instituicoes', to: '/rh/instituicoes', activePrefixes: ['/rh/instituicoes'] },
+          { id: 'instituicoes', type: 'link', label: 'Instituições', to: '/rh/instituicoes', activePrefixes: ['/rh/instituicoes'] },
         ],
       },
-      rhUnavailable('variaveis-de-gestao-pessoas', 'Variaveis de Gestao'),
+      rhUnavailable('variaveis-de-gestao-pessoas', 'Variáveis de Gestão'),
     ],
   },
   {
     id: 'modulos-ativacao',
     type: 'group',
-    label: 'Modulos em Ativacao',
+    label: 'Módulos em Ativação',
     icon: Power,
     items: [
-      activation('tecnologia-da-informacao', 'Tec. da Informacao (ativar)'),
+      activation('tecnologia-da-informacao', 'Tec. da Informação (ativar)'),
       activation('desenvolvimento-institucional', 'Des. Institucional (ativar)'),
-      activation('central-de-servicos', 'Central de Servicos (ativar)'),
-      activation('internacionalizacao', 'Internacionalizacao (ativar)'),
+      activation('central-de-servicos', 'Central de Serviços (ativar)'),
+      activation('internacionalizacao', 'Internacionalização (ativar)'),
       activation('atividades-estudantis', 'Atividades Estudantis (ativar)'),
-      activation('comunicacao-social', 'Comunicacao Social (ativar)'),
-      activation('seguranca-institucional', 'Seguranca Institucional (ativar)'),
+      activation('comunicacao-social', 'Comunicação Social (ativar)'),
+      activation('seguranca-institucional', 'Segurança Institucional (ativar)'),
       activation('pesquisa', 'Pesquisa (ativar)'),
-      activation('extensao', 'Extensao (ativar)'),
+      activation('extensao', 'Extensão (ativar)'),
     ],
   },
 ]

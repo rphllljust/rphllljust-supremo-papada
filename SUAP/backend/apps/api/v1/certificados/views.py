@@ -31,6 +31,10 @@ from apps.certificados.services import (
     renderizar_html_certificado,
 )
 from apps.certificados.services.qrcode_service import gerar_qr_code_data_uri
+from apps.certificados.services.default_templates import (
+    DIPLOMA_IDEP_CSS,
+    DIPLOMA_IDEP_TEMPLATE,
+)
 from apps.matriculas.models import Matricula
 from apps.turmas.models import Turma
 from apps.usuarios.models import PerfilUsuario
@@ -85,6 +89,60 @@ def _montar_dados_documento(certificado):
     dados["codigo_validacao"] = certificado.codigo_validacao or dados.get("codigo_validacao", "")
     dados["hash_integridade"] = certificado.hash_integridade or dados.get("hash_integridade", "")
     return dados
+
+
+class ModeloCertificadoPresetsApiView(APIView):
+    """Retorna os presets de template disponíveis para seleção no frontend."""
+    permission_classes = [CanAccessModule]
+    module_name = "certificados"
+    access_surface = "api"
+    access_action = "view"
+
+    PRESETS = [
+        {
+            "id": "diploma_idep",
+            "nome": "Diploma IDEP-ETEC — Modelo Oficial",
+            "descricao": "Layout oficial com fundo pergaminho, borda ornamental verde, brasão de Rondônia e 3 colunas de assinatura.",
+            "tipo": "DIPLOMA",
+            "template_html": DIPLOMA_IDEP_TEMPLATE,
+            "stylesheet_css": DIPLOMA_IDEP_CSS,
+            "texto_certificado": (
+                "Certificamos que [nome_aluno], de nacionalidade [nacionalidade], "
+                "portador(a) do CPF n° [cpf_aluno] e RG n° [rg_aluno], nascido(a) em "
+                "[data_nascimento], residente e domiciliado(a) em [naturalidade], "
+                "concluiu com aproveitamento o Curso Profissionalizante em [curso_nome], "
+                "pertencente ao eixo tecnológico [eixo_tecnologico], com carga horária "
+                "total de [carga_horaria] horas, no ano de [data_conclusao], "
+                "fazendo jus ao presente diploma."
+            ),
+        },
+    ]
+
+    def get(self, request, *args, **kwargs):
+        resumo = [
+            {
+                "id": p["id"],
+                "nome": p["nome"],
+                "descricao": p["descricao"],
+                "tipo": p["tipo"],
+            }
+            for p in self.PRESETS
+        ]
+        return Response(resumo)
+
+
+class ModeloCertificadoPresetDetalheApiView(APIView):
+    """Retorna o conteúdo completo (html + css) de um preset pelo id."""
+    permission_classes = [CanAccessModule]
+    module_name = "certificados"
+    access_surface = "api"
+    access_action = "view"
+
+    def get(self, request, preset_id, *args, **kwargs):
+        for preset in ModeloCertificadoPresetsApiView.PRESETS:
+            if preset["id"] == preset_id:
+                return Response(preset)
+        return Response({"detail": "Preset não encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ModeloCertificadoListCreateApiView(generics.ListCreateAPIView):

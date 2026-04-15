@@ -124,13 +124,14 @@ class CertificadosQrCodeApiTests(APITestCase):
         self.assertEqual(response.data['tipo_documento'], 'DIPLOMA')
         self.assertEqual(response.data['numero_registro'], emissao.data['numero_registro'])
 
-    def test_bloqueio_de_duplicidade(self):
+    def test_emissao_duplicada_retorna_documento_ativo(self):
         primeira = self._emitir(tipo_documento='DIPLOMA')
         self.assertEqual(primeira.status_code, status.HTTP_201_CREATED)
 
         duplicada = self._emitir(tipo_documento='DIPLOMA')
-        self.assertEqual(duplicada.status_code, status.HTTP_409_CONFLICT)
-        self.assertIn('Ja existe documento ativo', duplicada.data['detail'])
+        self.assertEqual(duplicada.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(duplicada.data['id'], primeira.data['id'])
+        self.assertEqual(CertificadoEmitido.objects.count(), 1)
 
     def test_rascunho_existente_nao_bloqueia_emissao(self):
         CertificadoEmitido.objects.create(

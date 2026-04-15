@@ -141,9 +141,8 @@ def emitir_certificado(
 
     documento_existente = _obter_documento_ativo(matricula, tipo_doc)
     if documento_existente and not forcar_reemissao:
-        raise ValueError(
-            f"Ja existe documento ativo para esta matricula ({tipo_doc}): {documento_existente.numero_registro or documento_existente.numero_certificado}."
-        )
+        # Emissao idempotente: reutiliza o documento ativo para evitar conflito por duplicidade.
+        return documento_existente
 
     if forcar_reemissao and not referencia_reemissao:
         referencia_reemissao = documento_existente
