@@ -20,7 +20,7 @@ function unavailable(slug, label, extra = {}) {
     state: {
       title: label,
       status: extra.status || 'indisponivel',
-      description: extra.description || 'Este item do SUAP ainda nao foi integrado ao frontend React.',
+      description: extra.description || 'Este item do SUAP ainda não foi integrado ao frontend React.',
     },
   }
 }
@@ -28,7 +28,7 @@ function unavailable(slug, label, extra = {}) {
 function activation(slug, label) {
   return unavailable(slug, label, {
     status: 'ativacao',
-    description: 'Este modulo aparece no menu legado, mas ainda esta em fase de ativacao no frontend do SUAP.',
+    description: 'Este módulo aparece no menu legado, mas ainda está em fase de ativação no frontend do SUAP.',
   })
 }
 
@@ -43,7 +43,7 @@ function rhUnavailable(slug, label, extra = {}) {
     state: {
       title: label,
       status: extra.status || 'indisponivel',
-      description: extra.description || 'Esta funcionalidade de Gestao de Pessoas ainda nao foi implementada no frontend.',
+      description: extra.description || 'Esta funcionalidade de Gestão de Pessoas ainda não foi implementada no frontend.',
     },
   }
 }
