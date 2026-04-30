@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { formatCpf } from '@/utils/cpf'
+import { formatCpf, normalizeCpf } from '@/utils/cpf'
 import idepRoLogo from '@/assets/idep-ro-logo.png'
 import toast from 'react-hot-toast'
 
@@ -16,6 +16,12 @@ const PERFIL_OPTIONS = [
   { value: 'PROFESSOR', label: 'Professor' },
   { value: 'ADMIN', label: 'Administrador' },
 ]
+
+const DEV_DEFAULT_ADMIN = {
+  cpf: import.meta.env.VITE_DEV_ADMIN_CPF || '900.000.100-57',
+  password: import.meta.env.VITE_DEV_ADMIN_PASSWORD || 'admin',
+  perfil: 'ADMIN',
+}
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -28,7 +34,9 @@ export default function LoginPage() {
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm()
+  } = useForm({
+    defaultValues: import.meta.env.DEV ? DEV_DEFAULT_ADMIN : undefined,
+  })
 
   const cpfField = register('cpf', { required: 'Informe o CPF' })
 
@@ -50,7 +58,10 @@ export default function LoginPage() {
 
   const onSubmit = async (formData) => {
     try {
-      const authenticatedUser = await login(formData)
+      const authenticatedUser = await login({
+        ...formData,
+        cpf: normalizeCpf(formData.cpf),
+      })
       toast.success('Login realizado com sucesso!')
       navigate(authenticatedUser?.must_change_password ? '/comum/alterar-senha' : nextPath, { replace: true })
     } catch (err) {
@@ -103,7 +114,7 @@ export default function LoginPage() {
             <select
               id="perfil"
               className="select"
-              defaultValue="SECRETARIA"
+              defaultValue={import.meta.env.DEV ? DEV_DEFAULT_ADMIN.perfil : 'SECRETARIA'}
               {...register('perfil', { required: 'Selecione o perfil' })}
               aria-invalid={!!errors.perfil}
             >
