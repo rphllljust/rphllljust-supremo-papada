@@ -33,7 +33,6 @@ const HistoricosPage = lazy(() => import('@/pages/documentos/HistoricosPage'))
 const HistoricoValidacaoPublicaPage = lazy(() => import('@/pages/documentos/HistoricoValidacaoPublicaPage'))
 const HistoricosDigitaisPage = lazy(() => import('@/pages/documentos/HistoricosDigitaisPage'))
 const GuiasTransferenciaPage = lazy(() => import('@/pages/documentos/GuiasTransferenciaPage'))
-const HipotesesLegaisPage = lazy(() => import('@/pages/documentos/HipotesesLegaisPage'))
 const CertificadosPage = lazy(() => import('@/pages/certificados/CertificadosPage'))
 const ModelosCertificadosPage = lazy(() => import('@/pages/certificados/ModelosCertificadosPage'))
 const ValidacaoCertificadoPage = lazy(() => import('@/pages/certificados/ValidacaoCertificadoPage'))
@@ -251,9 +250,6 @@ export default function App() {
                   <Route path="/documentos/historicos-digitais" element={<RouteShell><HistoricosDigitaisPage /></RouteShell>} />
                   <Route path="/documentos/guias" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
                   <Route path="/documentos/guias/nova" element={<RouteShell><GuiasTransferenciaPage /></RouteShell>} />
-                  <Route path="/documentos/hipoteses-legais" element={<RouteShell><HipotesesLegaisPage /></RouteShell>} />
-                  <Route path="/hipoteses-legais" element={<Navigate to="/documentos/hipoteses-legais" replace />} />
-                  <Route path="/documentos/hipoteses_legais" element={<Navigate to="/documentos/hipoteses-legais" replace />} />
                   <Route path="/certificados" element={<RouteShell><CertificadosPage /></RouteShell>} />
                   <Route path="/ensino/certificados" element={<Navigate to="/certificados" replace />} />
                   <Route path="/certificados/modelos" element={<RouteShell><ModelosCertificadosPage /></RouteShell>} />

@@ -94,13 +94,6 @@ export const sidebarItems = [
             label: 'Cadastros',
             items: [
               unavailable('documentos-eletronicos-classificacoes', 'Classificações'),
-              {
-                id: 'documentos-eletronicos-hipoteses-legais',
-                type: 'link',
-                label: 'Hipóteses Legais',
-                to: '/documentos/hipoteses-legais',
-                activePrefixes: ['/documentos/hipoteses-legais'],
-              },
               unavailable('documentos-eletronicos-modelos', 'Modelos'),
               unavailable('documentos-eletronicos-tipos-conferencia', 'Tipos de Conferência'),
               unavailable('documentos-eletronicos-tipos-documentos-externos', 'Tipos de Documentos Externos'),

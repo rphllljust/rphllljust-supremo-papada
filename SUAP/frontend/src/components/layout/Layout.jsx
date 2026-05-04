@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { Bell, ChevronDown, LogOut, Search, User } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Menu, Search, User } from 'lucide-react'
 import { notificacoesApi } from '@/api/endpoints'
 import { sidebarItems } from '@/components/layout/sidebarItems'
 import idepRoLogo from '@/assets/idep-ro-logo.png'
@@ -506,6 +506,7 @@ export default function Layout() {
   const location = useLocation()
   const [openGroups, setOpenGroups] = useState({})
   const [menuQuery, setMenuQuery] = useState('')
+  const [topbarSearch, setTopbarSearch] = useState('')
   const [quickAccessItems, setQuickAccessItems] = useState([])
 
   const normalizedQuery = normalizeText(menuQuery)
@@ -578,17 +579,6 @@ export default function Layout() {
     () => buildBreadcrumbItems(location.pathname, location.state, enabledSidebarItems),
     [enabledSidebarItems, location.pathname, location.state],
   )
-  const currentSectionLabel = breadcrumbItems[breadcrumbItems.length - 1]?.label || 'Dashboard'
-  const currentDateLabel = useMemo(() => {
-    const formatted = new Intl.DateTimeFormat('pt-BR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date())
-
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
-  }, [])
 
   return (
     <div className="layout layout--legacy">
@@ -681,27 +671,36 @@ export default function Layout() {
       <div className="workspace">
         <main className="main-content">
           <header className="workspace-topbar">
-            <div className="workspace-topbar__copy">
-              <span className="workspace-topbar__eyebrow">Sistema administrativo</span>
-              <h1 className="workspace-topbar__title">{currentSectionLabel}</h1>
-              <span className="workspace-topbar__subtitle">{currentDateLabel}</span>
+            <div className="workspace-topbar__left">
+              <button className="workspace-topbar__menu" type="button" aria-label="Abrir menu">
+                <Menu size={18} />
+              </button>
+              <label className="workspace-topbar__search" aria-label="Buscar no sistema">
+                <Search size={16} />
+                <input
+                  type="search"
+                  value={topbarSearch}
+                  onChange={(event) => setTopbarSearch(event.target.value)}
+                  placeholder="Buscar no sistema..."
+                />
+              </label>
             </div>
-            <div className="workspace-topbar__actions">
+            <div className="workspace-topbar__right">
               <NavLink
                 to="/comum/notificacoes"
-                className={({ isActive }) => `workspace-topbar__action ${isActive ? 'workspace-topbar__action--active' : ''}`}
+                className={({ isActive }) => `workspace-topbar__icon-btn ${isActive ? 'workspace-topbar__icon-btn--active' : ''}`}
+                aria-label="Notificacoes"
               >
-                <Bell size={16} />
-                <span>Notificações</span>
+                <Bell size={18} />
                 {unreadNotifications > 0 ? <strong>{unreadNotifications > 99 ? '99+' : unreadNotifications}</strong> : null}
               </NavLink>
-              <NavLink
-                to="/comum/minha_conta/"
-                end
-                className={({ isActive }) => `workspace-topbar__action ${isActive ? 'workspace-topbar__action--active' : ''}`}
-              >
-                <User size={16} />
-                <span>Minha conta</span>
+              <NavLink to="/comum/minha_conta/" end className="workspace-topbar__profile" aria-label="Minha conta">
+                <span className="workspace-topbar__profile-avatar">{getUserInitials(user)}</span>
+                <span className="workspace-topbar__profile-copy">
+                  <strong>{user?.nome_completo || user?.username}</strong>
+                  <span>{user?.tipo_display || 'Usuario autenticado'}</span>
+                </span>
+                <User size={15} />
               </NavLink>
             </div>
           </header>
@@ -726,3 +725,4 @@ export default function Layout() {
     </div>
   )
 }
+
