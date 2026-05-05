@@ -70,8 +70,12 @@
       - -c
       - |
         npm ci
-        npm run dev -- --host 0.0.0.0 --port 5173 --force
+        npm run dev -- --host 0.0.0.0 --port 5173
 
 volumes:
   frontend_node_modules:
+
+
+
+
 

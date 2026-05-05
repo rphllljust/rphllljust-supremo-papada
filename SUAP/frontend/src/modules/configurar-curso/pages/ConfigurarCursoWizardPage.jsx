@@ -192,7 +192,7 @@ export default function ConfigurarCursoWizardPage() {
         {errorMessage ? <AlertMessage type="error" message={errorMessage} /> : null}
 
         <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[1fr_260px]">
-          <div className="min-h-[280px]">
+          <div className="min-h-[360px]">
             {currentStep.key === 'estrutura' ? (
               <EtapaEstruturaCurso
                 selectedEstruturaId={selectedEstruturaId}

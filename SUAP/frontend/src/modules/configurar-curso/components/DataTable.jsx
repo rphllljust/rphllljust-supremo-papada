@@ -32,7 +32,7 @@
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length + (rowActions ? 1 : 0)} className="px-3 py-3 text-center text-slate-500">
+                <td colSpan={columns.length + (rowActions ? 1 : 0)} className="px-3 py-8 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
