@@ -278,6 +278,36 @@ function pruneDisabledSidebarItems(items) {
   }, [])
 }
 
+function getUserProfile(user) {
+  return String(user?.tipo || user?.perfil || '').toUpperCase()
+}
+
+function filterByProfile(items, user) {
+  const profile = getUserProfile(user)
+
+  return (items || []).reduce((acc, item) => {
+    if (!item) return acc
+
+    if (Array.isArray(item.profiles) && item.profiles.length > 0 && !item.profiles.includes(profile)) {
+      return acc
+    }
+
+    if (!item.items?.length) {
+      acc.push(item)
+      return acc
+    }
+
+    const children = filterByProfile(item.items, user)
+    if (children.length === 0) {
+      return acc
+    }
+
+    acc.push({ ...item, items: children })
+    return acc
+  }, [])
+}
+
+
 function filterSidebarItems(items, query, forcedOpenIds) {
   if (!query) {
     return items
@@ -512,7 +542,7 @@ export default function Layout() {
 
   const normalizedQuery = normalizeText(menuQuery)
   const forcedOpenIds = new Set()
-  const baseSidebarItems = useMemo(() => pruneDisabledSidebarItems(sidebarItems), [])
+  const baseSidebarItems = useMemo(() => filterByProfile(pruneDisabledSidebarItems(sidebarItems), user), [user])
   const enabledSidebarItems = useMemo(() => baseSidebarItems.map((item) => {
     if (item.id !== 'acesso-rapido') {
       return item
@@ -741,4 +771,5 @@ export default function Layout() {
     </div>
   )
 }
+
 

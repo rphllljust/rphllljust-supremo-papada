@@ -3,7 +3,7 @@ from rest_framework import generics
 
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
-from apps.matriculas.models import Transferencia
+from apps.matriculas.models import EtapaFluxoTransferencia, FluxoTransferencia, Transferencia
 
 from .serializers import TransferenciaSerializer
 
@@ -59,6 +59,23 @@ class TransferenciaListApiView(generics.ListCreateAPIView):
             )
 
         return queryset.distinct()
+
+    def perform_create(self, serializer):
+        transferencia = serializer.save()
+        fluxo, created = FluxoTransferencia.objects.get_or_create(
+            transferencia=transferencia,
+            defaults={
+                "matricula": transferencia.matricula,
+                "etapa_atual": "SOLICITACAO",
+            },
+        )
+        if created:
+            EtapaFluxoTransferencia.objects.create(
+                fluxo=fluxo,
+                etapa=fluxo.etapa_atual,
+                responsavel=self.request.user if self.request.user.is_authenticated else None,
+                observacao="Fluxo de transferencia iniciado automaticamente na criacao da transferencia.",
+            )
 
 
 class TransferenciaDetailApiView(generics.RetrieveUpdateDestroyAPIView):

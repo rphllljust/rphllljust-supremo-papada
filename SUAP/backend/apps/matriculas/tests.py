@@ -1,12 +1,13 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 
 from apps.cursos.models import Curso
 from apps.turmas.models import Turma
 from apps.unidades.models import Unidade
 from apps.usuarios.models import Usuario
 
-from .models import Matricula
+from .models import DependenciaAcademica, Matricula
 
 
 class MatriculaCrudTests(TestCase):
@@ -71,3 +72,83 @@ class MatriculaCrudTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Matricula.objects.filter(pk=matricula.pk).exists())
+
+    def test_block_new_active_enrollment_when_student_has_active_in_other_course(self):
+        outro_curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900)
+        outra_turma = Turma.objects.create(
+            curso=outro_curso,
+            nome="LOG-1",
+            ano_letivo=2026,
+            professor_responsavel=self.professor,
+            status="ATIVA",
+        )
+
+        Matricula.objects.create(
+            aluno=self.aluno,
+            curso=self.curso,
+            turma=self.turma,
+            status="ATIVA",
+            tipo_matricula="NOVA",
+        )
+
+        nova = Matricula(
+            aluno=self.aluno,
+            curso=outro_curso,
+            turma=outra_turma,
+            status="ATIVA",
+            tipo_matricula="NOVA",
+        )
+
+        with self.assertRaises(ValidationError) as exc:
+            nova.full_clean()
+
+        self.assertIn("aluno", exc.exception.message_dict)
+
+    def test_blocks_tecnico_enrollment_when_course_workload_invalid(self):
+        curso_tecnico = Curso.objects.create(
+            unidade=self.unidade,
+            nome="Tecnico Sem Carga",
+            carga_horaria=0,
+            tipo_curso="tecnico",
+        )
+        turma_tecnica = Turma.objects.create(
+            curso=curso_tecnico,
+            nome="TEC-0",
+            ano_letivo=2026,
+            professor_responsavel=self.professor,
+            status="ATIVA",
+        )
+
+        matricula = Matricula(
+            aluno=self.aluno,
+            curso=curso_tecnico,
+            turma=turma_tecnica,
+            status="TRANCADA",
+            tipo_matricula="NOVA",
+        )
+
+        with self.assertRaises(ValidationError) as exc:
+            matricula.full_clean()
+
+        self.assertIn("curso", exc.exception.message_dict)
+
+    def test_blocks_status_concluida_when_has_active_dependency(self):
+        matricula = Matricula.objects.create(
+            aluno=self.aluno,
+            curso=self.curso,
+            turma=self.turma,
+            status="ATIVA",
+            tipo_matricula="NOVA",
+        )
+        DependenciaAcademica.objects.create(
+            matricula=matricula,
+            componente="Matematica Basica",
+            status="ATIVA",
+            motivo="NOTA",
+        )
+
+        matricula.status = "CONCLUIDA"
+        with self.assertRaises(ValidationError) as exc:
+            matricula.full_clean()
+
+        self.assertIn("status", exc.exception.message_dict)

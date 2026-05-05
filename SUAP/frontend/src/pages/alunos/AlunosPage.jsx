@@ -9,7 +9,7 @@ import { alunosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
 import EntityFormPanel from '@/components/ui/EntityFormPanel'
-import { formatCpf, normalizeCpf } from '@/utils/cpf'
+import { formatCpf, normalizeCpf, validateCpf } from '@/utils/cpf'
 
 const SITUACAO_OPTIONS = [
   { value: 'ATIVO', label: 'Ativo' },
@@ -75,7 +75,11 @@ export default function AlunosPage() {
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
-  const cpfField = register('cpf', { required: 'Informe o CPF' })
+  // T017: validação dos dígitos verificadores do CPF no frontend
+  const cpfField = register('cpf', {
+    required: 'Informe o CPF',
+    validate: (value) => validateCpf(value) || 'CPF inválido. Verifique os dígitos informados.',
+  })
 
   const handleCpfChange = (event) => {
     const formattedValue = formatCpf(event.target.value)

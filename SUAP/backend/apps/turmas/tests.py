@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from apps.cursos.models import Curso
@@ -84,6 +85,23 @@ class TurmaCrudTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Turma.objects.filter(pk=turma.pk).exists())
+
+    def test_remote_turma_must_be_sede(self):
+        unidade_rio_branco, _ = Unidade.objects.get_or_create(codigo="rio_branco", defaults={"nome": "Rio Branco"})
+        curso_rio_branco = Curso.objects.create(unidade=unidade_rio_branco, nome="Logistica Remota", carga_horaria=800)
+
+        turma = Turma(
+            curso=curso_rio_branco,
+            nome="REM-2026-RB",
+            ano_letivo=2026,
+            modalidade="REMOTO",
+            professor_responsavel=self.professor,
+        )
+
+        with self.assertRaises(ValidationError) as exc:
+            turma.full_clean()
+
+        self.assertIn("modalidade", exc.exception.message_dict)
 
 
 class TurmaApiListTests(TestCase):

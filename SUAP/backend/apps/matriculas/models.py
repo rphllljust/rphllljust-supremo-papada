@@ -1,3 +1,5 @@
+import os
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -5,6 +7,25 @@ from django.db import models
 from apps.cursos.models import Curso
 from apps.turmas.models import Turma
 from apps.usuarios.models import PerfilUsuario
+
+# T048/T059: tipos permitidos e limite de tamanho para uploads
+_EXTENSOES_PERMITIDAS = {'.pdf', '.jpg', '.jpeg', '.png'}
+_TAMANHO_MAXIMO_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def validar_arquivo_documento(arquivo):
+    """Valida extensão e tamanho do arquivo de documento."""
+    ext = os.path.splitext(arquivo.name)[1].lower()
+    if ext not in _EXTENSOES_PERMITIDAS:
+        raise ValidationError(
+            f"Tipo de arquivo nao permitido: '{ext}'. "
+            f"Use: {', '.join(sorted(_EXTENSOES_PERMITIDAS))}."
+        )
+    if arquivo.size > _TAMANHO_MAXIMO_BYTES:
+        raise ValidationError(
+            f"Arquivo muito grande: {arquivo.size / 1024 / 1024:.1f} MB. "
+            f"Limite: {_TAMANHO_MAXIMO_BYTES // 1024 // 1024} MB."
+        )
 
 
 class Matricula(models.Model):
@@ -14,6 +35,11 @@ class Matricula(models.Model):
         ('CANCELADA', 'Cancelada'),
         ('CONCLUIDA', 'Concluída'),
     )
+
+    # T107: versioning para controle de concorrência otimista.
+    # O campo é incrementado automaticamente a cada save e deve ser enviado
+    # pelo cliente nas requisições de edição para detectar conflitos.
+    version = models.PositiveIntegerField(default=0, verbose_name='Versão')
 
     TRANSICOES_STATUS = {
         'ATIVA': {'TRANCADA', 'CANCELADA', 'CONCLUIDA'},
@@ -55,6 +81,34 @@ class Matricula(models.Model):
         if self.curso_id and self.turma_id and self.turma.curso_id != self.curso_id:
             raise ValidationError({'turma': 'A turma selecionada nao pertence ao curso informado.'})
 
+        if self.curso_id and (self.curso.tipo_curso or "").strip().lower() == "tecnico":
+            if (self.curso.carga_horaria or 0) <= 0:
+                raise ValidationError(
+                    {
+                        'curso': (
+                            'Curso tecnico com carga horaria invalida. '
+                            'Configure carga horaria maior que zero antes de matricular.'
+                        )
+                    }
+                )
+
+        if self.aluno_id and self.curso_id and self.status == 'ATIVA':
+            ativos_outro_curso = Matricula.objects.filter(
+                aluno_id=self.aluno_id,
+                status='ATIVA',
+            ).exclude(curso_id=self.curso_id)
+            if self.pk:
+                ativos_outro_curso = ativos_outro_curso.exclude(pk=self.pk)
+            if ativos_outro_curso.exists():
+                raise ValidationError(
+                    {
+                        'aluno': (
+                            'Aluno ja possui matricula ativa em outro curso. '
+                            'Finalize, cancele ou tranque a matricula ativa antes de continuar.'
+                        )
+                    }
+                )
+
         if not self.pk:
             return
 
@@ -66,10 +120,23 @@ class Matricula(models.Model):
         if self.status not in permitidos:
             raise ValidationError({'status': f'Transicao de status invalida: {original} -> {self.status}.'})
 
+        if self.status == 'CONCLUIDA':
+            possui_dependencia_ativa = self.dependencias.filter(status='ATIVA').exists()
+            if possui_dependencia_ativa:
+                raise ValidationError(
+                    {
+                        'status': (
+                            'Nao e permitido concluir a matricula com pre-requisitos/dependencias academicas em aberto.'
+                        )
+                    }
+                )
+
     def save(self, *args, **kwargs):
         if not self.numero_matricula:
             self.numero_matricula = self._gerar_numero_matricula()
         self.full_clean()
+        # T107: locking otimista — incrementa versão a cada gravação
+        self.version = (self.version or 0) + 1
         return super().save(*args, **kwargs)
 
     def _gerar_numero_matricula(self):
@@ -146,7 +213,13 @@ class DocumentoMatricula(models.Model):
     entregue = models.BooleanField(default=False, verbose_name='Entregue')
     data_entrega = models.DateField(null=True, blank=True, verbose_name='Data de Entrega')
     data_recebimento = models.DateField(null=True, blank=True, verbose_name='Data de Recebimento')
-    arquivo = models.FileField(upload_to='matriculas/documentos/', null=True, blank=True, verbose_name='Arquivo')
+    arquivo = models.FileField(
+        upload_to='matriculas/documentos/',
+        null=True,
+        blank=True,
+        verbose_name='Arquivo',
+        validators=[validar_arquivo_documento],
+    )
     validado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -196,6 +269,25 @@ class DocumentoMatricula(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_documento_display()} - {self.matricula} [{self.get_status_display()}]"
+
+
+class DocumentoObrigatorioCurso(models.Model):
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="documentos_obrigatorios")
+    tipo_documento = models.CharField(
+        max_length=40,
+        choices=DocumentoMatricula.TIPO_DOCUMENTO_CHOICES,
+        verbose_name="Tipo de Documento",
+    )
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+
+    class Meta:
+        verbose_name = "Documento Obrigatorio por Curso"
+        verbose_name_plural = "Documentos Obrigatorios por Curso"
+        unique_together = ("curso", "tipo_documento")
+        ordering = ["curso__nome", "tipo_documento"]
+
+    def __str__(self):
+        return f"{self.curso.nome} - {self.get_tipo_documento_display()}"
 
 
 class PendenciaDocumental(models.Model):
@@ -318,6 +410,12 @@ class TermoAssinado(models.Model):
 # ── UC03 – Transferência (Entrada/Saída) ─────────────────────────────────────
 
 class Transferencia(models.Model):
+    TRANSICOES_STATUS = {
+        'SOLICITADA': {'APROVADA', 'CANCELADA'},
+        'APROVADA': {'CONCLUIDA', 'CANCELADA'},
+        'CONCLUIDA': set(),
+        'CANCELADA': set(),
+    }
     TIPO_CHOICES = (
         ('ENTRADA', 'Entrada'),
         ('SAIDA',   'Saída'),
@@ -350,6 +448,17 @@ class Transferencia(models.Model):
             raise ValidationError({'escola_origem': 'Informe a escola de origem para transferência de entrada.'})
         if self.tipo == 'SAIDA' and not self.escola_destino:
             raise ValidationError({'escola_destino': 'Informe a escola de destino para transferência de saída.'})
+
+        if not self.pk:
+            return
+
+        original = Transferencia.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+        if not original or original == self.status:
+            return
+
+        permitidos = self.TRANSICOES_STATUS.get(original, set())
+        if self.status not in permitidos:
+            raise ValidationError({'status': f'Transicao de status invalida: {original} -> {self.status}.'})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -1439,3 +1548,4 @@ class EtapaFluxoTransferencia(models.Model):
 
     def __str__(self):
         return f'{self.fluxo} → {self.etapa} ({self.data:%d/%m/%Y %H:%M})'
+

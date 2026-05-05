@@ -3,6 +3,7 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework import viewsets
 
@@ -33,11 +34,29 @@ class AlunoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user
         search = self.request.query_params.get("search", "").strip()
         situacao = self.request.query_params.get("situacao", "").strip()
+        turma_id = self.request.query_params.get("turma", "").strip()
 
-        if situacao:
+        # T010: por padrão exclui inativos, a menos que seja solicitado explicitamente
+        if not situacao:
+            queryset = queryset.filter(pessoa__aluno__situacao="ATIVO")
+        else:
             queryset = queryset.filter(pessoa__aluno__situacao=situacao)
+
+        # T092/T093: professor vê apenas alunos das suas turmas
+        if getattr(user, "tipo", None) == PerfilUsuario.PROFESSOR:
+            queryset = queryset.filter(
+                matriculas__turma__professor_responsavel=user,
+                matriculas__status="ATIVA",
+            )
+
+        if turma_id:
+            queryset = queryset.filter(
+                matriculas__turma_id=turma_id,
+                matriculas__status="ATIVA",
+            )
 
         if search:
             queryset = queryset.filter(
@@ -58,8 +77,15 @@ class AlunoViewSet(viewsets.ModelViewSet):
             self.access_action = "view"
         return super().get_permissions()
 
-    @transaction.atomic
     def perform_destroy(self, instance):
+        # T096: exclusão restrita ao perfil ADMIN
+        user = self.request.user
+        if getattr(user, "tipo", None) != PerfilUsuario.ADMIN:
+            raise PermissionDenied("Apenas administradores podem excluir cadastros de alunos.")
+        self._destroy_with_cleanup(instance)
+
+    @transaction.atomic
+    def _destroy_with_cleanup(self, instance):
         pessoa = instance.pessoa
         instance.delete()
         if pessoa:

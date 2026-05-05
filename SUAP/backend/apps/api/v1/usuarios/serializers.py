@@ -6,6 +6,7 @@ Usuario = get_user_model()
 
 class UsuarioSerializer(serializers.ModelSerializer):
     nome_completo = serializers.SerializerMethodField()
+    email = serializers.EmailField(required=False, allow_blank=True)
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
 
     class Meta:

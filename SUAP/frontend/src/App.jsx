@@ -76,6 +76,7 @@ const MoodleCategoriasPanel = lazy(() => import('@/pages/cursos/MoodleCategorias
 const MoodleCategoriasCursosPanel = lazy(() => import('@/pages/cursos/MoodleCategoriasCursosPanel'))
 const MoodleSettingsPage = lazy(() => import('@/pages/cursos/MoodleSettingsPage'))
 const GoogleSheetsReadModulePage = lazy(() => import('@/pages/integracoes/GoogleSheetsReadModulePage'))
+const FinanceiroPage = lazy(() => import('@/pages/financeiro/FinanceiroPage'))
 const AtaProfessoresPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresPage'))
 const AtaProfessoresAssistantPage = lazy(() => import('@/pages/ata-professores/AtaProfessoresAssistantPage'))
 const AlunosPage     = lazy(() => import('@/pages/alunos/AlunosPage'))
@@ -356,6 +357,8 @@ export default function App() {
                   <Route path="/ti/moodle/configuracoes/" element={<RouteShell><MoodleSettingsPage /></RouteShell>} />
                   <Route path="/ti/integracoes/google-sheets" element={<RouteShell><GoogleSheetsReadModulePage /></RouteShell>} />
                   <Route path="/ti/integracoes/google-sheets/" element={<RouteShell><GoogleSheetsReadModulePage /></RouteShell>} />
+                  <Route path="/financeiro" element={<RouteShell><FinanceiroPage /></RouteShell>} />
+                  <Route path="/financeiro/" element={<RouteShell><FinanceiroPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/" element={<RouteShell><ComponenteDetailPage /></RouteShell>} />
                   <Route path="/ensino/componentes/:componenteId/editar" element={<RouteShell><ComponenteEditPage /></RouteShell>} />

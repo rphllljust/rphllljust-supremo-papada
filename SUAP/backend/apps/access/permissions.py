@@ -7,6 +7,13 @@ STAFF_MANAGE = (PerfilUsuario.SECRETARIA, PerfilUsuario.ADMIN)
 TEACHING_VIEW = (PerfilUsuario.SECRETARIA, PerfilUsuario.COORDENACAO, PerfilUsuario.PROFESSOR, PerfilUsuario.ADMIN)
 TEACHING_MANAGE = (PerfilUsuario.SECRETARIA, PerfilUsuario.COORDENACAO, PerfilUsuario.PROFESSOR, PerfilUsuario.ADMIN)
 
+# T090: módulo financeiro restrito ao perfil ADMIN e COORDENACAO — Secretaria não acessa
+FINANCEIRO_VIEW = (PerfilUsuario.COORDENACAO, PerfilUsuario.ADMIN)
+FINANCEIRO_MANAGE = (PerfilUsuario.ADMIN,)
+
+# T096: exclusão de cadastros restrita ao ADMIN
+ADMIN_DELETE = (PerfilUsuario.ADMIN,)
+
 
 ACCESS_MATRIX = {
     "dashboard": {
@@ -45,12 +52,27 @@ ACCESS_MATRIX = {
         "web": {
             "view": STAFF_VIEW,
             "manage": STAFF_MANAGE,
+            # T096: exclusão apenas pelo ADMIN
+            "delete": ADMIN_ONLY,
         },
         "api": {
             "view": STAFF_VIEW,
+            "manage": STAFF_MANAGE,
+            "delete": ADMIN_ONLY,
         },
         "api_ava": {
             "export": STAFF_VIEW,
+        },
+    },
+    # T090: financeiro não exposto para SECRETARIA
+    "financeiro": {
+        "web": {
+            "view": FINANCEIRO_VIEW,
+            "manage": FINANCEIRO_MANAGE,
+        },
+        "api": {
+            "view": FINANCEIRO_VIEW,
+            "manage": FINANCEIRO_MANAGE,
         },
     },
     "servidores": {

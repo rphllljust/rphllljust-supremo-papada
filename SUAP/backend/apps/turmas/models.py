@@ -5,12 +5,37 @@ from apps.cursos.models import Curso
 from apps.usuarios.models import PerfilUsuario
 
 
+class Polo(models.Model):
+    """Localidade/polo de atendimento para turmas itinerantes."""
+
+    nome = models.CharField(max_length=120, verbose_name='Nome do Polo')
+    municipio = models.CharField(max_length=100, verbose_name='Município')
+    uf = models.CharField(max_length=2, default='RO', verbose_name='UF')
+    endereco = models.CharField(max_length=255, blank=True, default='', verbose_name='Endereço')
+    ativo = models.BooleanField(default=True, verbose_name='Ativo')
+
+    class Meta:
+        verbose_name = 'Polo'
+        verbose_name_plural = 'Polos'
+        ordering = ['municipio', 'nome']
+
+    def __str__(self):
+        return f'{self.nome} — {self.municipio}/{self.uf}'
+
+
 class Turma(models.Model):
     STATUS_CHOICES = (
         ('PLANEJADA', 'Planejada'),
         ('ATIVA', 'Ativa'),
         ('ENCERRADA', 'Encerrada'),
         ('CANCELADA', 'Cancelada'),
+    )
+
+    MODALIDADE_CHOICES = (
+        ('PRESENCIAL', 'Presencial'),
+        ('REMOTO', 'Remoto'),
+        ('ITINERANTE', 'Itinerante'),
+        ('HIBRIDO', 'Híbrido'),
     )
 
     TRANSICOES_STATUS = {
@@ -24,6 +49,28 @@ class Turma(models.Model):
     nome = models.CharField(max_length=100)
     ano_letivo = models.PositiveIntegerField()
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='PLANEJADA')
+    modalidade = models.CharField(
+        max_length=15,
+        choices=MODALIDADE_CHOICES,
+        default='PRESENCIAL',
+        verbose_name='Modalidade',
+    )
+    capacidade_maxima = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Capacidade Máxima',
+        help_text='Deixe em branco para sem limite.',
+    )
+    # T033: polo obrigatório para turmas itinerantes
+    polo = models.ForeignKey(
+        Polo,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='turmas',
+        verbose_name='Polo/Localidade',
+        help_text='Obrigatório para turmas com modalidade Itinerante.',
+    )
     professor_responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -34,16 +81,34 @@ class Turma(models.Model):
     )
 
     def clean(self):
+        errors = {}
+
+        if self.modalidade == "REMOTO":
+            unidade_codigo = ((getattr(self.curso, "unidade", None) and self.curso.unidade.codigo) or "").strip().lower()
+            if unidade_codigo != "sede":
+                errors["modalidade"] = "Turmas remotas devem estar vinculadas a cursos da unidade Sede."
+
+        # T033: polo obrigatório para turmas itinerantes
+        if self.modalidade == "ITINERANTE" and not self.polo_id:
+            errors["polo"] = "Polo/localidade é obrigatório para turmas itinerantes."
+
         if not self.pk:
+            if errors:
+                raise ValidationError(errors)
             return
 
         original = Turma.objects.filter(pk=self.pk).values_list('status', flat=True).first()
         if not original or original == self.status:
+            if errors:
+                raise ValidationError(errors)
             return
 
         permitidos = self.TRANSICOES_STATUS.get(original, set())
         if self.status not in permitidos:
-            raise ValidationError({'status': f'Transicao de status invalida: {original} -> {self.status}.'})
+            errors["status"] = f'Transicao de status invalida: {original} -> {self.status}.'
+
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -62,9 +127,22 @@ class DiarioAcademico(models.Model):
         ('REVISAO', 'Em Revisão'),
     )
 
+    # T037/T042: tipo de encontro para distinção entre presencial, online e itinerante
+    TIPO_AULA_CHOICES = (
+        ('REGULAR', 'Regular'),
+        ('ONLINE', 'Online'),
+        ('ENCONTRO_ITINERANTE', 'Encontro Itinerante'),
+    )
+
     turma                 = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='diarios', verbose_name='Turma')
     periodo               = models.CharField(max_length=50, verbose_name='Período (ex: 2025/1)')
     componente_curricular = models.CharField(max_length=100, blank=True, default='', verbose_name='Componente Curricular')
+    tipo_aula             = models.CharField(
+        max_length=20,
+        choices=TIPO_AULA_CHOICES,
+        default='REGULAR',
+        verbose_name='Tipo de Aula',
+    )
     data_abertura         = models.DateField(auto_now_add=True, verbose_name='Data de Abertura')
     data_fechamento       = models.DateField(null=True, blank=True, verbose_name='Data de Fechamento')
     status                = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ABERTO', verbose_name='Status')

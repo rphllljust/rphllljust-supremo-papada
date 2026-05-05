@@ -7,8 +7,11 @@ class Unidade(models.Model):
     FIXED_UNITS = (
         ("sede", "Sede"),
         ("rio_branco", "Rio Branco"),
-        ("flora", "Flora"),
+        ("flora_calheiros", "Flora Calheiros"),
     )
+    LEGACY_CODE_ALIASES = {
+        "flora": "flora_calheiros",
+    }
     FIXED_CODES = {code for code, _ in FIXED_UNITS}
     CODE_TO_NAME = dict(FIXED_UNITS)
 
@@ -20,6 +23,7 @@ class Unidade(models.Model):
 
     def clean(self):
         self.codigo = (self.codigo or "").strip().lower()
+        self.codigo = self.LEGACY_CODE_ALIASES.get(self.codigo, self.codigo)
         expected_name = self.CODE_TO_NAME.get(self.codigo)
         if expected_name is None:
             raise ValidationError({"codigo": "Codigo de unidade invalido."})

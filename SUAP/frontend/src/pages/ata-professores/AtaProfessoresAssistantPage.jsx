@@ -896,14 +896,24 @@ ${assinaturasText}`
                     </div>
                     <div className="form-field">
                       <label>Arquivo (opcional)</label>
-                      <input type="file" onChange={(event) => {
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => {
                         const file = event.target.files?.[0] || null
-                        const next = anexos.map((attachment, attachmentIndex) => (
-                          attachmentIndex === index
-                            ? { ...attachment, file, arquivo_nome: file?.name || attachment.arquivo_nome }
-                            : attachment
-                        ))
-                        setAnexos(next)
+                        if (file) {
+                          import('@/utils/fileValidation').then(({ validateUploadFile }) => {
+                            const { valid, error } = validateUploadFile(file)
+                            if (!valid) {
+                              event.target.value = ''
+                              toast.error(error)
+                              return
+                            }
+                            const next = anexos.map((attachment, attachmentIndex) => (
+                              attachmentIndex === index
+                                ? { ...attachment, file, arquivo_nome: file.name }
+                                : attachment
+                            ))
+                            setAnexos(next)
+                          })
+                        }
                       }} disabled={isReadOnly} />
                       {item.arquivo_nome ? (
                         <span className="assistant-attachment-name">

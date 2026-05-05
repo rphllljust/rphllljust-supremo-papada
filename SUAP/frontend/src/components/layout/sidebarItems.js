@@ -9,6 +9,9 @@
   Power,
 } from 'lucide-react'
 
+const TEACHING_VIEW = ['SECRETARIA', 'COORDENACAO', 'PROFESSOR', 'ADMIN']
+const STAFF_VIEW = ['SECRETARIA', 'COORDENACAO', 'ADMIN']
+
 function unavailable(slug, label, extra = {}) {
   return {
     id: slug,
@@ -62,6 +65,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Acesso Rápido',
     icon: Rocket,
+    profiles: TEACHING_VIEW,
     items: [
       { id: 'cursos', type: 'link', label: 'Cursos', to: '/ensino/cursoinicial/' },
       { id: 'turmas', type: 'link', label: 'Turmas', to: '/turmas' },
@@ -78,6 +82,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Documentos e Processos',
     icon: FileText,
+    profiles: STAFF_VIEW,
     items: [
       {
         id: 'documentos-eletronicos',
@@ -131,8 +136,10 @@ export const sidebarItems = [
     type: 'group',
     label: 'Gestão e Sistema',
     icon: Settings,
+    profiles: STAFF_VIEW,
     items: [
       { id: 'programa-gestao', type: 'link', label: 'Programa de Gestão', to: '/dashboard' },
+      { id: 'financeiro', type: 'link', label: 'Financeiro', to: '/financeiro', activePrefixes: ['/financeiro'] },
       unavailable('administracao', 'Administração', {
         description: 'O acesso ao Django admin foi bloqueado dentro deste frontend. Use uma tela interna quando ela for portada.',
       }),
@@ -144,6 +151,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Tecnologia da Informação',
     icon: Settings,
+    profiles: STAFF_VIEW,
     items: [
       {
         id: 'ti-moodle',
@@ -187,6 +195,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Ensino',
     icon: GraduationCap,
+    profiles: TEACHING_VIEW,
     items: [
       {
         id: 'alunos-professores',
@@ -379,6 +388,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Gestão de Pessoas',
     icon: Users,
+    profiles: STAFF_VIEW,
     items: [
       {
         id: 'servidores',
@@ -442,6 +452,7 @@ export const sidebarItems = [
     type: 'group',
     label: 'Módulos em Ativação',
     icon: Power,
+    profiles: ['ADMIN'],
     items: [
       activation('tecnologia-da-informacao', 'Tec. da Informação (ativar)'),
       activation('desenvolvimento-institucional', 'Des. Institucional (ativar)'),

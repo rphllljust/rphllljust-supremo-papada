@@ -1,9 +1,9 @@
 from django.db.models import Q
-from rest_framework import generics
+from rest_framework import generics, serializers as drf_serializers
 
 from apps.access.api.permissions import CanAccessModule
 from apps.api.v1.pagination import StandardResultsSetPagination
-from apps.matriculas.models import Matricula
+from apps.matriculas.models import Matricula, PendenciaDocumental
 
 from .serializers import MatriculaSerializer
 
@@ -26,6 +26,7 @@ class MatriculaListApiView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Matricula.objects.select_related(
             "aluno__pessoa",
+            "aluno__pessoa__aluno",
             "curso",
             "turma",
             "turma__professor_responsavel",
@@ -34,11 +35,30 @@ class MatriculaListApiView(generics.ListCreateAPIView):
             "-data_matricula", "-id"
         )
 
-        search = self.request.query_params.get("search", "").strip()
-        status_value = self.request.query_params.get("status", "").strip()
+        params = self.request.query_params
+        search = params.get("search", "").strip()
+
+        # T075: filtros combinados — todos aplicados em AND
+        status_value = params.get("status", "").strip()
+        curso_id = params.get("curso", "").strip()
+        turma_id = params.get("turma", "").strip()
+        tipo_matricula = params.get("tipo_matricula", "").strip()
+        data_inicio = params.get("data_inicio", "").strip()
+        data_fim = params.get("data_fim", "").strip()
 
         if status_value:
             queryset = queryset.filter(status=status_value)
+        if curso_id:
+            queryset = queryset.filter(curso_id=curso_id)
+        if turma_id:
+            queryset = queryset.filter(turma_id=turma_id)
+        if tipo_matricula:
+            queryset = queryset.filter(tipo_matricula=tipo_matricula)
+        # T101: filtro de data corrigido — aplica data_inicio como limite inferior
+        if data_inicio:
+            queryset = queryset.filter(data_matricula__gte=data_inicio)
+        if data_fim:
+            queryset = queryset.filter(data_matricula__lte=data_fim)
 
         if search:
             queryset = queryset.filter(
@@ -53,6 +73,38 @@ class MatriculaListApiView(generics.ListCreateAPIView):
             )
 
         return queryset.distinct()
+
+    def perform_create(self, serializer):
+        # T027: bloqueia rematrícula de aluno inadimplente
+        aluno = serializer.validated_data.get("aluno")
+        tipo = serializer.validated_data.get("tipo_matricula", "NOVA")
+        if tipo == "REMATRICULA" and aluno:
+            from apps.matriculas.models import Matricula as M
+            tem_inadimplencia = M.objects.filter(
+                aluno=aluno,
+                status="ATIVA",
+            ).filter(
+                # Verifica se há consolidação pendente ou nota negativa
+                consolidacao__situacao__in=["REPROVADO_NOTA", "REPROVADO_FREQUENCIA", "REPROVADO_AMBOS"]
+            ).exists()
+            if tem_inadimplencia:
+                raise drf_serializers.ValidationError(
+                    {"tipo_matricula": "Rematricula nao permitida: aluno com pendencias academicas em aberto."}
+                )
+            tem_inadimplencia_financeira = PendenciaDocumental.objects.filter(
+                matricula__aluno=aluno,
+                status="ABERTA",
+            ).filter(
+                Q(descricao__icontains="financeir")
+                | Q(descricao__icontains="mensalidade")
+                | Q(descricao__icontains="debito")
+                | Q(descricao__icontains="inadimpl")
+            ).exists()
+            if tem_inadimplencia_financeira:
+                raise drf_serializers.ValidationError(
+                    {"tipo_matricula": "Rematricula nao permitida: aluno com inadimplencia financeira em aberto."}
+                )
+        serializer.save()
 
 
 class MatriculaDetailApiView(generics.RetrieveUpdateDestroyAPIView):

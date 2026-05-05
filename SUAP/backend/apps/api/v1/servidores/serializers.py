@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email as django_validate_email
 from django.db import transaction
 from rest_framework import serializers
 
@@ -89,8 +91,10 @@ def split_name(nome_completo):
     if not partes:
         return "", ""
     if len(partes) == 1:
-        return partes[0], ""
-    return partes[0], " ".join(partes[1:])
+        return partes[0][:150], ""
+    first_name = partes[0][:150]
+    last_name = " ".join(partes[1:])[:150]
+    return first_name, last_name
 
 
 def build_default_matricula(usuario):
@@ -115,6 +119,7 @@ def build_default_profile_data(usuario):
 
 class ServidorSerializer(serializers.ModelSerializer):
     nome_completo = serializers.SerializerMethodField()
+    email = serializers.EmailField(required=False, allow_blank=True)
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     setor_nome = serializers.CharField(source="setor.nome", read_only=True)
     matricula_servidor = ProfileCharField(profile_attr="matricula_servidor", required=False, allow_blank=True)
@@ -244,6 +249,16 @@ class ServidorSerializer(serializers.ModelSerializer):
         if queryset.exists():
             raise serializers.ValidationError("Ja existe um servidor cadastrado com esta matricula.")
         return value
+
+    def validate_email(self, value):
+        email = (value or "").strip().lower()
+        if not email:
+            return ""
+        try:
+            django_validate_email(email)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError("Informe um e-mail válido no formato RFC.") from exc
+        return email
 
     def validate(self, attrs):
         if not self.instance:

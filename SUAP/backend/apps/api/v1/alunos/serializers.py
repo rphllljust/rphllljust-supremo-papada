@@ -1,4 +1,10 @@
+import html
+import re
+from datetime import date
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email as django_validate_email
 from django.db import transaction
 from rest_framework import serializers
 
@@ -8,14 +14,31 @@ from apps.usuarios.models import Aluno, PerfilUsuario, Pessoa
 
 Usuario = get_user_model()
 
+_SCRIPT_RE = re.compile(r'<[^>]+>', re.IGNORECASE)
+
+
+def sanitize_text(value: str) -> str:
+    """Remove tags HTML/JS de campos de texto livre."""
+    cleaned = _SCRIPT_RE.sub('', str(value or ''))
+    return html.unescape(cleaned).strip()
+
+
+def _calcular_idade(data_nascimento: date) -> int:
+    today = date.today()
+    return today.year - data_nascimento.year - (
+        (today.month, today.day) < (data_nascimento.month, data_nascimento.day)
+    )
+
 
 def split_name(nome_completo):
     partes = [parte for parte in (nome_completo or "").strip().split() if parte]
     if not partes:
         return "", ""
     if len(partes) == 1:
-        return partes[0], ""
-    return partes[0], " ".join(partes[1:])
+        return partes[0][:150], ""
+    first_name = partes[0][:150]
+    last_name = " ".join(partes[1:])[:150]
+    return first_name, last_name
 
 
 class NomeCompletoField(serializers.Field):
@@ -65,10 +88,14 @@ class DataIngressoField(serializers.Field):
 class AlunoSerializer(serializers.ModelSerializer):
     nome_completo = NomeCompletoField()
     username = serializers.CharField(read_only=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
     tipo = serializers.CharField(read_only=True)
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     situacao = SituacaoAlunoField(required=False)
     data_ingresso = DataIngressoField(read_only=True)
+    # Campos extras recebidos na criação/edição para validação de menor
+    data_nascimento = serializers.DateField(required=False, write_only=True)
+    responsavel_nome = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = Usuario
@@ -83,6 +110,8 @@ class AlunoSerializer(serializers.ModelSerializer):
             "is_active",
             "situacao",
             "data_ingresso",
+            "data_nascimento",
+            "responsavel_nome",
         ]
 
     def validate_cpf(self, value):
@@ -92,12 +121,38 @@ class AlunoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(str(exc)) from exc
 
         instance = getattr(self, "instance", None)
+        # Verifica unicidade em AMBAS as tabelas (Usuario e Pessoa) para evitar
+        # cadastro duplicado quando o CPF ainda não está na tabela Usuario.
         queryset = Usuario.objects.filter(cpf=cpf)
         if instance:
             queryset = queryset.exclude(pk=instance.pk)
         if queryset.exists():
             raise serializers.ValidationError("Ja existe um aluno cadastrado com este CPF.")
+
+        from apps.usuarios.models import Pessoa as PessoaModel
+        pessoa_qs = PessoaModel.objects.filter(cpf=cpf)
+        if instance and instance.pessoa_id:
+            pessoa_qs = pessoa_qs.exclude(pk=instance.pessoa_id)
+        if pessoa_qs.exists():
+            raise serializers.ValidationError("Ja existe uma pessoa cadastrada com este CPF.")
+
         return cpf
+
+    def validate_nome_completo(self, value):
+        nome = sanitize_text(value)
+        if len(nome) > 200:
+            raise serializers.ValidationError("Nome completo muito longo. Limite de 200 caracteres.")
+        return nome
+
+    def validate_email(self, value):
+        email = sanitize_text(value).lower()
+        if not email:
+            return ""
+        try:
+            django_validate_email(email)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError("Informe um e-mail válido no formato RFC.") from exc
+        return email
 
     def validate_situacao(self, value):
         situacoes_validas = {choice for choice, _label in Aluno.SITUACAO_CHOICES}
@@ -111,6 +166,16 @@ class AlunoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"nome_completo": "Informe o nome completo do aluno."})
         attrs["nome_completo"] = nome_completo
         attrs.setdefault("situacao", Aluno.SITUACAO_CHOICES[0][0])
+
+        # Responsável obrigatório para alunos menores de 18 anos (T007 / T034)
+        data_nascimento = attrs.get("data_nascimento")
+        if data_nascimento and _calcular_idade(data_nascimento) < 18:
+            responsavel = (attrs.get("responsavel_nome") or "").strip()
+            if not responsavel:
+                raise serializers.ValidationError(
+                    {"responsavel_nome": "Informe o responsavel: alunos menores de 18 anos exigem responsavel."}
+                )
+
         return attrs
 
     @transaction.atomic
