@@ -261,7 +261,7 @@ export default function AlunosPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page alunos-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Alunos</h1>
@@ -297,7 +297,7 @@ export default function AlunosPage() {
         searchPlaceholder="Buscar por nome, CPF, usuario ou e-mail..."
         emptyMessage="Nenhum aluno encontrado."
         rowActions={(row) => (
-          <div className="table-actions">
+          <div className="table-actions table-actions--compact">
             <button type="button" className="btn btn--outline btn--sm" onClick={() => setSearchParams({ alunoId: String(row.id) })}>
               <Eye size={14} /> Visualizar
             </button>
