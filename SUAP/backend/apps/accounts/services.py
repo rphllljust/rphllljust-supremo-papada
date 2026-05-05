@@ -78,6 +78,18 @@ def ensure_initial_admin(
     cpf = normalize_cpf(cpf)
     existing_user = Usuario.objects.filter(cpf=cpf).first()
     if existing_user and not recreate_existing:
+        existing_user.username = cpf
+        existing_user.cpf = cpf
+        existing_user.tipo = PerfilUsuario.ADMIN
+        existing_user.first_name = first_name
+        existing_user.last_name = last_name
+        existing_user.email = ""
+        existing_user.is_active = True
+        existing_user.is_staff = True
+        existing_user.is_superuser = True
+        existing_user.must_change_password = force_password_change
+        existing_user.set_password(password)
+        existing_user.save()
         return existing_user, False
 
     nome_completo = " ".join(part for part in [first_name, last_name] if part).strip() or cpf

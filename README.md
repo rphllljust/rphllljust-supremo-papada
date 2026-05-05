@@ -34,3 +34,18 @@ Historico escolar digital MEC
 Documentacao tecnica detalhada da nova camada (XML/XSD/XMLDSig/PDF/QR/auditoria):
 
 * `SUAP/backend/docs/historico-digital-mec.md`
+
+Publicacao do frontend no backend static
+
+Quando o acesso e feito pelo Django (`:8000`), o front-end e servido a partir de `SUAP/backend/static`.
+Para refletir alteracoes do `SUAP/frontend/src` nesse fluxo, use:
+
+```powershell
+.\scripts\publish-frontend-static.ps1 -Environment development
+```
+
+O script:
+
+* gera o build do frontend no ambiente informado;
+* sincroniza `SUAP/frontend/dist` para `SUAP/backend/static`;
+* aplica versao (`?v=...`) em `index.html`/`vue.html` para invalidar cache do navegador.

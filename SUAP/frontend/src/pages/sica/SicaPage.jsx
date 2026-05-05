@@ -323,7 +323,7 @@ export default function SicaPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page page--wide matrix-page">
       <div className="page-header">
         <h1 className="page-title">SICA - Sistema de Informacoes Curriculares</h1>
       </div>

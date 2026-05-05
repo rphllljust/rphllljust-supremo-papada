@@ -56,9 +56,9 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
-            "--no-force-password-change",
+            "--force-password-change",
             action="store_true",
-            help="Nao marca o usuario para troca obrigatoria de senha no primeiro acesso.",
+            help="Marca o usuario para troca obrigatoria de senha no primeiro acesso.",
         )
 
     def _get_unique_random_cpf(self):
@@ -94,7 +94,7 @@ class Command(BaseCommand):
             password=password,
             first_name=options["first_name"],
             last_name=options["last_name"],
-            force_password_change=not options["no_force_password_change"],
+            force_password_change=options["force_password_change"],
             recreate_existing=recreate_existing,
         )
 

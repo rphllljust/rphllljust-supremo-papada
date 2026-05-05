@@ -504,6 +504,7 @@ export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState({})
   const [menuQuery, setMenuQuery] = useState('')
   const [topbarSearch, setTopbarSearch] = useState('')
@@ -561,6 +562,10 @@ export default function Layout() {
   }, [location.pathname, menuQuery, visibleSidebarItems.length])
 
   useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
     if (!user) {
       setQuickAccessItems([])
       return
@@ -582,7 +587,7 @@ export default function Layout() {
 
   return (
     <div className="layout layout--legacy">
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__header">
           <span className="sidebar__environment">{SIDEBAR_ENVIRONMENT_LABEL}</span>
           <span className="sidebar__header-spacer" aria-hidden="true" />
@@ -667,12 +672,23 @@ export default function Layout() {
           </button>
         </div>
       </aside>
+      <button
+        type="button"
+        className={`layout__overlay ${sidebarOpen ? 'layout__overlay--open' : ''}`}
+        aria-label="Fechar menu"
+        onClick={() => setSidebarOpen(false)}
+      />
 
       <div className="workspace">
         <main className="main-content">
           <header className="workspace-topbar">
             <div className="workspace-topbar__left">
-              <button className="workspace-topbar__menu" type="button" aria-label="Abrir menu">
+              <button
+                className="workspace-topbar__menu"
+                type="button"
+                aria-label="Abrir menu"
+                onClick={() => setSidebarOpen((current) => !current)}
+              >
                 <Menu size={18} />
               </button>
               <label className="workspace-topbar__search" aria-label="Buscar no sistema">

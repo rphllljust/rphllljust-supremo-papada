@@ -1,6 +1,0 @@
-import{j as e}from"./react-query-BYKRCv6g.js";import{c as d}from"./index.js";/**
- * @license lucide-react v0.368.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */const c=d("X",[["path",{d:"M18 6 6 18",key:"1bl5f8"}],["path",{d:"m6 6 12 12",key:"d8bk6v"}]]);function o(a){return a==null||a===""?"-":typeof a=="boolean"?a?"Sim":"Nao":String(a)}function p({title:a,subtitle:s,fields:n,isLoading:t,errorMessage:i,onClose:r}){return e.jsxs("section",{className:"details-panel","aria-live":"polite",children:[e.jsxs("div",{className:"details-panel__header",children:[e.jsxs("div",{children:[e.jsx("h2",{className:"details-panel__title",children:a}),s?e.jsx("p",{className:"details-panel__subtitle",children:s}):null]}),e.jsx("button",{type:"button",className:"btn btn--icon",onClick:r,"aria-label":"Fechar detalhes",children:e.jsx(c,{size:16})})]}),t?e.jsx("div",{className:"details-panel__loading",children:"Carregando detalhes..."}):i?e.jsx("div",{className:"alert alert--error",children:i}):e.jsx("dl",{className:"details-panel__grid",children:n.map(l=>e.jsxs("div",{className:"details-panel__item",children:[e.jsx("dt",{children:l.label}),e.jsx("dd",{children:o(l.value)})]},l.label))})]})}export{p as E};
