@@ -45,14 +45,21 @@ class AlunoViewSet(viewsets.ModelViewSet):
         else:
             queryset = queryset.filter(pessoa__aluno__situacao=situacao)
 
-        # T092/T093: professor vê apenas alunos das suas turmas
+        # T092/T093: professor vê SEMPRE apenas alunos das suas turmas,
+        # independente dos parâmetros de busca ou turma informada
         if getattr(user, "tipo", None) == PerfilUsuario.PROFESSOR:
             queryset = queryset.filter(
                 matriculas__turma__professor_responsavel=user,
                 matriculas__status="ATIVA",
             )
-
-        if turma_id:
+            if turma_id:
+                # Mesmo com turma_id, professor só vê alunos de SUAS turmas
+                queryset = queryset.filter(
+                    matriculas__turma_id=turma_id,
+                    matriculas__turma__professor_responsavel=user,
+                    matriculas__status="ATIVA",
+                )
+        elif turma_id:
             queryset = queryset.filter(
                 matriculas__turma_id=turma_id,
                 matriculas__status="ATIVA",

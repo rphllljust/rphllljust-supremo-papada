@@ -1,4 +1,7 @@
+from datetime import date
+
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -29,6 +32,29 @@ class Pessoa(models.Model):
 
     class Meta:
         ordering = ["nome_completo"]
+
+    def clean(self):
+        errors = {}
+
+        # Validação: data de nascimento não pode ser futura
+        if self.data_nascimento and self.data_nascimento > date.today():
+            errors['data_nascimento'] = 'A data de nascimento nao pode ser futura.'
+
+        # Validação: nome não pode conter caracteres especiais (apenas letras, espaços e acentos)
+        import re
+        if self.nome_completo:
+            nome_normalizado = re.sub(r'\s+', ' ', self.nome_completo).strip()
+            if not re.match(r'^[A-Za-zÀ-ÿ\s]+$', nome_normalizado):
+                errors['nome_completo'] = 'O nome deve conter apenas letras, espacos e acentos.'
+            elif len(nome_normalizado) > 200:
+                errors['nome_completo'] = 'O nome deve ter no maximo 200 caracteres.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nome_completo

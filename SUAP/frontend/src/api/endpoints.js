@@ -25,6 +25,11 @@ export const authApi = {
   changePassword: (payload) => client.post('/auth/change-password/', payload),
   me: () => client.get('/auth/me/'),
 }
+export const suapApi = {
+  startAuth: () => publicClient.get('/suap/auth/start/'),
+  exchangeTicket: (ticket) => publicClient.post('/suap/auth/exchange-ticket/', { ticket }),
+  me: () => client.get('/suap/me/'),
+}
 
 export const accessApi = {
   avaExportPreview: () => client.get('/access/ava-export/preview/'),

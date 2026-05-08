@@ -15,10 +15,18 @@
 
   backend:
     ports:
-      - "8005:8000"
+      - "8010:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    command:
+      - sh
+      - -c
+      - |
+        python manage.py migrate --noinput
+        python manage.py bootstrap_initial_admin
+        python manage.py seed_50_alunos
+        python manage.py runserver 0.0.0.0:8000
     environment:
       APP_ENV: development
       SECRET_KEY: django-insecure-dev-troque-isso

@@ -190,8 +190,9 @@ class Command(BaseCommand):
             users = self._seed_users(setor)
             area_curso, eixo = self._seed_catalogs()
 
-            # A criação de cursos, componentes e turmas foi removida conforme solicitação.
-            self.stdout.write(self.style.WARNING("Seed de cursos e componentes pulado conforme solicitacao."))
+            cursos, turmas = self._seed_course_structure(unidade, area_curso, eixo, users["professor.dev"])
+            matriculas_por_turma = self._seed_students(cursos, turmas, users)
+            self._seed_academic_records(turmas, matriculas_por_turma, users)
 
         self.stdout.write(self.style.SUCCESS("Dados de desenvolvimento disponíveis no banco configurado."))
         self.stdout.write("Usuários criados:")
@@ -294,9 +295,76 @@ class Command(BaseCommand):
         return area_curso, eixo
 
     def _seed_course_structure(self, unidade, area_curso, eixo, professor):
-        # Curso, componentes e turmas foram removidos do seed por decisão do time.
-        self.stdout.write(self.style.WARNING("_seed_course_structure: criação de cursos, componentes e turmas desativada."))
-        return {}, {}
+        cursos = {}
+        turmas = {}
+
+        cursos["TDSDEV"], _ = self.models["Curso"].objects.update_or_create(
+            sigla="TDSDEV",
+            defaults={
+                "unidade": unidade,
+                "nome": "T?cnico em Desenvolvimento de Sistemas DEV",
+                "carga_horaria": 1200,
+                "tipo_curso": "tecnico",
+                "area_curso": area_curso,
+                "eixo_tecnologico": eixo.descricao,
+            },
+        )
+        cursos["FICDEV"], _ = self.models["Curso"].objects.update_or_create(
+            sigla="FICDEV",
+            defaults={
+                "unidade": unidade,
+                "nome": "Forma??o Inicial DEV",
+                "carga_horaria": 160,
+                "tipo_curso": "formacao_inicial",
+                "area_curso": area_curso,
+                "eixo_tecnologico": eixo.descricao,
+            },
+        )
+
+        for componente in SEED_COMPONENTS:
+            self.models["ComponenteCurricular"].objects.update_or_create(
+                curso=cursos["TDSDEV"],
+                nome=componente["nome"],
+                defaults={
+                    "abreviatura": componente["abreviatura"],
+                    "ordem": componente["ordem"],
+                    "carga_horaria": componente["carga_horaria"],
+                },
+            )
+
+        for componente in SEED_FIC_COMPONENTS:
+            self.models["ComponenteCurricular"].objects.update_or_create(
+                curso=cursos["FICDEV"],
+                nome=componente["nome"],
+                defaults={
+                    "abreviatura": componente["abreviatura"],
+                    "ordem": componente["ordem"],
+                    "carga_horaria": componente["carga_horaria"],
+                },
+            )
+
+        turmas["DEV-TDS-2026-1"], _ = self.models["Turma"].objects.update_or_create(
+            nome="DEV-TDS-2026-1",
+            defaults={
+                "curso": cursos["TDSDEV"],
+                "ano_letivo": 2026,
+                "status": "ATIVA",
+                "modalidade": "PRESENCIAL",
+                "professor_responsavel": professor,
+            },
+        )
+        turmas["DEV-FIC-2026-1"], _ = self.models["Turma"].objects.update_or_create(
+            nome="DEV-FIC-2026-1",
+            defaults={
+                "curso": cursos["FICDEV"],
+                "ano_letivo": 2026,
+                "status": "ATIVA",
+                "modalidade": "PRESENCIAL",
+                "professor_responsavel": professor,
+            },
+        )
+
+        return cursos, turmas
 
     def _seed_students(self, cursos, turmas, users):
         matriculas_por_turma = {}

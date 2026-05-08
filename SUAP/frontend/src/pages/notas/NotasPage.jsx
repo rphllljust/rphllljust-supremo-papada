@@ -4,7 +4,7 @@ import { Eye, Pencil, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import { matriculasApi, notasApi } from '@/api/endpoints'
+import { componentesApi, matriculasApi, notasApi } from '@/api/endpoints'
 import { cursosApi, turmasApi, usuariosApi } from '@/api/endpoints'
 import DataTable from '@/components/ui/DataTable'
 import EntityDetailsPanel from '@/components/ui/EntityDetailsPanel'
@@ -23,6 +23,7 @@ const COLUMNS = [
   { key: 'numero_matricula', label: 'Matricula' },
   { key: 'aluno_nome', label: 'Aluno' },
   { key: 'curso_nome', label: 'Curso' },
+    { key: 'componente_curricular_nome', label: 'Componente', render: (row) => row.componente_curricular_nome || '-' },
   { key: 'descricao', label: 'Avaliacao' },
   { key: 'valor', label: 'Nota' },
   { key: 'peso', label: 'Peso' },
@@ -49,8 +50,9 @@ export default function NotasPage() {
   const [turmaSearch, setTurmaSearch] = useState('')
   const [professorSearch, setProfessorSearch] = useState('')
   const isCreatePage = location.pathname.endsWith('/notas/nova')
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
     matricula: '',
+    componente_curricular: '',
     descricao: '',
     valor: '',
     peso: '1.00',
@@ -89,6 +91,12 @@ export default function NotasPage() {
     staleTime: 60_000,
   })
 
+    const { data: componentesData } = useQuery({
+    queryKey: ['componentes', 'notas-options'],
+    queryFn: () => componentesApi.list({ page_size: 100 }).then((response) => response.data),
+    staleTime: 60_000,
+  })
+
   const { data: matriculasData } = useQuery({
     queryKey: ['matriculas', 'notas-options', matriculaSearch],
     queryFn: () => matriculasApi.list({ page_size: 10, search: matriculaSearch || undefined }).then((response) => response.data),
@@ -111,8 +119,9 @@ export default function NotasPage() {
 
   useEffect(() => {
     if (!editingNota) return
-    setFormData({
+        setFormData({
       matricula: editingNota.matricula ? String(editingNota.matricula) : '',
+      componente_curricular: editingNota.componente_curricular ? String(editingNota.componente_curricular) : '',
       descricao: editingNota.descricao || '',
       valor: editingNota.valor ? String(editingNota.valor) : '',
       peso: editingNota.peso ? String(editingNota.peso) : '1.00',
@@ -132,7 +141,7 @@ export default function NotasPage() {
         queryClient.invalidateQueries({ queryKey: ['nota', variables.id] })
       }
       setEditingNotaId(null)
-      setFormData({ matricula: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
+      setFormData({ matricula: '', componente_curricular: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
       toast.success(variables.id ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.')
       if (!variables.id) {
         navigate('/notas')
@@ -170,7 +179,7 @@ export default function NotasPage() {
 
   const closeForm = () => {
     setEditingNotaId(null)
-    setFormData({ matricula: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
+    setFormData({ matricula: '', componente_curricular: '', descricao: '', valor: '', peso: '1.00', data_lancamento: '' })
   }
 
   if (isCreatePage) {
@@ -202,8 +211,9 @@ export default function NotasPage() {
           onSubmit={(event) => {
             event.preventDefault()
             saveMutation.mutate({
-              payload: {
+                            payload: {
                 matricula: Number(formData.matricula),
+                componente_curricular: formData.componente_curricular ? Number(formData.componente_curricular) : null,
                 descricao: formData.descricao,
                 valor: formData.valor,
                 peso: formData.peso,
@@ -216,8 +226,9 @@ export default function NotasPage() {
           isSubmitting={saveMutation.isPending}
         >
           <SearchableRemoteSelect id="nota-matricula" label="Matricula" searchLabel="Buscar matricula" searchPlaceholder="Digite matricula ou aluno" searchValue={matriculaSearch} onSearchChange={setMatriculaSearch} value={formData.matricula} onChange={(nextValue) => setFormData((current) => ({ ...current, matricula: nextValue }))} options={matriculas} getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`} />
+          <div className="form-field"><label>Componente curricular</label><select className="select" value={formData.componente_curricular} onChange={(event) => setFormData((current) => ({ ...current, componente_curricular: event.target.value }))}><option value="">Sem componente</option>{(componentesData?.results || []).map((comp) => <option key={comp.id} value={String(comp.id)}>{comp.nome}</option>)}</select></div>
           <div className="form-field form-field--full"><label>Avaliacao</label><input type="text" value={formData.descricao} onChange={(event) => setFormData((current) => ({ ...current, descricao: event.target.value }))} /></div>
-          <div className="form-field"><label>Nota</label><input type="number" step="0.01" min="0" value={formData.valor} onChange={(event) => setFormData((current) => ({ ...current, valor: event.target.value }))} /></div>
+          <div className="form-field"><label>Nota (0-10)</label><input type="number" step="0.01" min="0" max="10" value={formData.valor} onChange={(event) => setFormData((current) => ({ ...current, valor: event.target.value }))} /></div>
           <div className="form-field"><label>Peso</label><input type="number" step="0.01" min="0" value={formData.peso} onChange={(event) => setFormData((current) => ({ ...current, peso: event.target.value }))} /></div>
           <div className="form-field"><label>Data de lancamento</label><input type="date" value={formData.data_lancamento} onChange={(event) => setFormData((current) => ({ ...current, data_lancamento: event.target.value }))} /></div>
         </EntityFormPanel>
@@ -232,7 +243,8 @@ export default function NotasPage() {
         { label: 'Aluno', value: selectedNota.aluno_nome },
         { label: 'Curso', value: selectedNota.curso_nome },
         { label: 'Turma', value: selectedNota.turma_nome },
-        { label: 'Avaliacao', value: selectedNota.descricao },
+                { label: 'Avaliacao', value: selectedNota.descricao },
+        { label: 'Componente', value: selectedNota.componente_curricular_nome || '-' },
         { label: 'Nota', value: selectedNota.valor },
         { label: 'Peso', value: selectedNota.peso },
         { label: 'Data de lancamento', value: formatDate(selectedNota.data_lancamento) },
@@ -352,7 +364,8 @@ export default function NotasPage() {
             saveMutation.mutate({
               id: editingNotaId,
               payload: {
-                matricula: Number(formData.matricula),
+                                matricula: Number(formData.matricula),
+                componente_curricular: formData.componente_curricular ? Number(formData.componente_curricular) : null,
                 descricao: formData.descricao,
                 valor: formData.valor,
                 peso: formData.peso,
@@ -364,7 +377,7 @@ export default function NotasPage() {
           submitLabel="Salvar alteracoes"
           isSubmitting={saveMutation.isPending}
         >
-          <SearchableRemoteSelect
+                    <SearchableRemoteSelect
             id="nota-matricula"
             label="Matricula"
             searchLabel="Buscar matricula"
@@ -377,13 +390,22 @@ export default function NotasPage() {
             selectedOption={selectedMatriculaOption}
             getOptionLabel={(item) => `${item.numero_matricula} - ${item.aluno_nome}`}
           />
+          <div className="form-field">
+            <label>Componente curricular</label>
+            <select className="select" value={formData.componente_curricular} onChange={(event) => setFormData((current) => ({ ...current, componente_curricular: event.target.value }))}>
+              <option value="">Sem componente</option>
+              {(componentesData?.results || []).map((comp) => (
+                <option key={comp.id} value={String(comp.id)}>{comp.nome}</option>
+              ))}
+            </select>
+          </div>
           <div className="form-field form-field--full">
             <label>Avaliacao</label>
             <input type="text" value={formData.descricao} onChange={(event) => setFormData((current) => ({ ...current, descricao: event.target.value }))} />
           </div>
           <div className="form-field">
-            <label>Nota</label>
-            <input type="number" step="0.01" min="0" value={formData.valor} onChange={(event) => setFormData((current) => ({ ...current, valor: event.target.value }))} />
+            <label>Nota (0-10)</label>
+            <input type="number" step="0.01" min="0" max="10" value={formData.valor} onChange={(event) => setFormData((current) => ({ ...current, valor: event.target.value }))} />
           </div>
           <div className="form-field">
             <label>Peso</label>

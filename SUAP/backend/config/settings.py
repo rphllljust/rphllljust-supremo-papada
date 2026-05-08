@@ -147,9 +147,10 @@ INSTALLED_APPS = [
     "apps.documentos",
     "apps.certificados",
     "apps.auditoria",
-    "apps.inscricoes",
+        "apps.inscricoes",
     "apps.estagio",
     "apps.notificacoes",
+    "apps.financeiro",
 ]
 
 MIDDLEWARE = [
@@ -288,6 +289,16 @@ GOOGLE_SHEETS_SERVICE_ACCOUNT_LOCAL_FILE = env_str(
     "GOOGLE_SHEETS_SERVICE_ACCOUNT_LOCAL_FILE",
     default=str(BASE_DIR / ".google_sheets_service_account.json"),
 )
+
+SUAP_AUTHORIZE_URL = env_str("SUAP_AUTHORIZE_URL", default="https://suap.ifrn.edu.br/o/authorize/")
+SUAP_TOKEN_URL = env_str("SUAP_TOKEN_URL", default="https://suap.ifrn.edu.br/o/token/")
+SUAP_USERINFO_URL = env_str("SUAP_USERINFO_URL", default="https://suap.ifrn.edu.br/api/eu/")
+SUAP_CLIENT_ID = env_str("SUAP_CLIENT_ID", default="")
+SUAP_CLIENT_SECRET = env_str("SUAP_CLIENT_SECRET", default="")
+SUAP_REDIRECT_URI = env_str("SUAP_REDIRECT_URI", default="http://localhost:8000/api/v1/suap/auth/callback/")
+SUAP_SCOPE = env_str("SUAP_SCOPE", default="identificacao")
+SUAP_TIMEOUT = env_int("SUAP_TIMEOUT", default=30)
+SUAP_FRONTEND_CALLBACK_URL = env_str("SUAP_FRONTEND_CALLBACK_URL", default="http://localhost:5173/login/suap/callback")
 
 INITIAL_ADMIN_CPF = env_str("INITIAL_ADMIN_CPF", default="")
 INITIAL_ADMIN_PASSWORD = env_str("INITIAL_ADMIN_PASSWORD", default="admin")

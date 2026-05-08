@@ -30,7 +30,7 @@ def gerar_cpf(seed: int) -> str:
 class TurmaCrudTests(TestCase):
     def setUp(self):
         self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200, tipo_curso="tecnico")
         self.secretaria = Usuario.objects.create_user(
             username="sec_turma",
             cpf="92345678902",
@@ -130,12 +130,12 @@ class TurmaApiListTests(TestCase):
             tipo="ALUNO",
             password="x",
         )
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informática", sigla="INFO", carga_horaria=1200)
-        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Logística", sigla="LOG", carga_horaria=900)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informática", sigla="INFO", carga_horaria=1200, tipo_curso="tecnico")
+        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Logística", sigla="LOG", carga_horaria=900, tipo_curso="tecnico")
         self.turma = Turma.objects.create(curso=self.curso, nome="INFO-2026-A", ano_letivo=2026, status="ATIVA", professor_responsavel=self.professor)
         self.turma_sem_diario = Turma.objects.create(curso=self.outro_curso, nome="LOG-2026-B", ano_letivo=2026, status="PLANEJADA", professor_responsavel=self.professor)
         self.turma_outro_professor = Turma.objects.create(curso=self.curso, nome="INFO-2025-C", ano_letivo=2025, status="ENCERRADA", professor_responsavel=self.outro_professor)
-        Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
+        Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
         DiarioAcademico.objects.create(turma=self.turma, periodo="2026/1", componente_curricular="Projeto Integrador", aberto_por=self.professor)
 
         token_response = self.api_client.post(
@@ -208,7 +208,7 @@ class DiarioApiTests(TestCase):
             first_name="Bruno",
             last_name="Souza",
         )
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200, tipo_curso="tecnico")
         self.turma = Turma.objects.create(curso=self.curso, nome="INFO-DIARIO", ano_letivo=2026, professor_responsavel=self.professor)
         self.diario = DiarioAcademico.objects.create(
             turma=self.turma,
@@ -217,8 +217,8 @@ class DiarioApiTests(TestCase):
             observacoes="Acompanhamento regular da turma.",
             aberto_por=self.professor,
         )
-        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
-        self.outra_matricula = Matricula.objects.create(aluno=self.outro_aluno, curso=self.curso, turma=self.turma, status="ATIVA")
+        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
+        self.outra_matricula = Matricula.objects.create(aluno=self.outro_aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="TARDE")
         Nota.objects.create(matricula=self.matricula, descricao="Avaliação 1", valor="8.50", peso="1.00", data_lancamento="2026-03-10")
         Frequencia.objects.create(matricula=self.matricula, data="2026-03-11", presente=True)
         DiarioMaterialAula.objects.create(

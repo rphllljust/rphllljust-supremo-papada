@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.access.api.permissions import CanAccessModule
+from apps.access.policies import filter_aluno_scoped_queryset
 from apps.api.v1.matriculas.serializers import MatriculaSerializer
 from apps.api.v1.pagination import StandardResultsSetPagination
 from apps.agenda.models import EventoAgenda
@@ -169,6 +170,12 @@ class VidaAcademicaListApiView(_VidaAcademicaPermissionMixin, generics.ListAPIVi
                 | Q(turma__professor_responsavel__last_name__icontains=search)
                 | Q(turma__diarios__componente_curricular__icontains=search)
             )
+
+        queryset = filter_aluno_scoped_queryset(
+            self.request.user,
+            queryset,
+            aluno_lookup="aluno_id",
+        )
 
         return queryset.distinct()
 

@@ -39,6 +39,8 @@ services:
             python manage.py seed_development_data --reset
           fi
         fi
+        python manage.py bootstrap_initial_admin
+        python manage.py seed_50_alunos
         python manage.py runserver 0.0.0.0:8000
 
   frontend:

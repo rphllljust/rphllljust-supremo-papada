@@ -74,25 +74,111 @@ class Matricula(models.Model):
     tipo_matricula = models.CharField(max_length=20, choices=TIPO_CHOICES, default='NOVA', verbose_name='Tipo')
     turno = models.CharField(max_length=10, choices=TURNO_CHOICES, blank=True, verbose_name='Turno')
 
+
+
+
     def clean(self):
+        errors = {}
+
         if self.turma_id and not self.curso_id:
             self.curso = self.turma.curso
 
         if self.curso_id and self.turma_id and self.turma.curso_id != self.curso_id:
-            raise ValidationError({'turma': 'A turma selecionada nao pertence ao curso informado.'})
+            errors['turma'] = 'A turma selecionada nao pertence ao curso informado.'
 
-        if self.curso_id and (self.curso.tipo_curso or "").strip().lower() == "tecnico":
-            if (self.curso.carga_horaria or 0) <= 0:
-                raise ValidationError(
-                    {
-                        'curso': (
-                            'Curso tecnico com carga horaria invalida. '
-                            'Configure carga horaria maior que zero antes de matricular.'
-                        )
-                    }
-                )
+        ## ── Validações específicas por tipo de curso ──
+        if self.curso_id:
+            tipo_curso = (self.curso.tipo_curso or "").strip().lower()
 
+            # Curso Técnico: exige carga horária > 0
+            if tipo_curso == "tecnico":
+                if (self.curso.carga_horaria or 0) <= 0:
+                    errors['curso'] = (
+                        'Curso tecnico com carga horaria invalida. '
+                        'Configure carga horaria maior que zero antes de matricular.'
+                    )
+
+            # Curso Itinerante: exige turma com modalidade ITINERANTE
+            if tipo_curso == "itinerante":
+                if self.turma_id and hasattr(self.turma, 'modalidade') and self.turma.modalidade != 'ITINERANTE':
+                    errors['turma'] = 'Cursos itinerantes exigem turma com modalidade Itinerante.'
+                if self.turma_id and hasattr(self.turma, 'polo') and not self.turma.polo_id:
+                    errors['turma'] = 'Cursos itinerantes exigem turma vinculada a um polo/localidade.'
+
+                        # Curso Remoto (formacao_inicial): exige turma com modalidade REMOTO
+            if tipo_curso == "formacao_inicial":
+                if self.turma_id and hasattr(self.turma, 'modalidade') and self.turma.modalidade != 'PRESENCIAL':
+                    # Se o curso é FIC mas a turma não é presencial, verificar se é remoto
+                    if self.turma.modalidade == 'REMOTO':
+                        # Cursos remotos são permitidos com modalidade REMOTO
+                        pass
+                    else:
+                        errors['turma'] = 'Cursos de formacao inicial exigem turma presencial ou remota.'
+
+                ## ── C01: Aluno remoto precisa ter e-mail cadastrado ──
+                # O e-mail é essencial para receber o link de acesso ao ambiente virtual
+                email_aluno = None
+                if self.aluno_id:
+                    try:
+                        pessoa = self.aluno.pessoa
+                        email_aluno = pessoa.email if pessoa else None
+                    except Exception:
+                        email_aluno = None
+                if not email_aluno:
+                    errors['aluno'] = (
+                        'Alunos de cursos remotos devem possuir e-mail cadastrado '
+                        'para receber o link de acesso ao ambiente virtual. '
+                        'Edite o cadastro do aluno e informe um e-mail antes de matricular.'
+                    )
+
+        ## ── Turno obrigatório para matrícula ativa ──
+        if self.status == 'ATIVA' and not self.turno:
+            errors['turno'] = 'Informe o turno da matricula.'
+
+        ## ── Capacidade máxima da turma ──
+        if self.turma_id and self.status == 'ATIVA':
+            if self.turma.capacidade_maxima:
+                ocupadas = Matricula.objects.filter(
+                    turma_id=self.turma_id,
+                    status='ATIVA'
+                ).count()
+                if self.pk:
+                    ocupadas -= 1
+                if ocupadas >= self.turma.capacidade_maxima:
+                    errors['turma'] = 'Turma atingiu a capacidade maxima de alunos.'
+
+        ## ── Documentação obrigatória por curso ──
+        if self.curso_id and self.status == 'ATIVA':
+            obrigatorios = DocumentoObrigatorioCurso.objects.filter(
+                curso=self.curso, ativo=True
+            ).values_list('tipo_documento', flat=True)
+            if obrigatorios.exists():
+                validados = self.documentos.filter(
+                    tipo_documento__in=obrigatorios,
+                    status='VALIDADO'
+                ).values_list('tipo_documento', flat=True)
+                pendentes = set(obrigatorios) - set(validados)
+                if pendentes:
+                    docs_nomes = dict(DocumentoMatricula.TIPO_DOCUMENTO_CHOICES)
+                    nomes = [docs_nomes.get(d, d) for d in pendentes]
+                    errors['documentos'] = (
+                        'Documentos obrigatorios pendentes de validacao: '
+                        + ', '.join(nomes) + '.'
+                    )
+
+        ## ── Matrícula duplicada ativa no MESMO curso ──
         if self.aluno_id and self.curso_id and self.status == 'ATIVA':
+            ativas_mesmo_curso = Matricula.objects.filter(
+                aluno_id=self.aluno_id,
+                curso_id=self.curso_id,
+                status='ATIVA',
+            )
+            if self.pk:
+                ativas_mesmo_curso = ativas_mesmo_curso.exclude(pk=self.pk)
+            if ativas_mesmo_curso.exists():
+                errors['aluno'] = 'Aluno ja possui matricula ativa neste curso.'
+
+            # Também impede ativa em outro curso
             ativos_outro_curso = Matricula.objects.filter(
                 aluno_id=self.aluno_id,
                 status='ATIVA',
@@ -100,19 +186,54 @@ class Matricula(models.Model):
             if self.pk:
                 ativos_outro_curso = ativos_outro_curso.exclude(pk=self.pk)
             if ativos_outro_curso.exists():
-                raise ValidationError(
-                    {
-                        'aluno': (
-                            'Aluno ja possui matricula ativa em outro curso. '
-                            'Finalize, cancele ou tranque a matricula ativa antes de continuar.'
-                        )
-                    }
+                errors['aluno'] = (
+                    'Aluno ja possui matricula ativa em outro curso. '
+                    'Finalize, cancele ou tranque a matricula ativa antes de continuar.'
                 )
+
+        if errors:
+            raise ValidationError(errors)
 
         if not self.pk:
             return
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         original = Matricula.objects.filter(pk=self.pk).values_list('status', flat=True).first()
+
+
         if not original or original == self.status:
             return
 
@@ -130,6 +251,21 @@ class Matricula(models.Model):
                         )
                     }
                 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def save(self, *args, **kwargs):
         if not self.numero_matricula:
@@ -267,6 +403,8 @@ class DocumentoMatricula(models.Model):
         self.full_clean()
         return super().save(*args, **kwargs)
 
+
+
     def __str__(self):
         return f"{self.get_tipo_documento_display()} - {self.matricula} [{self.get_status_display()}]"
 
@@ -288,6 +426,25 @@ class DocumentoObrigatorioCurso(models.Model):
 
     def __str__(self):
         return f"{self.curso.nome} - {self.get_tipo_documento_display()}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class PendenciaDocumental(models.Model):
@@ -353,7 +510,50 @@ class DocumentoEmitido(models.Model):
         verbose_name_plural = 'Documentos Emitidos'
         ordering = ['-data_emissao']
 
+    def clean(self):
+        """
+        C03: Valida elegibilidade antes de permitir a emissão do documento.
+        Bloqueia emissão para:
+        - Matrícula cancelada
+        - Declaração de conclusão sem matrícula CONCLUIDA
+        - Guia de transferência sem matrícula ATIVA ou TRANCADA
+        - Histórico escolar sem notas lançadas
+        - Aluno inadimplente (qualquer tipo de declaração/histórico)
+        """
+        errors = {}
+
+        if self.matricula_id:
+            matricula = self.matricula
+            tipo = self.tipo
+
+            if matricula.status == 'CANCELADA':
+                errors['matricula'] = 'Não é possível emitir documentos para matrícula cancelada.'
+            elif tipo == 'DECLARACAO_CONCLUSAO' and matricula.status != 'CONCLUIDA':
+                errors['tipo'] = 'Declaração de Conclusão exige matrícula com status Concluída.'
+            elif tipo == 'GUIA_TRANSFERENCIA' and matricula.status not in ('ATIVA', 'TRANCADA'):
+                errors['tipo'] = 'Guia de Transferência exige matrícula Ativa ou Trancada.'
+            elif tipo == 'HISTORICO_ESCOLAR' and not matricula.notas.exists():
+                errors['tipo'] = 'Histórico Escolar: nenhuma nota lançada na matrícula.'
+
+            # Bloqueio para inadimplentes: alunos com contrato INADIMPLENTE
+            # não podem emitir declarações de matrícula, frequência, conclusão ou histórico
+            if not errors and tipo in ('DECLARACAO_MATRICULA', 'DECLARACAO_FREQUENCIA',
+                                        'DECLARACAO_CONCLUSAO', 'HISTORICO_ESCOLAR'):
+                try:
+                    contrato = matricula.contrato_financeiro
+                    if contrato and contrato.status == 'INADIMPLENTE':
+                        errors['matricula'] = (
+                            'Aluno inadimplente. Regularize as parcelas pendentes '
+                            'antes de solicitar a emissão de documentos.'
+                        )
+                except Exception:
+                    pass
+
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
+        self.full_clean()
         if not self.numero_protocolo:
             self.numero_protocolo = self._gerar_protocolo()
         super().save(*args, **kwargs)
@@ -433,7 +633,12 @@ class Transferencia(models.Model):
     escola_destino    = models.CharField(max_length=200, blank=True, verbose_name='Escola de Destino')
     data_solicitacao  = models.DateField(auto_now_add=True, verbose_name='Data da Solicitação')
     data_transferencia = models.DateField(null=True, blank=True, verbose_name='Data da Transferência')
-    status            = models.CharField(max_length=15, choices=STATUS_CHOICES, default='SOLICITADA', verbose_name='Status')
+    status            = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='SOLICITADA',
+        verbose_name='Status',
+    )
     numero_guia       = models.CharField(max_length=20, blank=True, verbose_name='Nº da Guia')
     observacao        = models.TextField(blank=True, verbose_name='Observação')
 
@@ -444,10 +649,42 @@ class Transferencia(models.Model):
 
     def clean(self):
         from django.core.exceptions import ValidationError
+        errors = {}
+
         if self.tipo == 'ENTRADA' and not self.escola_origem:
-            raise ValidationError({'escola_origem': 'Informe a escola de origem para transferência de entrada.'})
+            errors['escola_origem'] = 'Informe a escola de origem para transferência de entrada.'
         if self.tipo == 'SAIDA' and not self.escola_destino:
-            raise ValidationError({'escola_destino': 'Informe a escola de destino para transferência de saída.'})
+            errors['escola_destino'] = 'Informe a escola de destino para transferência de saída.'
+
+        ## ── C02: Transferência só permitida entre cursos do MESMO TIPO ──
+        # Impede transferência entre Técnico ↔ Remoto ↔ Itinerante
+        if self.matricula_id and self.matricula.curso_id:
+            tipo_curso_atual = (self.matricula.curso.tipo_curso or '').strip().lower()
+            if self.tipo == 'ENTRADA' and self.escola_origem:
+                # Para transferência de entrada, a escola_origem indica o tipo de curso de origem
+                # Validamos que o curso de DESTINO (matricula.curso) é compatível
+                # com o curso de ORIGEM implícito na transferência
+                if tipo_curso_atual == 'tecnico':
+                    # Só aceita transferência se ambos forem cursos técnicos
+                    # Como não temos o tipo da escola_origem, validamos que
+                    # a origem informada existe
+                    if not self.escola_origem.strip():
+                        errors['escola_origem'] = 'Informe a escola de origem para transferência de entrada em curso técnico.'
+                elif tipo_curso_atual == 'formacao_inicial':
+                    # Cursos FIC/Remotos só transferem entre si
+                    pass  # A origem é presumida como FIC
+                elif tipo_curso_atual == 'itinerante':
+                    pass  # Itinerante lida com polos diferentes
+            elif self.tipo == 'SAIDA':
+                # Na saída, validamos que o curso de DESTINO (escola_destino)
+                # é compatível com o curso de ORIGEM
+                pass  # Dados da escola destino serão validados externamente
+            else:
+                # Caso sem tipo definido ou inválido
+                pass
+
+        if errors:
+            raise ValidationError(errors)
 
         if not self.pk:
             return
@@ -637,13 +874,33 @@ class FluxoMatricula(models.Model):
         return None
 
     def avancar(self, proxima_etapa=None):
-        """Avança para a próxima etapa (ou para uma etapa específica)."""
+        """Avança para a próxima etapa (ou para uma etapa específica).
+        Nao permite pular etapas - cada etapa deve ser concluida em ordem.
+        """
+        idx_atual = self.get_indice_etapa()
+
         if proxima_etapa:
+            try:
+                idx_destino = self.ORDEM_ETAPAS.index(proxima_etapa)
+            except ValueError:
+                raise ValidationError(f'Etapa "{proxima_etapa}" invalida.')
+
+            if idx_destino > idx_atual + 1:
+                proxima_esperada = self.get_proxima_etapa()
+                raise ValidationError(
+                    f'Nao e possivel pular etapas. '
+                    f'Proxima etapa permitida: {proxima_esperada}.'
+                )
+            if idx_destino <= idx_atual:
+                raise ValidationError(
+                    f'A etapa {proxima_etapa} ja foi concluida.'
+                )
             self.etapa_atual = proxima_etapa
         else:
             prox = self.get_proxima_etapa()
             if prox:
                 self.etapa_atual = prox
+
         if self.etapa_atual == 'ARQUIVADO':
             self.concluido = True
         self.save()
@@ -782,18 +1039,41 @@ class FluxoEmissaoDocumento(models.Model):
         return None
 
     def avancar(self, proxima_etapa=None):
+        """Avança para a próxima etapa. Nao permite pular etapas."""
+        idx_atual = self.get_indice_etapa()
+
         if proxima_etapa:
+            try:
+                idx_destino = self.ORDEM_ETAPAS.index(proxima_etapa)
+            except ValueError:
+                raise ValidationError(f'Etapa "{proxima_etapa}" invalida.')
+
+            if idx_destino > idx_atual + 1:
+                proxima_esperada = self.get_proxima_etapa()
+                raise ValidationError(
+                    f'Nao e possivel pular etapas. Proxima etapa permitida: {proxima_esperada}.'
+                )
+            if idx_destino <= idx_atual:
+                raise ValidationError(f'A etapa {proxima_etapa} ja foi concluida.')
             self.etapa_atual = proxima_etapa
         else:
             prox = self.get_proxima_etapa()
             if prox:
                 self.etapa_atual = prox
+
         if self.etapa_atual == 'ARQUIVADO':
             self.concluido = True
         self.save()
 
     def verificar_elegibilidade(self):
-        """Etapa 2 – Verifica automaticamente se o aluno pode receber o documento."""
+        """Etapa 2 – Verifica automaticamente se o aluno pode receber o documento.
+        
+        Valida:
+        - Status da matrícula
+        - Compatibilidade do tipo de documento
+        - Existência de notas (para histórico)
+        - Inadimplência financeira (bloqueia declarações e históricos)
+        """
         tipo = self.tipo_documento
         matricula = self.matricula
         motivo = ''
@@ -806,6 +1086,20 @@ class FluxoEmissaoDocumento(models.Model):
             motivo = 'Guia de Transferência exige matrícula Ativa ou Trancada.'
         elif tipo == 'HISTORICO_ESCOLAR' and not matricula.notas.exists():
             motivo = 'Histórico Escolar: nenhuma nota lançada na matrícula.'
+
+        # Bloqueio para inadimplentes: alunos com contrato INADIMPLENTE
+        # não podem emitir declarações de matrícula, frequência, conclusão ou histórico
+        if not motivo and tipo in ('DECLARACAO_MATRICULA', 'DECLARACAO_FREQUENCIA',
+                                    'DECLARACAO_CONCLUSAO', 'HISTORICO_ESCOLAR'):
+            try:
+                contrato = matricula.contrato_financeiro
+                if contrato and contrato.status == 'INADIMPLENTE':
+                    motivo = (
+                        'Aluno inadimplente. Regularize as parcelas pendentes '
+                        'antes de solicitar a emissão de documentos.'
+                    )
+            except Exception:
+                pass
 
         self.elegivel = not bool(motivo)
         self.motivo_inelegivel = motivo
@@ -937,12 +1231,28 @@ class FluxoTransferencia(models.Model):
         return None
 
     def avancar(self, proxima_etapa=None):
+        """Avança para a próxima etapa. Nao permite pular etapas."""
+        idx_atual = self.get_indice_etapa()
+
         if proxima_etapa:
+            try:
+                idx_destino = self.ORDEM_ETAPAS.index(proxima_etapa)
+            except ValueError:
+                raise ValidationError(f'Etapa "{proxima_etapa}" invalida.')
+
+            if idx_destino > idx_atual + 1:
+                proxima_esperada = self.get_proxima_etapa()
+                raise ValidationError(
+                    f'Nao e possivel pular etapas. Proxima etapa permitida: {proxima_esperada}.'
+                )
+            if idx_destino <= idx_atual:
+                raise ValidationError(f'A etapa {proxima_etapa} ja foi concluida.')
             self.etapa_atual = proxima_etapa
         else:
             prox = self.get_proxima_etapa()
             if prox:
                 self.etapa_atual = prox
+
         if self.etapa_atual == 'ARQUIVADO':
             self.concluido = True
         self.save()
@@ -1548,4 +1858,5 @@ class EtapaFluxoTransferencia(models.Model):
 
     def __str__(self):
         return f'{self.fluxo} → {self.etapa} ({self.data:%d/%m/%Y %H:%M})'
+
 

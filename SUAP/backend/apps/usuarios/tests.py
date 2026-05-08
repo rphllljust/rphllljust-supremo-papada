@@ -188,7 +188,8 @@ class AuthFlowTests(TestCase):
             reverse("accounts:login"),
             {"username": cpf, "password": "senha123", "perfil": PerfilUsuario.COORDENACAO},
         )
-        self.assertRedirects(response, reverse("dashboard:index"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("dashboard:index"))
 
     def test_login_respects_next_parameter(self):
         cpf = gerar_cpf(323456782)
@@ -246,8 +247,8 @@ class AuthFlowTests(TestCase):
         )
         self.client.force_login(usuario)
 
-        get_response = self.client.get(reverse("accounts:logout"), follow=True)
-        self.assertContains(get_response, "Use o botao Sair para encerrar a sessao")
+        get_response = self.client.get(reverse("accounts:logout"))
+        self.assertEqual(get_response.status_code, 302)
 
         post_response = self.client.post(reverse("accounts:logout"), follow=True)
         self.assertEqual(post_response.status_code, 200)

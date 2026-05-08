@@ -12,11 +12,11 @@ function resolveBackendOrigin(env) {
     try {
       return new URL(env.VITE_API_URL).origin
     } catch {
-      return 'http://127.0.0.1:8000'
+      return 'http://localhost:8010'
     }
   }
 
-  return 'http://127.0.0.1:8000'
+  return 'http://localhost:8010'
 }
 
 function resolvePort(rawPort, fallbackPort) {
@@ -78,10 +78,19 @@ export default defineConfig(({ command, mode }) => {
             }
             return 'assets/[name]-[hash][extname]'
           },
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'react-query': ['@tanstack/react-query'],
-            'vue-vendor': ['vue'],
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('@tanstack/react-query')) return 'react-query'
+              if (id.includes('/vue/')) return 'vue-vendor'
+              if (
+                id.includes('/react/') ||
+                id.includes('/react-dom/') ||
+                id.includes('/react-router-dom/')
+              ) {
+                return 'react-vendor'
+              }
+            }
+            return undefined
           },
         },
       },

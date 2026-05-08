@@ -1,0 +1,11 @@
+{
+  "name": "seed-alunos",
+  "version": "1.0.0",
+  "description": "Seed 50 alunos no sistema IDEP",
+  "scripts": {
+    "seed": "node seed_alunos.js"
+  },
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

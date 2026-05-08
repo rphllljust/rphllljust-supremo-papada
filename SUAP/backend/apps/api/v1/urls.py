@@ -31,6 +31,7 @@ urlpatterns = [
     path("configurar-curso/", include("apps.api.v1.configurar_curso.urls")),
     path("servidores/", include("apps.api.v1.servidores.urls")),
     path("sica/", include("apps.api.v1.sica.urls")),
+    path("suap/", include("apps.api.v1.suap.urls")),
     path("setores/", include("apps.api.v1.setores.urls")),
     path("transferencias/", include("apps.api.v1.transferencias.urls")),
     path("usuarios/", include("apps.api.v1.usuarios.urls")),
@@ -39,4 +40,5 @@ urlpatterns = [
     path("matriculas/", include("apps.api.v1.matriculas.urls")),
     path("vida-academica/", include("apps.api.v1.vida_academica.urls")),
     path("notas/", include("apps.api.v1.notas.urls")),
+    path("financeiro/", include("apps.financeiro.urls")),
 ]

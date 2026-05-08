@@ -13,6 +13,7 @@ export default function TipoComponentesPage() {
       helpTitle="Ajuda de Tipos do Componente"
       helpDescription="A ajuda detalhada desta funcionalidade ainda será portada para o frontend React."
       exportFileName="tipos-do-componente.xls"
+      pageClassName="tipo-componentes-page"
     />
   )
 }

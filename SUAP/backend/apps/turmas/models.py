@@ -84,9 +84,13 @@ class Turma(models.Model):
         errors = {}
 
         if self.modalidade == "REMOTO":
-            unidade_codigo = ((getattr(self.curso, "unidade", None) and self.curso.unidade.codigo) or "").strip().lower()
-            if unidade_codigo != "sede":
-                errors["modalidade"] = "Turmas remotas devem estar vinculadas a cursos da unidade Sede."
+            unidade = getattr(self.curso, "unidade", None)
+            if unidade is None:
+                errors["modalidade"] = "Turmas remotas exigem um curso vinculado a uma unidade."
+            else:
+                unidade_codigo = (unidade.codigo or "").strip().lower()
+                if unidade_codigo != "sede":
+                    errors["modalidade"] = f"Turmas remotas devem estar vinculadas a cursos da unidade Sede (codigo 'sede'), nao a '{unidade.codigo}'."
 
         # T033: polo obrigatório para turmas itinerantes
         if self.modalidade == "ITINERANTE" and not self.polo_id:

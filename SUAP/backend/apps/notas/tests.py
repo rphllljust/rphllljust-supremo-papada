@@ -31,7 +31,7 @@ def gerar_cpf(seed: int) -> str:
 class NotaCrudTests(TestCase):
     def setUp(self):
         self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200, tipo_curso="tecnico")
         self.professor = Usuario.objects.create_user(
             username="prof_notas",
             cpf="42345678901",
@@ -55,6 +55,7 @@ class NotaCrudTests(TestCase):
             curso=self.curso,
             turma=self.turma,
             status="ATIVA",
+            turno="MANHA",
         )
 
     def test_create_nota(self):
@@ -128,12 +129,18 @@ class NotaApiFiltersTests(TestCase):
             tipo="ALUNO",
             password="x",
         )
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200)
-        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
+        self.outro_aluno = Usuario.objects.create_user(
+            username="aluno_api_notas_2",
+            cpf=gerar_cpf(623456783),
+            tipo="ALUNO",
+            password="x",
+        )
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Informatica", carga_horaria=1200, tipo_curso="tecnico")
+        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000, tipo_curso="tecnico")
         self.turma = Turma.objects.create(curso=self.curso, nome="INFO-API", ano_letivo=2026, professor_responsavel=self.professor)
         self.outra_turma = Turma.objects.create(curso=self.outro_curso, nome="ADM-API", ano_letivo=2026, professor_responsavel=self.outro_professor)
-        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
-        self.outra_matricula = Matricula.objects.create(aluno=self.aluno, curso=self.outro_curso, turma=self.outra_turma, status="ATIVA")
+        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
+        self.outra_matricula = Matricula.objects.create(aluno=self.outro_aluno, curso=self.outro_curso, turma=self.outra_turma, status="ATIVA", turno="TARDE")
         self.nota = Nota.objects.create(matricula=self.matricula, descricao="Prova API", valor=Decimal("8.00"), peso=Decimal("1.00"), data_lancamento=date(2026, 3, 10))
         Nota.objects.create(matricula=self.outra_matricula, descricao="Trabalho API", valor=Decimal("7.00"), peso=Decimal("1.00"), data_lancamento=date(2026, 3, 11))
 

@@ -2,6 +2,7 @@ from django.db.models import Q
 from rest_framework import generics, serializers as drf_serializers
 
 from apps.access.api.permissions import CanAccessModule
+from apps.access.policies import filter_aluno_scoped_queryset
 from apps.api.v1.pagination import StandardResultsSetPagination
 from apps.matriculas.models import Matricula, PendenciaDocumental
 
@@ -72,6 +73,12 @@ class MatriculaListApiView(generics.ListCreateAPIView):
                 | Q(turma__nome__icontains=search)
             )
 
+        queryset = filter_aluno_scoped_queryset(
+            self.request.user,
+            queryset,
+            aluno_lookup="aluno_id",
+        )
+
         return queryset.distinct()
 
     def perform_create(self, serializer):
@@ -112,13 +119,20 @@ class MatriculaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     module_name = "matriculas"
     access_surface = "api"
     serializer_class = MatriculaSerializer
-    queryset = Matricula.objects.select_related(
-        "aluno__pessoa",
-        "curso",
-        "turma",
-        "turma__professor_responsavel",
-        "consolidacao",
-    ).prefetch_related("turma__diarios")
+
+    def get_queryset(self):
+        queryset = Matricula.objects.select_related(
+            "aluno__pessoa",
+            "curso",
+            "turma",
+            "turma__professor_responsavel",
+            "consolidacao",
+        ).prefetch_related("turma__diarios")
+        return filter_aluno_scoped_queryset(
+            self.request.user,
+            queryset,
+            aluno_lookup="aluno_id",
+        )
 
     def get_permissions(self):
         if self.request.method in {"PUT", "PATCH", "DELETE"}:

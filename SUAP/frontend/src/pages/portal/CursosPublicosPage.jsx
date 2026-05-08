@@ -7,7 +7,7 @@ import { portalApi } from '@/api/endpoints'
 
 function getDashboardHref() {
   if (typeof window !== 'undefined' && window.location.port === '5173') {
-    return 'http://localhost:8000/'
+    return 'http://localhost:8010/'
   }
   return '/'
 }

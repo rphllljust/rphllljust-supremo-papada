@@ -83,6 +83,7 @@ class Command(BaseCommand):
         if generated_random_credentials:
             cpf, password = self._resolve_random_admin_credentials()
             recreate_existing = True
+            options["force_password_change"] = True
 
         if not cpf:
             raise CommandError(

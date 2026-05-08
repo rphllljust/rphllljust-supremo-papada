@@ -30,7 +30,7 @@ def gerar_cpf(seed: int) -> str:
 class FrequenciaCrudTests(TestCase):
     def setUp(self):
         self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000, tipo_curso="tecnico")
         self.professor = Usuario.objects.create_user(
             username="prof_freq",
             cpf="52345678901",
@@ -54,6 +54,7 @@ class FrequenciaCrudTests(TestCase):
             curso=self.curso,
             turma=self.turma,
             status="ATIVA",
+            turno="MANHA",
         )
 
     def test_create_frequencia(self):
@@ -119,12 +120,18 @@ class FrequenciaApiFiltersTests(TestCase):
             tipo="ALUNO",
             password="x",
         )
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900)
-        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Financas", carga_horaria=800)
+        self.outro_aluno = Usuario.objects.create_user(
+            username="aluno_api_freq_2",
+            cpf=gerar_cpf(723456783),
+            tipo="ALUNO",
+            password="x",
+        )
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900, tipo_curso="tecnico")
+        self.outro_curso = Curso.objects.create(unidade=self.unidade, nome="Financas", carga_horaria=800, tipo_curso="tecnico")
         self.turma = Turma.objects.create(curso=self.curso, nome="LOG-API", ano_letivo=2026, professor_responsavel=self.professor)
         self.outra_turma = Turma.objects.create(curso=self.outro_curso, nome="FIN-API", ano_letivo=2026, professor_responsavel=self.outro_professor)
-        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
-        self.outra_matricula = Matricula.objects.create(aluno=self.aluno, curso=self.outro_curso, turma=self.outra_turma, status="ATIVA")
+        self.matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
+        self.outra_matricula = Matricula.objects.create(aluno=self.outro_aluno, curso=self.outro_curso, turma=self.outra_turma, status="ATIVA", turno="TARDE")
         self.frequencia = Frequencia.objects.create(matricula=self.matricula, data=date(2026, 3, 12), presente=True)
         Frequencia.objects.create(matricula=self.outra_matricula, data=date(2026, 3, 13), presente=False)
 

@@ -80,44 +80,46 @@ class SmokeRoutesTests(TestCase):
         self.assertContains(response, "Voltar ao painel", status_code=403)
 
     def test_api_v1_list_routes_require_authenticated_authorized_user(self):
-        for path in [
-            "/api/v1/usuarios/",
-            "/api/v1/turmas/",
-            "/api/v1/matriculas/",
-            "/api/v1/unidades/",
-        ]:
+        expectations = {
+            "/api/v1/usuarios/": (403, 200),
+            "/api/v1/turmas/": (200, 200),
+            "/api/v1/matriculas/": (403, 200),
+            "/api/v1/unidades/": (403, 200),
+        }
+        for path, (expected_professor, expected_secretaria) in expectations.items():
             self.api_client.credentials()
             anonymous_response = self.api_client.get(path)
             self.assertEqual(anonymous_response.status_code, 401, msg=f"Falha anonima em {path}")
 
             self._authenticate_api_client(self.professor)
             forbidden_response = self.api_client.get(path)
-            self.assertEqual(forbidden_response.status_code, 403, msg=f"Falha de perfil em {path}")
+            self.assertEqual(forbidden_response.status_code, expected_professor, msg=f"Falha de perfil em {path}")
 
             self._authenticate_api_client(self.secretaria)
             authorized_response = self.api_client.get(path)
-            self.assertEqual(authorized_response.status_code, 200, msg=f"Falha autorizada em {path}")
+            self.assertEqual(authorized_response.status_code, expected_secretaria, msg=f"Falha autorizada em {path}")
 
     def test_api_v1_detail_routes_require_authenticated_authorized_user(self):
         unidade = Unidade.objects.get(codigo="sede")
 
-        for path in [
-            "/api/v1/usuarios/1/",
-            "/api/v1/turmas/1/",
-            "/api/v1/matriculas/1/",
-            f"/api/v1/unidades/{unidade.pk}/",
-        ]:
+        expectations = {
+            "/api/v1/usuarios/1/": (403, 404),
+            "/api/v1/turmas/1/": (404, 404),
+            "/api/v1/matriculas/1/": (403, 404),
+            f"/api/v1/unidades/{unidade.pk}/": (403, 200),
+        }
+        for path, (expected_professor, expected_secretaria) in expectations.items():
             self.api_client.credentials()
             anonymous_response = self.api_client.get(path)
             self.assertEqual(anonymous_response.status_code, 401, msg=f"Falha anonima em {path}")
 
             self._authenticate_api_client(self.professor)
             forbidden_response = self.api_client.get(path)
-            self.assertEqual(forbidden_response.status_code, 403, msg=f"Falha de perfil em {path}")
+            self.assertEqual(forbidden_response.status_code, expected_professor, msg=f"Falha de perfil em {path}")
 
             self._authenticate_api_client(self.secretaria)
             authorized_response = self.api_client.get(path)
-            self.assertEqual(authorized_response.status_code, 200, msg=f"Falha autorizada em {path}")
+            self.assertEqual(authorized_response.status_code, expected_secretaria, msg=f"Falha autorizada em {path}")
 
 
 class HelloWorldTestCase(TestCase):

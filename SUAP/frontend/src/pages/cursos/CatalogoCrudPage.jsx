@@ -20,6 +20,27 @@ function exportRowsToExcel(rows, filename) {
   URL.revokeObjectURL(url)
 }
 
+function parseListPayload(payload) {
+  if (Array.isArray(payload)) {
+    return {
+      rows: payload,
+      total: payload.length,
+      next: null,
+      previous: null,
+    }
+  }
+
+  const rows = Array.isArray(payload?.results) ? payload.results : []
+  const total = typeof payload?.count === 'number' ? payload.count : rows.length
+
+  return {
+    rows,
+    total,
+    next: payload?.next ?? null,
+    previous: payload?.previous ?? null,
+  }
+}
+
 export default function CatalogoCrudPage({
   title,
   singular,
@@ -30,6 +51,7 @@ export default function CatalogoCrudPage({
   helpTitle,
   helpDescription,
   exportFileName,
+  pageClassName = '',
 }) {
   const queryClient = useQueryClient()
   const [draftSearch, setDraftSearch] = useState('')
@@ -37,6 +59,7 @@ export default function CatalogoCrudPage({
   const [page, setPage] = useState(1)
   const [draftDescription, setDraftDescription] = useState('')
   const [editingRow, setEditingRow] = useState(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: [queryKey, { search, page }],
@@ -70,8 +93,7 @@ export default function CatalogoCrudPage({
     },
   })
 
-  const rows = data?.results || []
-  const total = data?.count || 0
+  const { rows, total, next, previous } = useMemo(() => parseListPayload(data), [data])
   const formTitle = useMemo(() => (editingRow ? `Editar ${singular.toLowerCase()}` : `Novo ${singular.toLowerCase()}`), [editingRow, singular])
 
   const startCreate = () => {
@@ -109,8 +131,46 @@ export default function CatalogoCrudPage({
     deleteMutation.mutate(row.id)
   }
 
+  const handleExport = async () => {
+    if (isExporting) return
+
+    try {
+      setIsExporting(true)
+
+      const firstResponse = await api.list({ search, page: 1 })
+      const firstParsed = parseListPayload(firstResponse?.data)
+      const exportedRows = [...firstParsed.rows]
+
+      if (!Array.isArray(firstResponse?.data) && Array.isArray(firstResponse?.data?.results)) {
+        const count = typeof firstResponse.data.count === 'number' ? firstResponse.data.count : exportedRows.length
+        const pageSize = Math.max(exportedRows.length, 1)
+        const totalPages = Math.max(1, Math.ceil(count / pageSize))
+
+        for (let currentPage = 2; currentPage <= totalPages; currentPage += 1) {
+          const pageResponse = await api.list({ search, page: currentPage })
+          const pageRows = parseListPayload(pageResponse?.data).rows
+          exportedRows.push(...pageRows)
+
+          if (exportedRows.length >= count || pageRows.length === 0) {
+            break
+          }
+        }
+      }
+
+      exportRowsToExcel(exportedRows, exportFileName)
+      toast.success(`${exportedRows.length} registro(s) exportado(s).`)
+    } catch (error) {
+      const detail = error?.response?.data?.detail
+      toast.error(detail || `NÃ£o foi possÃ­vel exportar ${plural.toLowerCase()}.`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const pageClasses = ['page', 'page--wide', 'area-cursos-page', pageClassName].filter(Boolean).join(' ')
+
   return (
-    <div className="page page--wide area-cursos-page">
+    <div className={pageClasses}>
       <nav className="profile-breadcrumb">
         <Link to="/dashboard">Início</Link>
         <span className="profile-breadcrumb__sep">&gt;</span>
@@ -125,8 +185,8 @@ export default function CatalogoCrudPage({
           <button type="button" className="btn btn--primary" onClick={startCreate}>
             <Plus size={16} /> Novo {singular}
           </button>
-          <button type="button" className="btn btn--dark" onClick={() => exportRowsToExcel(rows, exportFileName)}>
-            <FileSpreadsheet size={16} /> Exportar para XLS
+          <button type="button" className="btn btn--dark" onClick={handleExport} disabled={isExporting || isLoading}>
+            <FileSpreadsheet size={16} /> {isExporting ? 'Exportando...' : 'Exportar para XLS'}
           </button>
           <Link
             to={`/indisponivel/${helpSlug}`}
@@ -235,11 +295,11 @@ export default function CatalogoCrudPage({
 
       {data ? (
         <div className="estagios-pagination">
-          <button type="button" className="btn btn--secondary" disabled={!data.previous} onClick={() => setPage((current) => current - 1)}>
+          <button type="button" className="btn btn--secondary" disabled={!previous} onClick={() => setPage((current) => current - 1)}>
             Anterior
           </button>
           <span className="pagination__info">Página {page} • {total} registros</span>
-          <button type="button" className="btn btn--secondary" disabled={!data.next} onClick={() => setPage((current) => current + 1)}>
+          <button type="button" className="btn btn--secondary" disabled={!next} onClick={() => setPage((current) => current + 1)}>
             Próxima
           </button>
         </div>

@@ -25,13 +25,14 @@ from apps.turmas.models import Turma
 class MatriculaForm(forms.ModelForm):
     class Meta:
         model = Matricula
-        fields = ["aluno", "curso", "turma", "tipo_matricula", "status"]
+        fields = ["aluno", "curso", "turma", "tipo_matricula", "status", "turno"]
         labels = {
             "aluno": "Aluno",
             "curso": "Curso",
             "turma": "Turma",
             "tipo_matricula": "Tipo de Matrícula",
             "status": "Status",
+            "turno": "Turno",
         }
 
     def __init__(self, *args, **kwargs):
@@ -99,6 +100,7 @@ class DocumentoMatriculaForm(forms.ModelForm):
         labels = {
             "tipo_documento": "Tipo de Documento",
             "status": "Status",
+            "turno": "Turno",
             "data_recebimento": "Data de Recebimento",
             "data_validacao": "Data de Validação",
             "motivo_recusa": "Motivo da Recusa",
@@ -138,6 +140,7 @@ class PendenciaDocumentalForm(forms.ModelForm):
         labels = {
             "descricao": "Descrição da Pendência",
             "status": "Status",
+            "turno": "Turno",
             "data_resolucao": "Data de Resolução",
             "observacao": "Observação",
         }
@@ -238,6 +241,7 @@ class TransferenciaForm(forms.ModelForm):
             "escola_destino": "Escola de Destino",
             "data_transferencia": "Data da Transferência",
             "status": "Status",
+            "turno": "Turno",
             "numero_guia": "Nº da Guia",
             "observacao": "Observação",
         }
@@ -479,6 +483,7 @@ class ConselhoClasseForm(forms.ModelForm):
             "periodo": "Período",
             "data_reuniao": "Data da Reunião",
             "status": "Status",
+            "turno": "Turno",
             "pauta": "Pauta",
             "responsavel": "Responsável",
         }
@@ -513,6 +518,7 @@ class CertificadoDiplomaForm(forms.ModelForm):
             "data_emissao": "Data de Emissão",
             "data_entrega": "Data de Entrega",
             "status": "Status",
+            "turno": "Turno",
             "observacao": "Observação",
         }
         widgets = {

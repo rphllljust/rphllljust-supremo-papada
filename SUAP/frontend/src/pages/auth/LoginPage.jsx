@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { formatCpf, normalizeCpf } from '@/utils/cpf'
 import idepRoLogo from '@/assets/idep-ro-logo.png'
 import toast from 'react-hot-toast'
+import { suapApi } from '@/api/endpoints'
 
 const PERFIL_OPTIONS = [
   { value: 'SECRETARIA', label: 'Secretaria' },
@@ -69,6 +70,15 @@ export default function LoginPage() {
       const detail = Array.isArray(data?.detail) ? data.detail[0] : data?.detail
       const msg = detail || data?.cpf?.[0] || data?.perfil?.[0] || data?.password?.[0] || 'Credenciais inválidas.'
       toast.error(String(msg))
+    }
+  }
+
+  const handleSuapLogin = async () => {
+    try {
+      const { data } = await suapApi.startAuth()
+      window.location.href = data.authorize_url
+    } catch (_error) {
+      toast.error('Nao foi possivel iniciar login com SUAP.')
     }
   }
 
@@ -144,6 +154,9 @@ export default function LoginPage() {
 
           <button type="submit" className="btn btn--primary btn--full" disabled={isSubmitting}>
             {isSubmitting ? 'Entrando...' : 'Entrar'}
+          </button>
+          <button type="button" className="btn btn--outline btn--full" onClick={handleSuapLogin}>
+            Entrar com SUAP
           </button>
         </form>
       </div>

@@ -9,6 +9,7 @@ class NotaSerializer(serializers.ModelSerializer):
     curso_nome = serializers.CharField(source="matricula.curso.nome", read_only=True)
     turma_nome = serializers.CharField(source="matricula.turma.nome", read_only=True)
     professor_nome = serializers.SerializerMethodField(read_only=True)
+    componente_curricular_nome = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Nota
@@ -20,6 +21,8 @@ class NotaSerializer(serializers.ModelSerializer):
             "curso_nome",
             "turma_nome",
             "professor_nome",
+            "componente_curricular",
+            "componente_curricular_nome",
             "descricao",
             "valor",
             "peso",
@@ -41,3 +44,8 @@ class NotaSerializer(serializers.ModelSerializer):
 
         nome = professor.get_full_name().strip()
         return nome or professor.username
+
+    def get_componente_curricular_nome(self, obj):
+        if obj.componente_curricular:
+            return obj.componente_curricular.nome
+        return None

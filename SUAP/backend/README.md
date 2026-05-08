@@ -251,13 +251,13 @@ npm run dev
 No frontend, defina `VITE_API_URL` apontando para o backend Django, por exemplo:
 
 ```text
-http://127.0.0.1:8000/api/v1
+http://localhost:8010/api/v1
 ```
 
 A aplicação ficará disponível em:
 
 ```text
-http://127.0.0.1:8000/
+http://localhost:8010/
 ```
 
 O frontend React em desenvolvimento ficará disponível no host/porta configurados pelo Vite, normalmente:
@@ -335,7 +335,7 @@ py manage.py createsuperuser
 ```
 acesse no navegador:
 ```text
-http://127.0.0.1:8000/admin/
+http://localhost:8010/admin/
 ```
 
 ## Migrações
@@ -450,7 +450,7 @@ O `access token` e o `refresh token` carregam claims adicionais calculadas a par
 ### Usar Bearer token
 
 ```powershell
-curl http://127.0.0.1:8000/api/v1/usuarios/ -H "Authorization: Bearer <access_token>"
+curl http://localhost:8010/api/v1/usuarios/ -H "Authorization: Bearer <access_token>"
 ```
 
 ### Renovar token

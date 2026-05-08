@@ -26,6 +26,10 @@ def is_professor_user(user) -> bool:
     return is_authenticated_user(user) and get_user_profile(user) == PerfilUsuario.PROFESSOR
 
 
+def is_aluno_user(user) -> bool:
+    return is_authenticated_user(user) and get_user_profile(user) == PerfilUsuario.ALUNO
+
+
 def _normalize_profiles(profiles: Iterable[object]) -> set[str]:
     normalized = set()
     for profile in profiles:
@@ -117,6 +121,15 @@ def filter_queryset_for_user(user, queryset, *, action: str = "view", surface: s
     if not can_access_module(user, app_label, action=action, surface=surface):
         return queryset.none()
     return queryset
+
+
+def filter_aluno_scoped_queryset(user, queryset, *, aluno_lookup: str):
+    """Restringe queryset ao próprio aluno quando o usuário tem perfil ALUNO (LGPD)."""
+    if not is_authenticated_user(user):
+        return queryset.none()
+    if is_admin_user(user) or not is_aluno_user(user):
+        return queryset
+    return queryset.filter(**{aluno_lookup: user.id})
 
 
 def filter_professor_scoped_queryset(user, queryset, *, professor_lookup: str):

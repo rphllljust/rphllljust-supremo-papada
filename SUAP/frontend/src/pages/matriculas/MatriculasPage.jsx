@@ -148,7 +148,7 @@ export default function MatriculasPage() {
 
   const saveMutation = useMutation({
     mutationFn: ({ id, payload }) => (id ? matriculasApi.update(id, payload) : matriculasApi.create(payload)),
-    onSuccess: (_response, variables) => {
+        onSuccess: (_response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['matriculas'] })
       if (variables.id) {
         queryClient.invalidateQueries({ queryKey: ['matricula', variables.id] })
@@ -160,7 +160,15 @@ export default function MatriculasPage() {
         navigate('/matriculas')
       }
     },
-    onError: (error) => toast.error(getErrorMessage(error, 'Nao foi possivel salvar a matricula.')),
+    onError: (error) => {
+      const msg = getErrorMessage(error, 'Nao foi possivel salvar a matricula.')
+      // T107: exibe mensagem de conflito de versao
+      if (msg.includes('version') || msg.includes('concorr') || msg.includes('conflito')) {
+        toast.error('Conflito de versao: outro usuario alterou esta matricula. Recarregue e tente novamente.')
+      } else {
+        toast.error(msg)
+      }
+    },
   })
 
   const deleteMutation = useMutation({
@@ -265,7 +273,7 @@ export default function MatriculasPage() {
           <SearchableRemoteSelect id="matricula-turma" label="Turma" searchLabel="Buscar turma" searchPlaceholder="Digite nome da turma" searchValue={turmaSearch} onSearchChange={setTurmaSearch} value={formData.turma} onChange={(nextValue) => setFormData((current) => ({ ...current, turma: nextValue }))} options={turmas} getOptionLabel={(item) => `${item.nome} - ${item.curso_nome}`} />
           <div className="form-field"><label>Status</label><select className="select" value={formData.status} onChange={(event) => setFormData((current) => ({ ...current, status: event.target.value }))}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
           <div className="form-field"><label>Tipo da matricula</label><select className="select" value={formData.tipo_matricula} onChange={(event) => setFormData((current) => ({ ...current, tipo_matricula: event.target.value }))}>{TIPO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-          <div className="form-field"><label>Turno</label><select className="select" value={formData.turno} onChange={(event) => setFormData((current) => ({ ...current, turno: event.target.value }))}>{TURNO_OPTIONS.map((option) => <option key={option.value || 'blank'} value={option.value}>{option.label}</option>)}</select></div>
+                    <div className="form-field"><label>Turno {formData.status === 'ATIVA' ? <span className="field-required">*</span> : ''}</label><select className="select" value={formData.turno} onChange={(event) => setFormData((current) => ({ ...current, turno: event.target.value }))}>{TURNO_OPTIONS.map((option) => <option key={option.value || 'blank'} value={option.value}>{option.label}</option>)}</select>{formData.status === 'ATIVA' && !formData.turno ? <span className="field-error">Turno obrigatorio para matricula ativa.</span> : null}</div>
         </EntityFormPanel>
       </div>
     )
@@ -333,7 +341,7 @@ export default function MatriculasPage() {
           subtitle="Informe aluno, curso, turma e situacao da matricula."
           onSubmit={(event) => {
             event.preventDefault()
-            saveMutation.mutate({
+                        saveMutation.mutate({
               id: editingMatriculaId,
               payload: {
                 aluno: Number(formData.aluno),
@@ -342,6 +350,8 @@ export default function MatriculasPage() {
                 status: formData.status,
                 tipo_matricula: formData.tipo_matricula,
                 turno: formData.turno || '',
+                // T107: enviar versao atual para controle de concorrencia
+                ...(editingMatricula?.version !== undefined ? { version: editingMatricula.version } : {}),
               },
             })
           }}
@@ -404,13 +414,14 @@ export default function MatriculasPage() {
               ))}
             </select>
           </div>
-          <div className="form-field">
-            <label>Turno</label>
+                    <div className="form-field">
+                        <label>Turno {formData.status === 'ATIVA' ? <span className="field-required">*</span> : ''}</label>
             <select className="select" value={formData.turno} onChange={(event) => setFormData((current) => ({ ...current, turno: event.target.value }))}>
               {TURNO_OPTIONS.map((option) => (
                 <option key={option.value || 'blank'} value={option.value}>{option.label}</option>
               ))}
             </select>
+            {formData.status === 'ATIVA' && !formData.turno ? <span className="field-error">Turno obrigatorio para matricula ativa.</span> : null}
           </div>
         </EntityFormPanel>
       ) : null}

@@ -3,7 +3,11 @@ from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 
 from apps.access.api.permissions import CanAccessModule
-from apps.access.policies import filter_professor_scoped_queryset, professor_owns_related_resource
+from apps.access.policies import (
+    filter_aluno_scoped_queryset,
+    filter_professor_scoped_queryset,
+    professor_owns_related_resource,
+)
 from apps.api.v1.pagination import StandardResultsSetPagination
 from apps.notas.models import Nota
 
@@ -31,11 +35,17 @@ class NotaListApiView(generics.ListCreateAPIView):
             "matricula__curso",
             "matricula__turma",
             "matricula__turma__professor_responsavel",
+            "componente_curricular",
         ).order_by("-data_lancamento", "descricao", "-id")
         queryset = filter_professor_scoped_queryset(
             self.request.user,
             queryset,
             professor_lookup="matricula__turma__professor_responsavel_id",
+        )
+        queryset = filter_aluno_scoped_queryset(
+            self.request.user,
+            queryset,
+            aluno_lookup="matricula__aluno_id",
         )
 
         search = self.request.query_params.get("search", "").strip()
@@ -80,12 +90,14 @@ class NotaDetailApiView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [CanAccessModule]
     module_name = "notas"
     access_surface = "api"
+    access_action = "view"
     serializer_class = NotaSerializer
     queryset = Nota.objects.select_related(
         "matricula__aluno__pessoa",
         "matricula__curso",
         "matricula__turma",
         "matricula__turma__professor_responsavel",
+        "componente_curricular",
     )
 
     def get_queryset(self):

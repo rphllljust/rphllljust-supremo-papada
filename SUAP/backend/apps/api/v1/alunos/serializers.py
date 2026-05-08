@@ -9,12 +9,14 @@ from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.utils import normalize_cpf
-from apps.usuarios.models import Aluno, PerfilUsuario, Pessoa
+from apps.usuarios.models import Aluno, PerfilUsuario, Pessoa, Responsavel
 
 
 Usuario = get_user_model()
 
 _SCRIPT_RE = re.compile(r'<[^>]+>', re.IGNORECASE)
+
+_TELEFONE_RE = re.compile(r'^\+?\d{10,15}$|^\(\d{2}\)\s?\d{4,5}-?\d{4}$|^\d{8,11}$')
 
 
 def sanitize_text(value: str) -> str:
@@ -96,6 +98,7 @@ class AlunoSerializer(serializers.ModelSerializer):
     # Campos extras recebidos na criação/edição para validação de menor
     data_nascimento = serializers.DateField(required=False, write_only=True)
     responsavel_nome = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    telefone = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = Usuario
@@ -112,6 +115,7 @@ class AlunoSerializer(serializers.ModelSerializer):
             "data_ingresso",
             "data_nascimento",
             "responsavel_nome",
+            "telefone",
         ]
 
     def validate_cpf(self, value):
@@ -143,6 +147,16 @@ class AlunoSerializer(serializers.ModelSerializer):
         if len(nome) > 200:
             raise serializers.ValidationError("Nome completo muito longo. Limite de 200 caracteres.")
         return nome
+
+    def validate_telefone(self, value):
+        telefone = sanitize_text(value)
+        if not telefone:
+            return ""
+        if not _TELEFONE_RE.match(telefone):
+            raise serializers.ValidationError(
+                "Informe um telefone valido (formato: (XX) XXXXX-XXXX ou +55XXXXXXXXXXX)."
+            )
+        return telefone
 
     def validate_email(self, value):
         email = sanitize_text(value).lower()
@@ -178,16 +192,41 @@ class AlunoSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def _salvar_responsavel(self, usuario, responsavel_nome):
+        """Cria ou atualiza o responsavel financeiro/parental do aluno."""
+        if not responsavel_nome:
+            return
+        aluno = Aluno.objects.filter(pessoa=usuario.pessoa).first()
+        if not aluno:
+            return
+        # Remove responsavel anterior se existir
+        Responsavel.objects.filter(aluno=aluno, responsavel_principal=True).delete()
+        # Cria nova pessoa como responsavel
+        resp_pessoa, _ = Pessoa.objects.get_or_create(
+            nome_completo=responsavel_nome.strip(),
+            defaults={'cpf': f'RESP-{usuario.cpf}'},
+        )
+        Responsavel.objects.create(
+            aluno=aluno,
+            pessoa=resp_pessoa,
+            parentesco='RESPONSAVEL_FINANCEIRO',
+            responsavel_principal=True,
+            contato_principal=usuario.email or '',
+        )
+
     @transaction.atomic
     def create(self, validated_data):
         nome_completo = validated_data.pop("nome_completo")
         situacao = validated_data.pop("situacao", Aluno.SITUACAO_CHOICES[0][0])
+        responsavel_nome = validated_data.pop("responsavel_nome", "")
+        telefone = validated_data.pop("telefone", "")
         first_name, last_name = split_name(nome_completo)
 
         pessoa = Pessoa.objects.create(
             nome_completo=nome_completo,
             cpf=validated_data["cpf"],
             email=validated_data.get("email", ""),
+            telefone=telefone or "",
             ativo=validated_data.get("is_active", True),
         )
 
@@ -207,12 +246,16 @@ class AlunoSerializer(serializers.ModelSerializer):
             situacao=situacao,
         )
 
+        self._salvar_responsavel(usuario, responsavel_nome)
+
         return usuario
 
     @transaction.atomic
     def update(self, instance, validated_data):
         nome_completo = validated_data.pop("nome_completo", None)
         situacao = validated_data.pop("situacao", None)
+        responsavel_nome = validated_data.pop("responsavel_nome", None)
+        telefone = validated_data.pop("telefone", None)
 
         for field, value in validated_data.items():
             setattr(instance, field, value)
@@ -240,6 +283,8 @@ class AlunoSerializer(serializers.ModelSerializer):
             instance.pessoa.cpf = instance.cpf
             instance.pessoa.email = instance.email or ""
             instance.pessoa.ativo = instance.is_active
+            if telefone is not None:
+                instance.pessoa.telefone = telefone
             instance.pessoa.save()
 
             aluno, _created = Aluno.objects.get_or_create(
@@ -249,6 +294,9 @@ class AlunoSerializer(serializers.ModelSerializer):
             if situacao is not None and aluno.situacao != situacao:
                 aluno.situacao = situacao
                 aluno.save(update_fields=["situacao"])
+
+            if responsavel_nome is not None:
+                self._salvar_responsavel(instance, responsavel_nome)
 
         instance.save()
         return instance

@@ -33,6 +33,9 @@ const DEFAULT_VALUES = {
   nome_completo: '',
   cpf: '',
   email: '',
+  telefone: '',
+  data_nascimento: '',
+  responsavel_nome: '',
   situacao: 'ATIVO',
   is_active: true,
 }
@@ -75,10 +78,41 @@ export default function AlunosPage() {
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: DEFAULT_VALUES })
 
-  // T017: validação dos dígitos verificadores do CPF no frontend
+    // T017: validação dos dígitos verificadores do CPF no frontend
   const cpfField = register('cpf', {
     required: 'Informe o CPF',
     validate: (value) => validateCpf(value) || 'CPF inválido. Verifique os dígitos informados.',
+  })
+
+  // Validação: hoje para data máxima de nascimento
+  const today = new Date().toISOString().split('T')[0]
+
+  // Validação: nome completo (apenas letras, espaços e acentos)
+  const nomeField = register('nome_completo', {
+    required: 'Informe o nome completo',
+    maxLength: { value: 200, message: 'O nome deve ter no maximo 200 caracteres.' },
+    pattern: {
+      value: /^[A-Za-zÀ-ÿ\s]+$/,
+      message: 'O nome deve conter apenas letras, espacos e acentos.',
+    },
+  })
+
+  // Validação: telefone (formato mínimo)
+  const telefoneField = register('telefone', {
+    validate: (value) => {
+      if (!value) return true
+      const digits = value.replace(/\D/g, '')
+      if (digits.length < 10) return 'Telefone deve ter ao menos 10 digitos (DDD + numero).'
+      return true
+    },
+  })
+
+  // Validação: e-mail com padrão básido
+  const emailField = register('email', {
+    pattern: {
+      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Informe um e-mail valido.',
+    },
   })
 
   const handleCpfChange = (event) => {
@@ -128,10 +162,13 @@ export default function AlunosPage() {
       return
     }
 
-    reset({
+        reset({
       nome_completo: editingAluno.nome_completo || '',
       cpf: formatCpf(editingAluno.cpf || ''),
       email: editingAluno.email || '',
+      telefone: editingAluno.telefone || '',
+      data_nascimento: editingAluno.data_nascimento || '',
+      responsavel_nome: editingAluno.responsavel_nome || '',
       situacao: editingAluno.situacao || 'ATIVO',
       is_active: Boolean(editingAluno.is_active),
     })
@@ -203,12 +240,15 @@ export default function AlunosPage() {
   }
 
   const onSubmit = handleSubmit(async (formData) => {
-    await saveMutation.mutateAsync({
+        await saveMutation.mutateAsync({
       id: editingAlunoId,
       payload: {
         nome_completo: formData.nome_completo.trim(),
         cpf: normalizeCpf(formData.cpf),
         email: formData.email.trim(),
+        telefone: formData.telefone.trim(),
+        data_nascimento: formData.data_nascimento || null,
+        responsavel_nome: formData.responsavel_nome.trim(),
         situacao: formData.situacao,
         is_active: Boolean(formData.is_active),
       },
@@ -254,10 +294,13 @@ export default function AlunosPage() {
           submitLabel="Criar aluno"
           isSubmitting={isSubmitting || saveMutation.isPending}
         >
-          <div className="form-field"><label htmlFor="aluno-nome">Nome completo</label><input id="aluno-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />{errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}</div>
-          <div className="form-field"><label htmlFor="aluno-cpf">CPF</label><input id="aluno-cpf" type="text" inputMode="numeric" maxLength={14} {...cpfField} onChange={handleCpfChange} onPaste={handleCpfPaste} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
-          <div className="form-field"><label htmlFor="aluno-email">E-mail</label><input id="aluno-email" type="email" {...register('email')} /></div>
-          <div className="form-field"><label htmlFor="aluno-situacao">Situacao academica</label><select id="aluno-situacao" className="select" {...register('situacao', { required: 'Selecione a situacao' })}>{SITUACAO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.situacao ? <span className="field-error">{errors.situacao.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-nome">Nome completo <span className="char-counter" id="nome-counter"></span></label><input id="aluno-nome" type="text" maxLength={200} {...nomeField} onInput={(e) => document.getElementById('nome-counter') && (document.getElementById('nome-counter').textContent = `${e.target.value.length}/200`)} />{errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-cpf">CPF</label><input id="aluno-cpf" type="text" inputMode="numeric" maxLength={14} {...cpfField} onChange={handleCpfChange} onPaste={handleCpfPaste} />{errors.cpf ? <span className="field-error">{errors.cpf.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-email">E-mail</label><input id="aluno-email" type="email" {...emailField} />{errors.email ? <span className="field-error">{errors.email.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-telefone">Telefone</label><input id="aluno-telefone" type="tel" placeholder="(XX) XXXXX-XXXX" maxLength={15} {...telefoneField} />{errors.telefone ? <span className="field-error">{errors.telefone.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-data-nascimento">Data de nascimento</label><input id="aluno-data-nascimento" type="date" max={today} {...register('data_nascimento', { validate: (value) => !value || new Date(value) <= new Date() || 'A data de nascimento nao pode ser futura.' })} />{errors.data_nascimento ? <span className="field-error">{errors.data_nascimento.message}</span> : null}</div>
+                    <div className="form-field"><label htmlFor="aluno-responsavel">Nome do responsavel</label><input id="aluno-responsavel" type="text" placeholder="Obrigatorio para menores de 18 anos" {...register('responsavel_nome')} /></div>
+                    <div className="form-field"><label htmlFor="aluno-situacao">Situacao academica</label><select id="aluno-situacao" className="select" {...register('situacao', { required: 'Selecione a situacao' })}>{SITUACAO_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.situacao ? <span className="field-error">{errors.situacao.message}</span> : null}</div>
           <div className="form-field form-field--checkbox"><label className="checkbox-field"><input type="checkbox" {...register('is_active')} /><span>Aluno ativo</span></label></div>
         </EntityFormPanel>
       </div>
@@ -335,9 +378,9 @@ export default function AlunosPage() {
           submitLabel="Salvar alteracoes"
           isSubmitting={isSubmitting || saveMutation.isPending || isLoadingEditing}
         >
-          <div className="form-field">
+                                        <div className="form-field">
             <label htmlFor="aluno-edit-nome">Nome completo</label>
-            <input id="aluno-edit-nome" type="text" {...register('nome_completo', { required: 'Informe o nome completo' })} />
+            <input id="aluno-edit-nome" type="text" maxLength={200} {...nomeField} />
             {errors.nome_completo ? <span className="field-error">{errors.nome_completo.message}</span> : null}
           </div>
           <div className="form-field">
@@ -347,7 +390,22 @@ export default function AlunosPage() {
           </div>
           <div className="form-field">
             <label htmlFor="aluno-edit-email">E-mail</label>
-            <input id="aluno-edit-email" type="email" {...register('email')} />
+            <input id="aluno-edit-email" type="email" {...emailField} />
+            {errors.email ? <span className="field-error">{errors.email.message}</span> : null}
+          </div>
+          <div className="form-field">
+            <label htmlFor="aluno-edit-telefone">Telefone</label>
+            <input id="aluno-edit-telefone" type="tel" placeholder="(XX) XXXXX-XXXX" maxLength={15} {...telefoneField} />
+            {errors.telefone ? <span className="field-error">{errors.telefone.message}</span> : null}
+          </div>
+          <div className="form-field">
+            <label htmlFor="aluno-edit-data-nascimento">Data de nascimento</label>
+            <input id="aluno-edit-data-nascimento" type="date" max={today} {...register('data_nascimento', { validate: (value) => !value || new Date(value) <= new Date() || 'A data de nascimento nao pode ser futura.' })} />
+            {errors.data_nascimento ? <span className="field-error">{errors.data_nascimento.message}</span> : null}
+          </div>
+          <div className="form-field">
+            <label htmlFor="aluno-edit-responsavel">Nome do responsavel</label>
+            <input id="aluno-edit-responsavel" type="text" placeholder="Obrigatorio para menores de 18 anos" {...register('responsavel_nome')} />
           </div>
           <div className="form-field">
             <label htmlFor="aluno-edit-situacao">Situacao academica</label>

@@ -13,7 +13,7 @@ from .models import DependenciaAcademica, Matricula
 class MatriculaCrudTests(TestCase):
     def setUp(self):
         self.unidade, _ = Unidade.objects.get_or_create(codigo="sede", defaults={"nome": "Sede"})
-        self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000)
+        self.curso = Curso.objects.create(unidade=self.unidade, nome="Administracao", carga_horaria=1000, tipo_curso="tecnico")
         self.secretaria = Usuario.objects.create_user(
             username="sec_matricula",
             cpf="92345678903",
@@ -50,6 +50,7 @@ class MatriculaCrudTests(TestCase):
                 "turma": self.turma.pk,
                 "tipo_matricula": "NOVA",
                 "status": "ATIVA",
+                "turno": "MANHA",
             },
             follow=True,
         )
@@ -58,7 +59,7 @@ class MatriculaCrudTests(TestCase):
         self.assertTrue(Matricula.objects.filter(aluno=self.aluno, turma=self.turma, curso=self.curso).exists())
 
     def test_list_matriculas(self):
-        Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
+        Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
 
         response = self.client.get(reverse("matriculas:matriculas_list"))
 
@@ -66,7 +67,7 @@ class MatriculaCrudTests(TestCase):
         self.assertContains(response, "aluno_matricula")
 
     def test_delete_matricula(self):
-        matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA")
+        matricula = Matricula.objects.create(aluno=self.aluno, curso=self.curso, turma=self.turma, status="ATIVA", turno="MANHA")
 
         response = self.client.post(reverse("matriculas:matriculas_delete", args=[matricula.pk]), follow=True)
 
@@ -74,7 +75,7 @@ class MatriculaCrudTests(TestCase):
         self.assertFalse(Matricula.objects.filter(pk=matricula.pk).exists())
 
     def test_block_new_active_enrollment_when_student_has_active_in_other_course(self):
-        outro_curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900)
+        outro_curso = Curso.objects.create(unidade=self.unidade, nome="Logistica", carga_horaria=900, tipo_curso="tecnico")
         outra_turma = Turma.objects.create(
             curso=outro_curso,
             nome="LOG-1",
@@ -89,6 +90,7 @@ class MatriculaCrudTests(TestCase):
             turma=self.turma,
             status="ATIVA",
             tipo_matricula="NOVA",
+            turno="MANHA",
         )
 
         nova = Matricula(
@@ -97,6 +99,7 @@ class MatriculaCrudTests(TestCase):
             turma=outra_turma,
             status="ATIVA",
             tipo_matricula="NOVA",
+            turno="TARDE",
         )
 
         with self.assertRaises(ValidationError) as exc:
@@ -139,6 +142,7 @@ class MatriculaCrudTests(TestCase):
             turma=self.turma,
             status="ATIVA",
             tipo_matricula="NOVA",
+            turno="MANHA",
         )
         DependenciaAcademica.objects.create(
             matricula=matricula,

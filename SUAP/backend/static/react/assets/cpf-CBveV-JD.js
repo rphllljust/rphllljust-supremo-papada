@@ -1,1 +1,0 @@
-function n(i){return String(i||"").replace(/\D/g,"").slice(0,11)}function l(i){const e=n(i);return e.length<=3?e:e.length<=6?`${e.slice(0,3)}.${e.slice(3)}`:e.length<=9?`${e.slice(0,3)}.${e.slice(3,6)}.${e.slice(6)}`:`${e.slice(0,3)}.${e.slice(3,6)}.${e.slice(6,9)}-${e.slice(9)}`}export{l as f,n};

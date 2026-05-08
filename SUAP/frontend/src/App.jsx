@@ -24,6 +24,7 @@ const CursosPublicosPage = lazy(() => import('@/pages/portal/CursosPublicosPage'
 
 // ── Auth ───────────────────────────────────────────────
 const LoginPage      = lazy(() => import('@/pages/auth/LoginPage'))
+const SuapCallbackPage = lazy(() => import('@/pages/auth/SuapCallbackPage'))
 
 // ── Painel interno (requer JWT) ────────────────────────
 const DashboardPage  = lazy(() => import('@/pages/dashboard/DashboardPage'))
@@ -231,6 +232,7 @@ export default function App() {
 
               {/* ── Auth ────────────────────────────────── */}
               <Route path="/login" element={<RouteShell><LoginPage /></RouteShell>} />
+              <Route path="/login/suap/callback" element={<RouteShell><SuapCallbackPage /></RouteShell>} />
               <Route path="/accounts/login" element={<Navigate to="/login" replace />} />
               <Route path="/validar-certificado" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
               <Route path="/validar-certificado/:codigo" element={<RouteShell><ValidacaoCertificadoPage /></RouteShell>} />
